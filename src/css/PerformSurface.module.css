@@ -32,7 +32,7 @@
 
 .label {
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -97,7 +97,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* The driver chip. Warm accent is reserved for the state that means the

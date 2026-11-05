@@ -298,7 +298,7 @@ body {
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   color: rgba(200, 255, 116, 0.88);
 }
@@ -357,7 +357,7 @@ body {
     rgba(12, 22, 36, 0.74);
   color: #e9fbff;
   text-decoration: none;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   transition:
     transform 160ms ease,
     box-shadow 200ms ease,
@@ -538,7 +538,7 @@ body {
 }
 
 .control-panel__heading {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.01em;
   margin-bottom: 2px;
 }
@@ -610,7 +610,7 @@ body {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: 0.9375rem;
 }
 
@@ -637,17 +637,17 @@ body {
   padding: 10px 12px;
   min-width: 150px;
   min-height: 44px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.01em;
   box-shadow: none;
   font-size: 1rem;
 }
 
 .control-panel select:focus {
-  outline: 2px solid rgba(161, 124, 106, 0.65);
+  outline: 2px solid var(--accent-color);
   outline-offset: 2px;
   box-shadow:
-    0 0 18px rgba(161, 124, 106, 0.4),
+    0 0 18px color-mix(in srgb, var(--accent-color) 40%, transparent),
     0 0 10px var(--stims-muted-35);
 }
 
@@ -664,10 +664,10 @@ body {
 }
 
 .control-panel input[type="range"]:focus-visible {
-  outline: 2px solid rgba(161, 124, 106, 0.65);
+  outline: 2px solid var(--accent-color);
   outline-offset: 3px;
   box-shadow:
-    0 0 18px rgba(161, 124, 106, 0.4),
+    0 0 18px color-mix(in srgb, var(--accent-color) 40%, transparent),
     0 0 10px var(--stims-muted-35);
 }
 
@@ -857,7 +857,7 @@ body {
   border: 1px solid rgba(255, 123, 123, 0.35);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
   z-index: var(--z-active-nav);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 body.tv-mode .control-panel {

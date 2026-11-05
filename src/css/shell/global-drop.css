@@ -20,6 +20,6 @@
     border-radius: var(--radius-lg);
     background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
     color: var(--stims-ink);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 }

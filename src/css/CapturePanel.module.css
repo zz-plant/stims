@@ -26,7 +26,7 @@
 .formats legend {
   margin-bottom: 10px;
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -93,7 +93,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
   font: inherit;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition:
     transform 0.15s ease,

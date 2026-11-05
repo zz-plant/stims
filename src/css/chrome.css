@@ -92,7 +92,7 @@ html.light .stims-shell {
     background: transparent;
     color: var(--ctl-ink-2);
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     white-space: nowrap;
     cursor: pointer;
     transition:
@@ -108,7 +108,7 @@ html.light .stims-shell {
   .ctl-tab--active {
     background: var(--ctl-fill-hover);
     color: var(--ctl-ink);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
@@ -143,7 +143,7 @@ html.light .stims-shell {
     margin: 0;
     color: var(--ctl-ink-2);
     font-size: 0.6875rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.09em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -180,7 +180,7 @@ html.light .stims-shell {
   .ctl-row__label {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.3;
   }
 
@@ -384,7 +384,7 @@ html.light .stims-shell {
   .ctl-option__label {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.3;
   }
 
@@ -511,7 +511,7 @@ html.light .stims-shell {
     color: var(--ctl-ink);
     font: inherit;
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     white-space: nowrap;
     cursor: pointer;
     transition:
@@ -675,7 +675,7 @@ html.light .stims-shell {
     border-color: var(--ctl-accent);
     background: var(--ctl-accent);
     color: var(--ctl-on-accent);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-chip:disabled {
@@ -834,7 +834,7 @@ html.light .stims-shell {
     overflow: hidden;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.35;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1052,7 +1052,7 @@ html.light .stims-shell {
     margin: 0 0 5px;
     color: var(--ctl-ink-3);
     font-size: 0.6875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     letter-spacing: 0.02em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1130,7 +1130,7 @@ html.light .stims-shell {
     margin: 0;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-lineage__list {
@@ -1244,7 +1244,7 @@ html.light .stims-shell {
   .ctl-empty__title {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-empty__body {
@@ -1527,7 +1527,7 @@ html.light .stims-shell {
     margin: 0;
     color: var(--ctl-ink-2);
     font-size: 0.6875rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.09em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1538,7 +1538,7 @@ html.light .stims-shell {
     margin-bottom: 6px;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__input {
@@ -1603,7 +1603,7 @@ html.light .stims-shell {
      the token flips correctly in light theme. */
   .ctl-section .stims-shell__youtube-feedback[data-state="invalid"] {
     color: var(--stims-bad, #ff9d8a);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__meta-copy {
@@ -1666,7 +1666,7 @@ html.light .stims-shell {
   .ctl-section .stims-shell__source-card strong {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__source-card > span:last-child {
@@ -1689,7 +1689,7 @@ html.light .stims-shell {
     padding: 10px 12px;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__settings-summary .stims-shell__meta-copy {
@@ -1729,7 +1729,7 @@ html.light .stims-shell {
   }
 
   .ctl-section .stims-shell__chip strong {
-    font-weight: 400;
+    font-weight: var(--font-weight-normal);
   }
 
   .ctl-section .stims-shell__youtube-recent-header {

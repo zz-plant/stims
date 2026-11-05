@@ -16,7 +16,7 @@
   background: var(--stims-on-stage-panel-strong);
   color: var(--stims-on-stage-ink-strong);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .link {
-  font-weight: 400;
+  font-weight: var(--font-weight-normal);
   text-decoration: underline;
   text-underline-offset: 3px;
 }

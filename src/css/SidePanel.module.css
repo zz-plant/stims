@@ -235,7 +235,7 @@
 .title {
   margin: 0;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--ctl-ink, var(--stims-ink-strong));
   letter-spacing: -0.005em;
 }

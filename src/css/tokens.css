@@ -269,7 +269,14 @@
   --text-display: 2.5rem;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
+  /* The most-used weight in the app (labels, buttons, headings), which had
+     no token, so it was written out 49 times. */
+  --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  /* Display titles (launch title, title card, preset page) and the heavier
+     launch nameplate: Archivo is variable, and these sit between steps. */
+  --font-weight-display: 760;
+  --font-weight-heavy: 820;
   --line-height-tight: 1.2;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;

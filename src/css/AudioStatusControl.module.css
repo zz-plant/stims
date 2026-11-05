@@ -21,7 +21,7 @@
   color: var(--ctl-ink-2);
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -62,7 +62,7 @@
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   color: var(--ctl-ink);
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   line-height: 1.35;
   text-align: left;
   white-space: normal;
@@ -231,7 +231,7 @@
   color: var(--ctl-ink-2);
   font: inherit;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   text-align: left;
   cursor: pointer;
   transition:
@@ -261,7 +261,7 @@
 .item[data-active="true"]::after {
   content: "✓" / "";
   margin-left: auto;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 /* The dock is tight on phones. Measured at 375px: with the word kept this
