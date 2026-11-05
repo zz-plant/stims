@@ -142,7 +142,7 @@ per_pixel_3=dy=dy+dr*sin(-ang)*0.6;</code></pre>
 </ul>
 <p><code>dx</code>/<code>dy</code> here work exactly like Track 2&#39;s screen-wide push, set to a <em>different value per pixel</em> instead of one constant.</p>
 <h2 id="lesson-4--bridging-per_frame-and-per_pixel-with-q-vars">Lesson 4 · Bridging per_frame and per_pixel with q-vars</h2>
-<p><code>per_pixel</code> can read the audio registers directly: Happy Drops in <a href="/learn/motion/#lesson-7--dissection-geiss--happy-drops-ryan-geiss">Track 2</a> scales its rings by <code>bass_att</code> inside <code>per_pixel_1</code>. Smoothing is different. An RC filter carries its average from one frame to the next, and <code>per_frame</code> runs once a frame, so that is where the average belongs. A q-register hands the result over: written once in <code>per_frame</code>, read by every point in <code>per_pixel</code>:</p>
+<p><code>per_pixel</code> can read the audio registers directly: Happy Drops in <a href="/learn/motion/#lesson-8--dissection-geiss--happy-drops-ryan-geiss">Track 2</a> scales its rings by <code>bass_att</code> inside <code>per_pixel_1</code>. Smoothing is different. An RC filter carries its average from one frame to the next, and <code>per_frame</code> runs once a frame, so that is where the average belongs. A q-register hands the result over: written once in <code>per_frame</code>, read by every point in <code>per_pixel</code>:</p>
 <pre><code class="language-text">per_frame_1=ra=6/fps;
 per_frame_2=bass_avg=bass_avg*(1-ra)+ra*bass;
 per_frame_3=q8=bass_avg;
