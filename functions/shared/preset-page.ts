@@ -6,7 +6,11 @@
 // both from this model keeps the two from describing different pages.
 
 import { creditedHandles } from '../../src/js/milkdrop/preset-handles.ts';
-import { findAuthorRoute } from '../discover-slugs.ts';
+import {
+  DISCOVER_ROUTES,
+  findAuthorRoute,
+  semanticRouteHeading,
+} from '../discover-slugs.ts';
 import { type PresetMetaTable, presetFileHref } from './preset-meta.ts';
 import { relatedPresetGroups } from './preset-related.ts';
 import { presentTitle } from './preset-title.ts';
@@ -15,6 +19,16 @@ import { presentTitle } from './preset-title.ts';
 export type PresetPageCredit = { name: string; href: string | null };
 
 export type PresetPageLink = { id: string; title: string; href: string };
+
+/** A topic hub that lists this preset. */
+export type PresetPageTopic = {
+  slug: string;
+  /** The look on its own: "Fractal". */
+  label: string;
+  /** The hub's own heading, as link text: "Fractal Music Visualizers". */
+  heading: string;
+  href: string;
+};
 
 export type PresetPageContent = {
   id: string;
@@ -31,6 +45,8 @@ export type PresetPageContent = {
    * Geiss" is two credits, each linked to its own author page.
    */
   credits: PresetPageCredit[];
+  /** The topic hubs that list this preset. */
+  topics: PresetPageTopic[];
   /** Other presets by the same hands, one group per credited handle. */
   related: { author: string; presets: PresetPageLink[] }[];
   /** Where the preset's .milk file is served, or null when none is bundled. */
@@ -39,6 +55,9 @@ export type PresetPageContent = {
 
 /** The label of the link to a preset's .milk file. */
 export const PRESET_DOWNLOAD_LABEL = 'Download .milk';
+
+/** The heading over the links to a preset's topic hubs. */
+export const PRESET_TOPICS_HEADING = 'Collections';
 
 /** The canonical URL path of a preset page, as the sitemap lists it. */
 export function presetPageHref(presetId: string): string {
@@ -58,9 +77,33 @@ function authorHref(handle: string): string | null {
   return route ? `/author/${route.slug}` : null;
 }
 
+/**
+ * The sentence a preset page gives search results and link previews. Naming its
+ * collections sets 2,200 otherwise identical descriptions apart. Audio-Reactive
+ * is left out because the sentence already says the preset reacts to sound.
+ */
+export function presetPageDescription(page: PresetPageContent): string {
+  const collections = page.topics
+    .filter((topic) => topic.slug !== 'audio-reactive')
+    .slice(0, 2)
+    .map((topic) => topic.label);
+  const credit = page.author ? ` by ${page.author}` : '';
+  const membership =
+    collections.length > 0
+      ? ` in the ${collections.join(' and ')} collection${collections.length > 1 ? 's' : ''}`
+      : '';
+  return `${page.title}${credit} — a MilkDrop preset${membership}. It reacts to any song, your mic or another tab, live in your browser.`;
+}
+
+/**
+ * @param topics Bit i set when the preset is in DISCOVER_ROUTES[i]; defaults to
+ * the table's value. The workspace passes the playing preset's own, rather than
+ * running every topic's filter over every row of the catalog to fill the table.
+ */
 export function buildPresetPageContent(
   table: PresetMetaTable,
   presetId: string,
+  topics: number = table[presetId]?.[3] ?? 0,
 ): PresetPageContent | null {
   const entry = table[presetId];
   if (!entry) return null;
@@ -75,6 +118,18 @@ export function buildPresetPageContent(
     title: presentTitle(entry[0], author ?? undefined),
     author,
     credits,
+    topics: DISCOVER_ROUTES.flatMap((route, bit) =>
+      (topics >>> bit) & 1
+        ? [
+            {
+              slug: route.slug,
+              label: route.label,
+              heading: semanticRouteHeading(route),
+              href: `/discover/${route.slug}`,
+            },
+          ]
+        : [],
+    ),
     download: presetFileHref(presetId, entry),
     related: relatedPresetGroups(table, presetId).map((group) => ({
       author: group.handle,

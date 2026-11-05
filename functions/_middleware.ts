@@ -46,8 +46,18 @@ import {
   buildPresetPageContent,
   CREDIT_SEPARATOR,
   PRESET_DOWNLOAD_LABEL,
+  PRESET_TOPICS_HEADING,
+  presetPageDescription,
   presetPageHref,
 } from './shared/preset-page.ts';
+import {
+  breadcrumbList,
+  MILKDROP_ENTITY,
+  personNode,
+  presetItemList,
+  serializeJsonLd,
+  websiteNode,
+} from './shared/structured-data.ts';
 
 /**
  * The one <noscript> that carries page content for crawlers that run no
@@ -334,25 +344,35 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
       },
     });
 
-    const jsonLd = JSON.stringify({
+    const jsonLd = serializeJsonLd({
       '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: fullTitle,
-      description,
-      url: canonical,
-      ...(isAuthor
-        ? {
-            mainEntity: {
-              '@type': 'Person',
-              name: semanticRoute.label,
-            },
-          }
-        : {}),
-      isPartOf: {
-        '@type': 'SoftwareApplication',
-        name: 'Stims',
-        url: url.origin,
-      },
+      '@graph': [
+        {
+          '@type': 'CollectionPage',
+          '@id': `${canonical}#page`,
+          name: fullTitle,
+          description,
+          url: canonical,
+          inLanguage: 'en',
+          about: isAuthor
+            ? personNode(url.origin, semanticRoute.label, url.pathname)
+            : MILKDROP_ENTITY,
+          isPartOf: websiteNode(url.origin),
+          ...(collection && collection.count > 0
+            ? {
+                mainEntity: presetItemList(
+                  url.origin,
+                  collection.groups.flatMap((group) => group.presets),
+                ),
+              }
+            : {}),
+        },
+        breadcrumbList([
+          { name: 'Stims', url: `${url.origin}/` },
+          { name: 'Presets', url: `${url.origin}/presets/` },
+          { name: heading, url: canonical },
+        ]),
+      ],
     });
 
     const rewritten = new HTMLRewriter()
@@ -436,7 +456,7 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
   const { title, author } = page;
   const authorCredit = author ? ` by ${author}` : '';
   const fullTitle = `${title}${authorCredit} — MilkDrop Preset on Stims`;
-  const description = `${title}${authorCredit} — a MilkDrop preset you can watch react to any song, your microphone, or audio from another tab. Live in your browser, no install.`;
+  const description = presetPageDescription(page);
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
@@ -472,45 +492,46 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
   });
 
   // Inject preset-specific JSON-LD structured data for search engine rich snippets
-  const jsonLd = JSON.stringify({
+  const jsonLd = serializeJsonLd({
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'VisualArtwork',
+        '@id': `${canonical}#preset`,
         name: title,
         description,
-        ...(author ? { artist: { '@type': 'Person', name: author } } : {}),
+        artform: 'Music visualization',
+        artMedium: 'MilkDrop preset',
+        // One person per hand in the chain: "Stahlregen + Geiss" is two
+        // authors, and each with a page shares its @id with that page.
+        ...(page.credits.length > 0
+          ? {
+              artist: page.credits.map((credit) =>
+                personNode(url.origin, credit.name, credit.href),
+              ),
+            }
+          : {}),
+        ...(page.topics.length > 0
+          ? { genre: page.topics.map((topic) => topic.label) }
+          : {}),
+        ...(page.download
+          ? {
+              encoding: {
+                '@type': 'MediaObject',
+                contentUrl: new URL(page.download, url.origin).toString(),
+                encodingFormat: 'text/plain',
+              },
+            }
+          : {}),
         image: imageUrl,
         url: canonical,
-        isPartOf: {
-          '@type': 'SoftwareApplication',
-          name: 'Stims',
-          url: url.origin,
-        },
+        isPartOf: websiteNode(url.origin),
       },
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'Home',
-            item: url.origin,
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: 'Presets',
-            item: canonical,
-          },
-          {
-            '@type': 'ListItem',
-            position: 3,
-            name: title,
-            item: canonical,
-          },
-        ],
-      },
+      breadcrumbList([
+        { name: 'Stims', url: `${url.origin}/` },
+        { name: 'Presets', url: `${url.origin}/presets/` },
+        { name: title, url: canonical },
+      ]),
     ],
   });
 
@@ -527,7 +548,7 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
   });
 
   // What a crawler that reads only the HTML sees for this preset: the same
-  // heading, byline, sibling presets and topic hubs the workspace renders
+  // heading, byline, topic hubs and sibling presets the workspace renders
   // below the stage (PresetPageDetails.tsx), plus the preview card and a link
   // into the app.
   const linkHtml = (href: string, text: string) =>
@@ -552,7 +573,12 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
   const download = page.download
     ? `<p><a href="${escapeAttribute(page.download)}" download>${escapeAttribute(PRESET_DOWNLOAD_LABEL)}</a></p>`
     : '';
-  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${byline}</p>${download}<p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${relatedSection}`;
+  const topicsSection = page.topics.length
+    ? `<h2>${escapeAttribute(PRESET_TOPICS_HEADING)}</h2><ul>${page.topics
+        .map((topic) => `<li>${linkHtml(topic.href, topic.heading)}</li>`)
+        .join('')}</ul>`
+    : '';
+  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${byline}</p>${download}<p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${topicsSection}${relatedSection}`;
 
   const rewritten = new HTMLRewriter()
     .on('title', {

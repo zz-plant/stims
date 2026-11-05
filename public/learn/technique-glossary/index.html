@@ -33,6 +33,7 @@
   "@graph": [
     {
       "@type": "TechArticle",
+      "@id": "https://toil.fyi/learn/technique-glossary/#page",
       "headline": "9 · The technique glossary",
       "name": "MilkDrop Technique Glossary",
       "description": "The named techniques of MilkDrop presets, like Jelly, Relief, and Painterly, counted across the shipped catalog with examples.",
@@ -40,15 +41,44 @@
       "mainEntityOfPage": "https://toil.fyi/learn/technique-glossary/",
       "inLanguage": "en",
       "image": "https://toil.fyi/og/milkdrop.png",
-      "isPartOf": {
-        "@type": "WebSite",
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "MilkDrop",
+        "sameAs": [
+          "https://en.wikipedia.org/wiki/MilkDrop",
+          "https://www.wikidata.org/wiki/Q4044271"
+        ]
+      },
+      "isPartOf": [
+        {
+          "@type": "WebSite",
+          "@id": "https://toil.fyi/#website",
+          "name": "Stims",
+          "url": "https://toil.fyi/"
+        },
+        {
+          "@id": "https://toil.fyi/learn/#course"
+        }
+      ],
+      "author": {
+        "@type": "Organization",
+        "@id": "https://toil.fyi/#organization",
         "name": "Stims",
-        "url": "https://toil.fyi/"
+        "url": "https://toil.fyi/",
+        "logo": "https://toil.fyi/icons/icon-512.png",
+        "sameAs": [
+          "https://github.com/zz-plant/stims"
+        ]
       },
       "publisher": {
         "@type": "Organization",
+        "@id": "https://toil.fyi/#organization",
         "name": "Stims",
-        "url": "https://toil.fyi/"
+        "url": "https://toil.fyi/",
+        "logo": "https://toil.fyi/icons/icon-512.png",
+        "sameAs": [
+          "https://github.com/zz-plant/stims"
+        ]
       }
     },
     {
@@ -73,6 +103,142 @@
           "item": "https://toil.fyi/learn/technique-glossary/"
         }
       ]
+    },
+    {
+      "@type": "DefinedTermSet",
+      "@id": "https://toil.fyi/learn/technique-glossary/#terms",
+      "name": "MilkDrop Technique Glossary",
+      "url": "https://toil.fyi/learn/technique-glossary/",
+      "hasDefinedTerm": [
+        {
+          "@type": "DefinedTerm",
+          "name": "Jelly",
+          "description": "The single largest named family in the catalog, and the only one with real version discipline — V2 through V5.5, plus a Reverse variant. A wobbling, viscous displacement of the feedback frame.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Painterly",
+          "description": "Softened, brush-like accumulation. Appears both alone and compounded (Painterly Relief Mix, Painterly Tendrils Colorfast).",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Kaleidoscope",
+          "description": "Angular mirroring, from the plain Kaleidoscope Mix through Flexi's kaleidoscope.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Relief",
+          "description": "Edge-lit embossing that reads as raised surface. Almost never appears without Geiss in the chain.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Emboss",
+          "description": "Directional-difference shading. Geiss Emboss Mix is [A].",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Saturation",
+          "description": "Chroma push on the composite pass. Every shipped instance credits Geiss.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Ripple",
+          "description": "Concentric radial displacement. The Martin's … variant is [A].",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Composite",
+          "description": "Names whose composite-pass treatment was grafted on.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Grow Mix",
+          "description": "Outward-scaling accumulation. The numbered series is a single lineage — see the witchcraft family.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Crossfire",
+          "description": "Mirrored cross-blend. The marker names Stahlregen.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Kali Mix",
+          "description": "An Airhandler branch specifically — the root of a three-deep derivation chain, and the deepest documented lineage in the catalog.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Filament Mix",
+          "description": "Thin, threadlike trails through the warp field.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Glow Mix",
+          "description": "Bloom on the composite.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "LSB Mix",
+          "description": "Low-bit manipulation for banding/noise texture. Rare and worth a dissection.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "HPF",
+          "description": "High-pass filtering on the feedback frame.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "name": "Flexi-Tex Shader",
+          "description": "Flexi's texture-shader technique, credited by name on a preset he is not a byline author of.",
+          "inDefinedTermSet": {
+            "@id": "https://toil.fyi/learn/technique-glossary/#terms"
+          }
+        }
+      ]
     }
   ]
 }
@@ -82,7 +248,7 @@
 <body>
 <header class="site-header">
 <a class="brand" href="/">Stims</a>
-<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
+<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/presets/">Presets</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
 <a class="nav-cta" href="/">Open Stims</a>
 </header>
 <main>

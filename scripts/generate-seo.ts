@@ -42,7 +42,7 @@ import {
   PRESET_INDEX_PATH,
   siteIndexHtml,
 } from '../functions/shared/site-index.ts';
-import { discoveryRouteFilter } from '../src/js/frontend/workspace-helpers.ts';
+import { presetTopicMask } from '../src/js/frontend/workspace-helpers.ts';
 import { LEARN_PAGES, learnPagePath } from './generate-learn-pages.ts';
 import {
   PRESET_INDEX_OUT_FILE,
@@ -982,7 +982,7 @@ export async function buildPresetSitemapEntries(
  * the root catalog first and then each library, first entry wins.
  *
  * Each entry records its title and author, where its .milk file is served,
- * which topic hubs list it (by Browse's own filter, discoveryRouteFilter), and
+ * which topic hubs list it (by Browse's own filter, presetTopicMask), and
  * whether its page is indexed: fixtures and nameless presets carry noindex,
  * and a preset with the same name and credit as an earlier indexable one
  * names that one as canonical. 72 library presets repeat a root preset that
@@ -1013,7 +1013,6 @@ export async function buildPresetMetaMap(
     .map((name) => path.join(libraryDir, name, 'catalog.json'));
 
   const blankLandings = readBlankLandingIds(rootDir);
-  const topicFilters = DISCOVER_ROUTES.map(discoveryRouteFilter);
   const primaryByName = new Map<string, string>();
   const meta: PresetMetaTable = {};
   for (const catalogPath of [
@@ -1033,10 +1032,7 @@ export async function buildPresetMetaMap(
           `${preset.id}: ${preset.file} is not in a directory PRESET_FILE_DIRS lists (functions/shared/preset-meta.ts)`,
         );
       }
-      let topics = 0;
-      topicFilters.forEach((matches, bit) => {
-        if (matches(preset)) topics |= 1 << bit;
-      });
+      const topics = presetTopicMask(preset);
       let indexing = '';
       if (blankLandings.has(preset.id)) {
         indexing = NOINDEX;

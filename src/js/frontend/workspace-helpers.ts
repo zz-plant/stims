@@ -3,7 +3,10 @@
  * query normalization, route state transitions, catalog transformation, and accessibility filtering.
  */
 
-import type { SemanticDiscoveryRoute } from '../../../functions/discover-slugs.ts';
+import {
+  DISCOVER_ROUTES,
+  type SemanticDiscoveryRoute,
+} from '../../../functions/discover-slugs.ts';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {
@@ -424,6 +427,20 @@ export function discoveryRouteFilter(
       Boolean(entry.tags?.includes(route.collectionTag))) &&
     (!matcher || matchesPreset(entry, matcher)) &&
     matchesAuthor(entry, route.author ?? null);
+}
+
+let topicFilters: ((entry: PresetCatalogEntry) => boolean)[] | null = null;
+
+/**
+ * Which topic hubs list a preset, by the filter Browse opens each with: bit i
+ * is set for DISCOVER_ROUTES[i]. The catalog table stores this value.
+ */
+export function presetTopicMask(entry: PresetCatalogEntry): number {
+  topicFilters ??= DISCOVER_ROUTES.map(discoveryRouteFilter);
+  return topicFilters.reduce(
+    (mask, matches, bit) => (matches(entry) ? mask | (1 << bit) : mask),
+    0,
+  );
 }
 
 /**
