@@ -360,6 +360,14 @@ function describePowerSaving(
     : 'Uncapped — frames present as fast as the display allows.';
 }
 
+// Lazy loaders live at module scope: an `import()` expression inside a
+// component, even in an effect or handler, makes React Compiler skip that
+// whole component (#1540).
+const loadPowerState = () => import('../core/power-state.ts');
+const loadPowerSaverStore = () => import('../core/state/power-saver-store.ts');
+const loadPerformanceSettingsStore = () =>
+  import('../core/state/performance-settings-store.ts');
+
 function PowerSaverRow() {
   const [mode, setMode] = useState<PowerSaverMode>('auto');
   const [level, setLevel] = useState<PowerSavingLevel>('off');
@@ -367,21 +375,20 @@ function PowerSaverRow() {
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     let disposed = false;
-    void Promise.all([
-      import('../core/power-state.ts'),
-      import('../core/state/power-saver-store.ts'),
-    ]).then(([powerState, store]) => {
-      if (disposed) return;
-      setMode(store.getPowerSaverMode());
-      void powerState.startBatteryMonitoring();
-      // One subscription covers both inputs: the level is derived from the
-      // stored mode *and* the live battery reading, and unplugging the machine
-      // has to move this row without the user touching it.
-      unsubscribe = powerState.subscribeToPowerSavingLevel((next) => {
-        setLevel(next);
+    void Promise.all([loadPowerState(), loadPowerSaverStore()]).then(
+      ([powerState, store]) => {
+        if (disposed) return;
         setMode(store.getPowerSaverMode());
-      });
-    });
+        void powerState.startBatteryMonitoring();
+        // One subscription covers both inputs: the level is derived from the
+        // stored mode *and* the live battery reading, and unplugging the machine
+        // has to move this row without the user touching it.
+        unsubscribe = powerState.subscribeToPowerSavingLevel((next) => {
+          setLevel(next);
+          setMode(store.getPowerSaverMode());
+        });
+      },
+    );
     return () => {
       disposed = true;
       unsubscribe?.();
@@ -390,11 +397,9 @@ function PowerSaverRow() {
 
   const changeMode = (next: PowerSaverMode) => {
     setMode(next);
-    void import('../core/state/power-saver-store.ts').then(
-      ({ setPowerSaverMode }) => {
-        setPowerSaverMode(next);
-      },
-    );
+    void loadPowerSaverStore().then(({ setPowerSaverMode }) => {
+      setPowerSaverMode(next);
+    });
   };
 
   return (
@@ -435,7 +440,7 @@ function PerformanceSection() {
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     let disposed = false;
-    import('../core/state/performance-settings-store.ts').then(
+    loadPerformanceSettingsStore().then(
       ({ getActivePerformanceSettings, subscribeToPerformanceSettings }) => {
         if (disposed) return;
         const s = getActivePerformanceSettings();
@@ -471,22 +476,20 @@ function PerformanceSection() {
     value: PerformanceSettings[K],
   ) => {
     setPerf((p) => ({ ...p, [key]: value }));
-    import('../core/state/performance-settings-store.ts').then(
-      ({ setPerformanceOption }) => {
-        setPerformanceOption(key, value);
-      },
-    );
+    loadPerformanceSettingsStore().then(({ setPerformanceOption }) => {
+      setPerformanceOption(key, value);
+    });
   };
 
-  const resetConfirm = useTwoStepConfirm(() => resetPerformance());
   const resetPerformance = () => {
-    import('../core/state/performance-settings-store.ts').then(
+    loadPerformanceSettingsStore().then(
       ({ resetPerformanceSettingsToDefaults }) => {
         const next = resetPerformanceSettingsToDefaults();
         setPerf({ ...next, loaded: true });
       },
     );
   };
+  const resetConfirm = useTwoStepConfirm(() => resetPerformance());
 
   return (
     <section className="ctl-section">

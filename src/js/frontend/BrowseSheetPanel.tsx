@@ -283,9 +283,11 @@ export function BrowseSheetPanel({
   // The family section and the recent rail follow the preset on stage. While
   // trying they hold still, or the card beside the one just picked would move
   // out from under the next click.
-  const [tried, setTried] = useState(false);
-  const heldLayoutPresetRef = useRef<string | null>(null);
-  const heldRecentRef = useRef<PresetCatalogEntry[]>([]);
+  // Held in state, not refs, because render reads it (#1540).
+  const [held, setHeld] = useState<{
+    presetId: string | null;
+    recent: PresetCatalogEntry[];
+  } | null>(null);
 
   // Phone only: see shell/browse-trying.css.
   const [sheetShrunk, setSheetShrunk] = useState(false);
@@ -360,11 +362,7 @@ export function BrowseSheetPanel({
       updatePanel(null);
       return true;
     }
-    if (!tried) {
-      heldLayoutPresetRef.current = currentPresetId;
-      heldRecentRef.current = recentEntries;
-      setTried(true);
-    }
+    if (!held) setHeld({ presetId: currentPresetId, recent: recentEntries });
     shrinkSheetForTrying();
     triedPresetRef.current = presetId;
     commitRoute((current) => ({ ...current, presetId }));
@@ -693,7 +691,8 @@ export function BrowseSheetPanel({
   // reads persisted lastOpenedAt across sessions. sessionHistory is in-memory
   // only, so this is "what you just looked at", good for flicking back a
   // couple of steps without losing your place in the filtered list below.
-  const recentEntries = useMemo(() => {
+  // Memoized by React Compiler (a manual useMemo here made it bail, #1540).
+  const recentEntries = (() => {
     const seen = new Set<string>();
     const entries: PresetCatalogEntry[] = [];
     for (const record of sessionHistory) {
@@ -711,7 +710,7 @@ export function BrowseSheetPanel({
       }
     }
     return entries;
-  }, [sessionHistory, catalog, currentPresetId]);
+  })();
 
   // Send both views back to the top when filters change — mirrors the old
   // pagination reset (a fresh filter previously meant "start from batch one
@@ -738,8 +737,8 @@ export function BrowseSheetPanel({
     setFilterEpoch((epoch) => epoch + 1);
   }, [searchQuery, routeState.collectionTag, authorFilter]);
 
-  const railEntries = tried ? heldRecentRef.current : recentEntries;
-  const lineagePresetId = tried ? heldLayoutPresetRef.current : currentPresetId;
+  const railEntries = held ? held.recent : recentEntries;
+  const lineagePresetId = held ? held.presetId : currentPresetId;
 
   return (
     <div

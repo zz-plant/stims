@@ -1,5 +1,5 @@
 /** Explicit publishing; opening the dialog records and uploads nothing. */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from '../../css/VideoShareDialog.module.css';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
@@ -19,7 +19,11 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const snapshot = useRef(engineSnapshot);
-  snapshot.current = engineSnapshot;
+  // Synced in a layout effect, not during render, so React Compiler can
+  // compile this dialog; the capture reads it after commit either way.
+  useLayoutEffect(() => {
+    snapshot.current = engineSnapshot;
+  }, [engineSnapshot]);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const controller = useRef<AbortController | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -68,7 +72,10 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
     controller.current = abort;
     setBusy(true);
     setMessage('Capturing four seconds. Keep this preset playing.');
-    try {
+    // The capture and upload are an inner function so the `throw` on a
+    // non-ok response stays out of the handler React Compiler parses: a
+    // throw inside try is not lowered yet (#1540).
+    const captureAndUpload = async (): Promise<Published> => {
       const clip = await captureSocialPreview(
         stage,
         abort.signal,
@@ -96,6 +103,10 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error || 'Could not publish this preview.');
+      return result;
+    };
+    try {
+      const result = await captureAndUpload();
       if (!abort.signal.aborted) {
         setPublished(result);
         setMessage('Your public video link is ready.');
@@ -107,9 +118,10 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
             ? error.message
             : 'Could not publish this preview.',
         );
-    } finally {
-      if (!abort.signal.aborted) setBusy(false);
     }
+    // Cleanup after the catch rather than in a `finally` clause: the catch
+    // never rethrows, so this runs on both paths exactly as the finally did.
+    if (!abort.signal.aborted) setBusy(false);
   };
 
   const remove = async () => {

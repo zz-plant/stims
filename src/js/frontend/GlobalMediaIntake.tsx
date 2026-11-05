@@ -4,7 +4,7 @@
  * audio panel, which on a running stage sits two steps away in Settings.
  */
 import '../../css/shell/global-drop.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';
 import { displayAudioCapture } from './display-audio-capture.ts';
 import { playAudioFiles } from './file-audio.ts';
@@ -28,8 +28,12 @@ export function GlobalMediaIntake() {
   const { ui, engine } = useWorkspace();
   const [dragging, setDragging] = useState(false);
   // Listeners stay attached for the page's life, and read the latest values.
+  // Synced after commit rather than during render, so React Compiler can
+  // compile this component (#1540); events only fire after commit anyway.
   const latest = useRef({ ui, engine });
-  latest.current = { ui, engine };
+  useLayoutEffect(() => {
+    latest.current = { ui, engine };
+  }, [ui, engine]);
 
   useEffect(() => {
     // dragenter and dragleave fire for every element crossed, so only the
