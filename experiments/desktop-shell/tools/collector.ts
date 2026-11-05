@@ -76,8 +76,14 @@ Bun.serve({
       if (queued) return json(queued);
       const waited = await new Promise<Pending | null>((resolve) => {
         pollers.get(shell)?.(null);
-        pollers.set(shell, resolve);
-        setTimeout(() => resolve(null), 20_000);
+        const poller = (value: Pending | null) => {
+          clearTimeout(expiry);
+          // A poll that already ended must not take the next command with it.
+          if (pollers.get(shell) === poller) pollers.delete(shell);
+          resolve(value);
+        };
+        const expiry = setTimeout(() => poller(null), 20_000);
+        pollers.set(shell, poller);
       });
       return json(waited);
     }
