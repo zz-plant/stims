@@ -55,7 +55,7 @@ per_pixel_3=dy=dy+dr*sin(-ang)*0.6;
 
 ## Lesson 4 · Bridging per_frame and per_pixel with q-vars
 
-`per_pixel` can read the audio registers directly: Happy Drops in [Track 2](/learn/motion/#lesson-7--dissection-geiss--happy-drops-ryan-geiss) scales its rings by `bass_att` inside `per_pixel_1`. Smoothing is different. An RC filter carries its average from one frame to the next, and `per_frame` runs once a frame, so that is where the average belongs. A q-register hands the result over: written once in `per_frame`, read by every point in `per_pixel`:
+`per_pixel` can read the audio registers directly: Happy Drops in [Track 2](/learn/motion/#lesson-8--dissection-geiss--happy-drops-ryan-geiss) scales its rings by `bass_att` inside `per_pixel_1`. Smoothing is different. An RC filter carries its average from one frame to the next, and `per_frame` runs once a frame, so that is where the average belongs. A q-register hands the result over: written once in `per_frame`, read by every point in `per_pixel`:
 
 ```text
 per_frame_1=ra=6/fps;

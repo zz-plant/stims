@@ -99,7 +99,30 @@ Line by line:
 
 **Turn one knob.** Make the vortex violent: shorten `decay`, raise the `rot` swing, and speed up the color sines. Then make it glacial. The same six lines cover the whole mood spectrum.
 
-## Lesson 7 · Dissection: _Geiss — Happy Drops_ (Ryan Geiss)
+## Lesson 7 · `progress` — an arc over the slot
+
+Everything so far loops on `time`, so minute five looks like minute one. `progress` is a clock with an end: `0` when the preset appears, `1` when the next one is due (the autoplay dwell, 30 s by default). Drive knobs from it and the preset has an arc — it opens one way and closes another.
+
+```text
+per_frame_1=arc = progress*progress;
+per_frame_2=zoom = 1.002 + 0.016*arc;
+per_frame_3=rot = 0.012*arc*sin(time*0.21);
+per_frame_4=warp = 0.15*arc;
+per_frame_5=wave_r = 0.2 + 0.7*arc;
+per_frame_6=wave_b = 1 - 0.5*arc;
+```
+
+[**▶ Run the arc**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfZnJhbWVfMT1hcmMgPSBwcm9ncmVzcypwcm9ncmVzczsKcGVyX2ZyYW1lXzI9em9vbSA9IDEuMDAyICsgMC4wMTYqYXJjOwpwZXJfZnJhbWVfMz1yb3QgPSAwLjAxMiphcmMqc2luKHRpbWUqMC4yMSk7CnBlcl9mcmFtZV80PXdhcnAgPSAwLjE1KmFyYzsKcGVyX2ZyYW1lXzU9d2F2ZV9yID0gMC4yICsgMC43KmFyYzsKcGVyX2ZyYW1lXzY9d2F2ZV9iID0gMSAtIDAuNSphcmM7Cg%3D%3D "examples/27-arc.milk")
+
+- `per_frame_1` — squaring `progress` eases in: the first half of the slot changes little, the last third changes a lot, so the build lands just before the hand-off.
+- `per_frame_2`–`per_frame_4` — the motion grows with `arc`. It opens as a near-still waveform, then the tunnel speeds up, the twist starts swinging, and a little `warp` stirs in. `warp` stops at `0.15` so the climax doesn't collapse into [Lesson 5's smudge](#lesson-5--warp--the-wobble).
+- `per_frame_5`/`per_frame_6` — the color travels too, from cold cyan to warm magenta.
+
+**Design for the hold.** `progress` stays at `1` while a preset is held, so the last frame of the arc is also the look someone may stare at for an hour. Make the end state a destination, not a cliff: here it is a steady tunnel with a slow `sin(time)` twist, which never stops moving. To see the end state straight away while you tune it, replace `progress` with `1` in `per_frame_1`, then put it back.
+
+**Turn one knob.** Swap `progress*progress` for `1 - progress` and the arc runs backwards: a preset that arrives loud and settles.
+
+## Lesson 8 · Dissection: _Geiss — Happy Drops_ (Ryan Geiss)
 
 Time to read a real one. This ships in the Stims catalog and is old enough to drink. Its six `per_frame` lines are pure Track 2 material; its three `per_pixel` lines are a preview of Tracks 3 and 4.
 
