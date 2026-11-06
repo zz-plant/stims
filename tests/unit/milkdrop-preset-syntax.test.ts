@@ -18,9 +18,6 @@ const files = dirs.flatMap((dir) =>
     .map((name) => join(dir, name)),
 );
 
-const _kinds = (source: string) =>
-  parsePresetSyntax(source).lines.map((line) => line.kind);
-
 describe('preset syntax tree', () => {
   test('prints every bundled preset back byte for byte', () => {
     expect(files.length).toBeGreaterThan(10);

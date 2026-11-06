@@ -1,25 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
-import { exportMilkdrop2Preset } from 'milkdrop-toolchain/src/milkdrop2-export.ts';
 import { roundTripDiff } from '../../scripts/preset-lab-format-roundtrip.ts';
-
-/**
- * Export is the file other engines open. MilkDrop 2 reads `[preset00]` with
- * its own key names and backtick shader lines; the editor's dialect gave it a
- * file whose base values were all ignored and whose shaders were missing.
- */
-const _exportSource = (source: string) =>
-  exportMilkdrop2Preset(
-    compileMilkdropPresetSource(source, { id: `ex-${source.length}` }),
-  );
-
-const lines = (text: string) => text.split('\n');
-const _value = (text: string, key: string) =>
-  lines(text)
-    .find((line) => line.startsWith(`${key}=`))
-    ?.slice(key.length + 1);
 
 const PRESET = [
   'title="Glow Test"',
