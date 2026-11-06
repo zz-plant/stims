@@ -21,9 +21,6 @@ import type {
 
 export type SlotKind = 'wave' | 'shape';
 
-/** A custom wave or shape as the file names it: `wave_0`, `shape_3`. */
-export type SlotName = `${SlotKind}_${number}`;
-
 export type SlotControls = {
   toggles: ToggleControlConfig[];
   scalars: ScalarControlConfig[];

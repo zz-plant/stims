@@ -43,7 +43,6 @@ mock.module('../../src/js/core/toy-audio', () => ({
 
 mock.module('../../src/js/core/animation-loop', () => ({
   getContextFrequencyData: () => new Uint8Array(8),
-  virtualTimeSource: null,
 }));
 
 const freshImport = async () =>

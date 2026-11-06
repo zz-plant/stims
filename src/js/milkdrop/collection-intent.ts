@@ -1,7 +1,5 @@
 const REQUESTED_COLLECTION_KEY = 'stims:milkdrop:requested-collection';
 
-export const CREAM_OF_THE_CROP_COLLECTION_TAG = 'collection:cream-of-the-crop';
-
 function normalizeCollectionTag(collectionTag: string | null | undefined) {
   const normalized = collectionTag?.trim().toLowerCase();
   if (!normalized) {

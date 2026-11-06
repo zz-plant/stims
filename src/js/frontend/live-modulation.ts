@@ -269,11 +269,6 @@ export function listModulators(): Modulator[] {
   return [...modulators.values()];
 }
 
-/** True while the rAF loop is scheduled — used by tests and diagnostics. */
-export function isModulating(): boolean {
-  return frame !== null;
-}
-
 export interface ModulationHealth {
   scheduled: boolean;
   count: number;

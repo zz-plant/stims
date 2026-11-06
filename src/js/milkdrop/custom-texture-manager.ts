@@ -73,13 +73,6 @@ export function getTextureSlotOverride(
   return slotOverrides.get(key) ?? null;
 }
 
-export function getAllTextureSlotOverrides(): ReadonlyMap<
-  string,
-  TextureSlotOverride
-> {
-  return slotOverrides;
-}
-
 export function setBundledSlotOverride(
   samplerName: string,
   bundledFileName: string,

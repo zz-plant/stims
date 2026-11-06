@@ -54,10 +54,6 @@ export function setRenderPreferences(update: RenderPreferenceInput) {
   return next;
 }
 
-export function clearRenderOverrides() {
-  return setRenderPreferences({});
-}
-
 export function setCompatibilityMode(enabled: boolean) {
   if (enabled) {
     clearWebGPUCompatibilityGapOverride();

@@ -43,19 +43,6 @@ export type PaletteResult =
   | { kind: 'action'; id: string; action: CommandAction; score: number }
   | { kind: 'preset'; id: string; preset: PalettePresetResult; score: number };
 
-/**
- * Case-insensitive tiered score for `query` against a single `text`.
- * Returns null on no match. Higher is better:
- *   - exact match > prefix > word-start substring > substring > subsequence
- *   - shorter targets rank slightly higher (tighter match)
- *
- * Kept as a one-field call into the shared matcher so the palette and the
- * browse filter rank the same query identically.
- */
-export function scoreMatch(query: string, text: string): number | null {
-  return scoreFields(query, [toMatchField(text)]);
-}
-
 function scoreAction(query: string, action: CommandAction): number | null {
   // Keyword hits rank a notch under equivalent label hits.
   return scoreFields(query, [

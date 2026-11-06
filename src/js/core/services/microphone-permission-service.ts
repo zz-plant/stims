@@ -82,8 +82,3 @@ export function getMicrophoneCapabilityFromState(
     reason: null,
   };
 }
-
-export async function probeMicrophoneCapability(): Promise<MicrophoneCapability> {
-  const state = await queryMicrophonePermissionState();
-  return getMicrophoneCapabilityFromState(state);
-}

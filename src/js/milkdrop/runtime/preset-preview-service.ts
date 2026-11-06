@@ -180,7 +180,3 @@ export function createMilkdropPresetPreviewService({
     },
   };
 }
-
-export type MilkdropPresetPreviewService = ReturnType<
-  typeof createMilkdropPresetPreviewService
->;

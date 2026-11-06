@@ -8,7 +8,3 @@ export function createRenderScale(value: number): RenderScale {
   }
   return value as RenderScale;
 }
-
-export function isRenderScale(value: unknown): value is RenderScale {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0;
-}

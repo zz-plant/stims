@@ -22,7 +22,3 @@ export function createMilkdropRuntimeLifetime() {
     },
   };
 }
-
-export type MilkdropRuntimeLifetime = ReturnType<
-  typeof createMilkdropRuntimeLifetime
->;

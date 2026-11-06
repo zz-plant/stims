@@ -64,19 +64,3 @@ export function StimsStageFrame({
     </section>
   );
 }
-
-export function StimsFrameChrome({ children }: { children: ReactNode }) {
-  return <div className="stims-shell__frame-chrome">{children}</div>;
-}
-
-export function StimsFrameHeader({ children }: { children: ReactNode }) {
-  return <div className="stims-shell__frame-header">{children}</div>;
-}
-
-export function StimsCornerBrand({ children }: { children: ReactNode }) {
-  return <div className="stims-shell__corner-brand">{children}</div>;
-}
-
-export function StimsRailActions({ children }: { children: ReactNode }) {
-  return <div className="stims-shell__rail-actions">{children}</div>;
-}

@@ -10,15 +10,6 @@ export interface Point2D {
 
 export type SymmetryGroup = 'cyclic' | 'dihedral' | 'rose' | 'trochoid';
 
-export interface GeometryPathOptions {
-  size: number;
-  seedHash: number;
-  symmetry?: SymmetryGroup;
-  sides?: number;
-  rotationDeg?: number;
-  radialModulation?: number;
-}
-
 /**
  * Generates an N-gon or Star polygon path.
  */

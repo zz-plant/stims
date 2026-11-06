@@ -7,14 +7,12 @@ import {
   DISCOVER_ROUTES,
   type SemanticDiscoveryRoute,
 } from '../../../functions/discover-slugs.ts';
-import type { MotionPreference } from '../core/motion-preferences.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   describeQualityPresetImpact,
   type QualityPreset,
 } from '../core/settings-panel.ts';
-import type { RenderPreferences } from '../core/state/render-preference-store.ts';
 import {
   creditedHandles,
   creditsHandle,
@@ -22,9 +20,7 @@ import {
 } from '../milkdrop/preset-handles.ts';
 import type { MilkdropCatalogEntry } from '../milkdrop/types.ts';
 import type {
-  AudioSource,
   LaunchIntent,
-  PanelState,
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
@@ -51,51 +47,6 @@ export type StarterPreset = {
   summary: string;
   preset: PresetCatalogEntry;
 };
-
-export type WorkspaceLaunchState = {
-  engineReady: boolean;
-  featuredPreset: PresetCatalogEntry | null;
-  audioActive: boolean;
-  launchEyebrow: string;
-  launchTitle: string;
-  launchSummary: string;
-  showExtendedSources: boolean;
-  youtubeReady: boolean;
-  youtubeUrl: string;
-};
-
-export type WorkspaceStageState = {
-  audioSource: AudioSource | null | undefined;
-  backend: 'webgl' | 'webgpu' | null | undefined;
-  featuredPreset: PresetCatalogEntry | null;
-  missingRequestedPreset: boolean;
-  stageEyebrow: string;
-  stageTitle: string;
-  stageSummary: string;
-};
-
-export type WorkspaceSettingsState = {
-  motionPreference: MotionPreference;
-  qualityPreset: QualityPreset;
-  renderPreferences: RenderPreferences;
-};
-
-export type WorkspaceBrowseState = {
-  catalog: PresetCatalogEntry[];
-  catalogError: string | null;
-  catalogReady: boolean;
-  collectionTags: string[];
-  currentPresetId: string | null;
-  filteredCatalog: PresetCatalogEntry[];
-  routeState: SessionRouteState;
-  searchQuery: string;
-};
-
-export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
-  'browse',
-  'editor',
-  'settings',
-];
 
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:favorites': 'Saved presets',

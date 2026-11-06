@@ -38,10 +38,3 @@ export interface ToyStartOptions {
    */
   audioContext?: AudioContext;
 }
-
-/**
- * The standard function signature exported by a Toy module.
- */
-export type ToyStartFunction = (
-  options?: ToyStartOptions,
-) => Promise<ToyInstance> | ToyInstance;

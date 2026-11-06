@@ -1,8 +1,4 @@
-import {
-  getRendererCapabilities,
-  getRenderingSupport,
-  type RendererCapabilities,
-} from './renderer-capabilities.ts';
+import type { RendererCapabilities } from './renderer-capabilities.ts';
 import {
   getRendererFallbackReasonMessage,
   RENDERER_FALLBACK_REASON_CODES,
@@ -74,32 +70,5 @@ export function deriveRendererPlan({
       capabilities.fallbackReason ??
       getRendererFallbackReasonMessage(RENDERER_FALLBACK_REASON_CODES.unknown),
     canRetryWebGPU: capabilities.shouldRetryWebGPU,
-  };
-}
-
-export async function getRendererPlan({
-  forceRetry = false,
-  preferWebGLForKnownCompatibilityGaps = false,
-}: {
-  forceRetry?: boolean;
-  preferWebGLForKnownCompatibilityGaps?: boolean;
-} = {}): Promise<{
-  plan: RendererPlan;
-  capabilities: RendererCapabilities | null;
-}> {
-  const [capabilities, support] = await Promise.all([
-    getRendererCapabilities({
-      forceRetry,
-      preferWebGLForKnownCompatibilityGaps,
-    }).catch(() => null),
-    Promise.resolve(getRenderingSupport()),
-  ]);
-
-  return {
-    capabilities,
-    plan: deriveRendererPlan({
-      capabilities,
-      hasWebGL: support.hasWebGL,
-    }),
   };
 }

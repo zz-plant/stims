@@ -61,15 +61,6 @@ export function getRenderIsolation(): RenderIsolation | null {
   return current;
 }
 
-export function subscribeRenderIsolation(
-  listener: IsolationListener,
-): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
 /** Solo an element, or pass it again to un-solo. */
 export function toggleSolo(presetId: string, element: IsolatedElement) {
   const state = forPreset(presetId);

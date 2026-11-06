@@ -17,12 +17,6 @@ import {
 } from './salvage-compile.ts';
 import type { MilkdropCompiledPreset } from './types.ts';
 
-export type GenerateStatus =
-  | { status: 'generating' }
-  | { status: 'compiling' }
-  | { status: 'ready'; preset: MilkdropCompiledPreset }
-  | { status: 'error'; message: string };
-
 export type PresetGenerationProvider =
   | {
       kind: 'hosted';
@@ -430,15 +424,6 @@ export async function generatePresetFromImage(
   return salvaged.compiled;
 }
 
-export async function generatePresetQuick(
-  description: string,
-): Promise<MilkdropCompiledPreset> {
-  return generatePreset(description, {
-    model: '@cf/qwen/qwen3-30b-a3b-fp8',
-    complexity: 'simple',
-  });
-}
-
 export type TournamentCandidate = {
   compiled: MilkdropCompiledPreset;
   probe: ReactivityProbeResult;
@@ -620,49 +605,4 @@ export async function generatePresetTournament(
     survivors: candidates.length,
     usedFallback: false,
   };
-}
-
-export async function generatePresetQuality(
-  description: string,
-): Promise<MilkdropCompiledPreset> {
-  return generatePreset(description, {
-    model: '@cf/qwen/qwen2.5-coder-32b-instruct',
-  });
-}
-
-export async function generatePresetCached(
-  description: string,
-): Promise<MilkdropCompiledPreset> {
-  return generatePreset(description, {
-    apiEndpoint: '/api/generate-preset',
-  });
-}
-
-export async function generatePresetOnWorker(
-  description: string,
-  complexity: 'simple' | 'moderate' | 'complex' = 'moderate',
-): Promise<MilkdropCompiledPreset> {
-  buildGeneratePrompt(description, complexity);
-
-  const response = await fetch('/api/generate-preset', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description, complexity }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text);
-  }
-
-  const { milkSource } = (await response.json()) as { milkSource: string };
-
-  const sourceMeta = {
-    id: `ai-${Date.now()}`,
-    title: `AI: ${description}`,
-    origin: 'generated' as const,
-  };
-  const compiled = compileMilkdropPresetSource(milkSource, sourceMeta);
-
-  return compiled;
 }

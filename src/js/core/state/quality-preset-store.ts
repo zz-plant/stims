@@ -74,16 +74,6 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
   },
 ];
 
-export const CUSTOM_QUALITY_PRESET: QualityPreset = {
-  id: 'custom',
-  label: 'Custom settings',
-  description:
-    'Individual performance or quality settings have been customized.',
-  maxPixelRatio: 1.5,
-  renderScale: 1,
-  particleScale: 1,
-};
-
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
 const DEFAULT_PRESET_ID = FALLBACK_QUALITY_PRESET_ID;
 
@@ -268,19 +258,6 @@ export function describeQualityPresetImpact(preset: QualityPreset): string {
   const render = preset.renderScale ?? 1;
   const particles = preset.particleScale ?? 1;
   return `What changes: pixel ratio up to ${preset.maxPixelRatio.toFixed(2)}x, render scale ${render.toFixed(2)}x, particle density ${particles.toFixed(2)}x.`;
-}
-
-export function markQualityPresetAsCustom({
-  storageKey = QUALITY_STORAGE_KEY,
-}: {
-  storageKey?: string;
-} = {}): QualityPreset {
-  getBrowserStorage()?.setItem(storageKey, CUSTOM_QUALITY_PRESET.id);
-  storedPresetIdCache.set(storageKey, CUSTOM_QUALITY_PRESET.id);
-  activeQualityPreset = CUSTOM_QUALITY_PRESET;
-  activeQualityPresetStorageKey = storageKey;
-  qualitySubscribers.forEach((subscriber) => subscriber(CUSTOM_QUALITY_PRESET));
-  return CUSTOM_QUALITY_PRESET;
 }
 
 export function resetQualityPresetState() {
