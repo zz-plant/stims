@@ -28,7 +28,7 @@
 
 .label {
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -132,7 +132,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
 
@@ -149,7 +149,7 @@
   background: var(--stims-accent);
   color: var(--stims-on-accent, #071019);
   font: inherit;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
 

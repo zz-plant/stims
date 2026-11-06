@@ -77,7 +77,7 @@ body[data-page="performance"] {
 .stims-performance__label {
   margin: 0 0 8px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -207,7 +207,7 @@ body[data-page="performance"] {
   border-top: 0;
   background: rgba(255, 255, 255, 0.05);
   color: #fff8ef;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .stims-performance__table tbody th {

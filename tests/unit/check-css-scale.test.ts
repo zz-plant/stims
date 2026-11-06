@@ -46,6 +46,19 @@ describe('check:css-scale', () => {
     expect(code).toBe(0);
   });
 
+  test('rejects an off-scale font weight, and accepts a step or a token', () => {
+    const off = runGuard('.a { font-weight: 650; }');
+    expect(off.code).toBe(1);
+    expect(off.output).toContain('font-weight: 650');
+
+    const on = runGuard(
+      `.a { font-weight: 600; }
+       .b { font-weight: var(--font-weight-semibold); }
+       @font-face { font-family: X; font-weight: 100 900; }`,
+    );
+    expect(on.code).toBe(0);
+  });
+
   test('rejects an off-scale radius in the leading position', () => {
     const { code, output } = runGuard('.a { border-radius: 18px; }');
     expect(code).toBe(1);

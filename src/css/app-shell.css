@@ -153,7 +153,7 @@ body[data-page="workspace"] {
     background: rgba(3, 5, 11, 0.76);
     color: rgba(255, 255, 255, 0.9);
     font-size: 0.75rem;
-    font-weight: 650;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.04em;
     text-decoration: none;
     backdrop-filter: blur(8px);
@@ -522,7 +522,7 @@ body[data-page="workspace"] {
     font-stretch: var(--font-stretch-legend);
     letter-spacing: 0.22em;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--stims-cool, #77c9ff);
     text-shadow: 0 0 10px rgba(119, 201, 255, 0.25);
   }
@@ -664,7 +664,7 @@ body[data-page="workspace"] {
 
   .stims-shell__starter-label {
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1057,7 +1057,7 @@ body[data-page="workspace"] {
     margin: 0 0 6px;
     font-family: var(--stims-display);
     font-size: clamp(1.75rem, 2.6vw, 2.25rem);
-    font-weight: 820;
+    font-weight: var(--font-weight-heavy);
     font-stretch: 72%;
     line-height: 0.88;
     letter-spacing: -0.012em;
@@ -1072,7 +1072,7 @@ body[data-page="workspace"] {
     max-width: 16ch;
     font-family: var(--stims-display);
     font-size: clamp(2.25rem, 4.4vw, 3.75rem);
-    font-weight: 760;
+    font-weight: var(--font-weight-display);
     font-stretch: 86%;
     line-height: 0.98;
     letter-spacing: -0.016em;
@@ -1183,7 +1183,7 @@ body[data-page="workspace"] {
     margin: 0;
     color: var(--stims-ink-strong);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     line-height: 1.3;
     letter-spacing: -0.01em;
     overflow-wrap: anywhere;
@@ -1291,7 +1291,7 @@ body[data-page="workspace"] {
   .stims-shell__launch-showcase-header .stims-shell__section-label {
     color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
     font-size: var(--text-xs-plus);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1300,7 +1300,7 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-showcase-hint {
     font-size: var(--text-2xs);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--stims-muted);
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1410,14 +1410,14 @@ body[data-page="workspace"] {
     line-clamp: 1;
     overflow: hidden;
     font-size: var(--text-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     line-height: 1.25;
     color: var(--stims-on-stage-ink-strong);
   }
 
   .stims-shell__launch-starter-vibe {
     font-size: var(--text-2xs);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--stims-cool);
     letter-spacing: 0.02em;
   }
@@ -1446,7 +1446,7 @@ body[data-page="workspace"] {
   .stims-shell__launch-soundflow-header .stims-shell__section-label {
     color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
     font-size: var(--text-xs-plus);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1463,7 +1463,7 @@ body[data-page="workspace"] {
     background: var(--stims-on-stage-control-fill);
     color: var(--stims-on-stage-ink-strong);
     font-size: var(--text-xs-plus);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition:
       background var(--transition-fast),
@@ -1515,7 +1515,7 @@ body[data-page="workspace"] {
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     font-size: var(--text-2xs);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     font-stretch: var(--font-stretch-legend);
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1588,7 +1588,7 @@ body[data-page="workspace"] {
   .stims-shell__attract-caption-label {
     color: var(--stims-cool);
     font-size: 0.6875rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     font-stretch: var(--font-stretch-legend);
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1599,7 +1599,7 @@ body[data-page="workspace"] {
     overflow: hidden;
     color: var(--stims-ink-strong);
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     font-stretch: var(--font-stretch-compact);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1668,7 +1668,7 @@ body[data-page="workspace"] {
     border-radius: var(--stims-radius-control);
     font-family: var(--font-family-base);
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.02em;
     line-height: 1;
     cursor: pointer;
@@ -1815,7 +1815,7 @@ body[data-page="workspace"] {
   .stims-shell__settings-summary::after {
     content: "+";
     font-size: 1.125rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--stims-ink-strong);
   }
 
@@ -2440,7 +2440,7 @@ body[data-page="workspace"] {
     line-clamp: 2;
     overflow: hidden;
     font-size: clamp(var(--text-3xl), 5.2vw, 4.5rem);
-    font-weight: 760;
+    font-weight: var(--font-weight-display);
     line-height: 0.98;
     letter-spacing: -0.02em;
     /* The line clamp needs overflow: hidden, and that clipped the card's
@@ -2633,7 +2633,7 @@ body[data-page="workspace"] {
   .stims-shell__section-label {
     margin: 4px 0 0;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -3337,7 +3337,7 @@ body[data-page="workspace"] {
 .stims-shell__midi-hud-value {
   color: var(--stims-ink);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3383,7 +3383,7 @@ body[data-page="workspace"] {
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.06em;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stims-shell__debug-hud-close {
@@ -3439,14 +3439,14 @@ body[data-page="workspace"] {
   font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.06em;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stims-shell__debug-hud-note {
   color: var(--stims-ink-dim);
   text-transform: none;
   letter-spacing: 0;
-  font-weight: 400;
+  font-weight: var(--font-weight-normal);
 }
 
 .stims-shell__debug-hud-empty {
@@ -3567,7 +3567,7 @@ body[data-page="workspace"] {
 .stims-shell__dialog-title {
   margin: 0;
   font-size: var(--text-xl);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--stims-ink-strong);
 }
 
@@ -3801,7 +3801,7 @@ body[data-page="workspace"] {
   margin: 0 0 20px;
   font-family: var(--font-family-base);
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.015em;
   /* Solid ink, not a gradient fill: a color shift across a heading is
      decoration that competes with the words. Hierarchy comes from the size
@@ -3824,7 +3824,7 @@ body[data-page="workspace"] {
   margin: 0 0 14px;
   font-family: var(--font-family-base);
   font-size: 0.9375rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.01em;
   color: var(--stims-ink);
 }
@@ -3840,7 +3840,7 @@ body[data-page="workspace"] {
 .stims-shell__shortcut-row kbd {
   font-family: var(--font-family-mono);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.05em;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
@@ -3891,7 +3891,7 @@ body[data-page="workspace"] {
 .stims-credits-section-title {
   font-family: var(--font-family-base);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin: 0 0 0.75rem 0;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -3917,7 +3917,7 @@ body[data-page="workspace"] {
 
 .stims-credits-entry-name {
   color: var(--stims-ink-strong);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stims-credits-entry-role {
@@ -4103,7 +4103,7 @@ body[data-page="workspace"] {
 .stims-shell__shortcut-row .stims-shell__shortcut-group {
   grid-column: 1 / -1;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -4172,7 +4172,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 
 .stims-shell__error-heading {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 8px;
   color: var(--stims-bad);
 }
@@ -4197,7 +4197,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 .stims-shell__error-details-summary {
   padding: 8px 12px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--stims-ink-dim);
   user-select: none;
 }
@@ -4232,7 +4232,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.01em;
   transition:
     opacity 150ms ease,
@@ -4393,7 +4393,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   margin: 0;
   color: var(--stims-cool);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.06em;
   text-transform: uppercase;

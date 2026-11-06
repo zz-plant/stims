@@ -144,7 +144,7 @@
   padding: 7px 18px;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
 
@@ -182,7 +182,7 @@
    forced-colors mode. */
 .status[data-tone="error"] {
   color: var(--stims-bad, #ff7b72);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .status[data-tone="error"]::before {
