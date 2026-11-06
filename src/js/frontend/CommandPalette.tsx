@@ -40,6 +40,7 @@ import {
 } from './command-palette-registry.ts';
 import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
+import { useLatestRef } from './hooks/use-latest-ref.ts';
 import {
   eventMatchesShortcut,
   readShortcutOverrides,
@@ -376,8 +377,7 @@ export function CommandPalette({
  * from the shortcuts dialog like any other binding.
  */
 export function useCommandPaletteHotkey(onOpen: () => void) {
-  const onOpenRef = useRef(onOpen);
-  onOpenRef.current = onOpen;
+  const onOpenRef = useLatestRef(onOpen);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {

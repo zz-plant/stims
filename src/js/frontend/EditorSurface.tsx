@@ -12,6 +12,7 @@ import {
   noteFirstCodeEditAppliedOnce,
   noteFirstTuneEditAppliedOnce,
 } from './first-edit.ts';
+import { useLatestRef } from './hooks/use-latest-ref.ts';
 import { RepositorySupport } from './RepositorySupport.tsx';
 import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
@@ -25,6 +26,10 @@ import { useWorkspace } from './workspace-context.tsx';
  * guide and repository support around it. Named "surface" after
  * PerformSurface — the name EditorPanel belongs to the engine class.
  */
+// Module scope: an `import()` inside the component, even in an effect, makes
+// React Compiler skip the whole component (#1540).
+const loadEditorPanel = () => import('../milkdrop/overlay/editor-panel.ts');
+
 export function EditorSurface() {
   const [shared, setShared] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -37,30 +42,29 @@ export function EditorSurface() {
   } | null>(null);
   const { engine, ui } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
+  // Space and the dock hold the stage too; keep Inspect's Freeze truthful.
+  // Declared before the mount effect, which reads it once the panel exists.
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
+  const playbackPausedRef = useLatestRef(playbackPaused);
 
-  const engineRef = useRef(engine);
-  engineRef.current = engine;
+  const engineRef = useLatestRef(engine);
 
-  const handleImportRef = useRef(ui.handleImport);
-  handleImportRef.current = ui.handleImport;
+  const handleImportRef = useLatestRef(ui.handleImport);
 
-  const uiRef = useRef(ui);
-  uiRef.current = ui;
+  const uiRef = useLatestRef(ui);
 
   const sessionState = engineSnapshot?.sessionState ?? null;
   const backend = engineSnapshot?.backend ?? null;
   // Same read-through-a-ref contract as sessionStateRef: this callback is
   // handed to the panel once, on mount, and the panel re-reads it on every
   // paint, so the Textures pane's per-backend notes track backend switches.
-  const backendRef = useRef(backend);
-  backendRef.current = backend;
+  const backendRef = useLatestRef(backend);
   // The panel is code-split, so it appends itself a tick or two after this
   // component renders. Session state only changes identity when a compile
   // commits, so by mount time the state that opened the editor will never be
   // re-delivered — without this ref the editor opens on an empty document and
   // stays that way until the first keystroke.
-  const sessionStateRef = useRef(sessionState);
-  sessionStateRef.current = sessionState;
+  const sessionStateRef = useLatestRef(sessionState);
 
   // Reads the session through refs rather than closing over the render's
   // values: the panel gets this once, on mount, and a captured source would
@@ -83,8 +87,7 @@ export function EditorSurface() {
       onSuccess: () => setShared(true),
     });
   };
-  const copyShareLinkRef = useRef(copyShareLink);
-  copyShareLinkRef.current = copyShareLink;
+  const copyShareLinkRef = useLatestRef(copyShareLink);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -93,7 +96,7 @@ export function EditorSurface() {
 
     let cancelled = false;
 
-    import('../milkdrop/overlay/editor-panel.ts').then(({ EditorPanel }) => {
+    loadEditorPanel().then(({ EditorPanel }) => {
       if (cancelled) return;
 
       const panel = new EditorPanel({
@@ -151,10 +154,6 @@ export function EditorSurface() {
     }
   }, [sessionState]);
 
-  // Space and the dock hold the stage too; keep Inspect's Freeze truthful.
-  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
-  const playbackPausedRef = useRef(playbackPaused);
-  playbackPausedRef.current = playbackPaused;
   useEffect(() => {
     panelRef.current?.setStageFrozen(playbackPaused);
   }, [playbackPaused]);

@@ -9,7 +9,7 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
+  useState,
 } from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
@@ -202,6 +202,34 @@ export function coarseEngineSnapshotEqual(
   );
 }
 
+/**
+ * The engine-snapshot context value, keeping its identity while the coarse
+ * fields are unchanged. A fresh `{ engineSnapshot }` per snapshot tick
+ * re-rendered every useEngineSnapshot consumer at frame rate while audio
+ * played (the snapshot itself rebuilds per frame on audioEnergy), which showed
+ * up as continuous 60-80ms long tasks whenever a panel with catalog rows was
+ * open.
+ *
+ * State adjusted during render rather than refs read in a memo, so React
+ * Compiler can compile the provider (#1540). React re-runs the render before
+ * committing, so no consumer sees the superseded value.
+ */
+export function useCoarseEngineSnapshotValue(
+  snap: EngineSnapshotValue['engineSnapshot'],
+): EngineSnapshotValue {
+  const [value, setValue] = useState<EngineSnapshotValue>(() => ({
+    engineSnapshot: snap,
+  }));
+  const held = value.engineSnapshot;
+  if (
+    snap !== held &&
+    !(held && snap && coarseEngineSnapshotEqual(held, snap))
+  ) {
+    setValue({ engineSnapshot: snap });
+  }
+  return value;
+}
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
 
@@ -227,14 +255,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     stageRef: sessionState.stageRef,
   });
 
-  const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
-  // The context VALUE wrapper must also keep its identity when the coarse
-  // fields are unchanged — returning a fresh `{ engineSnapshot: prev }` per
-  // snapshot tick re-rendered every useEngineSnapshot consumer at frame rate
-  // while audio played (the snapshot itself rebuilds per frame on
-  // audioEnergy), which showed up as continuous 60-80ms long tasks whenever
-  // a panel with catalog rows was open.
-  const coarseValueRef = useRef<EngineSnapshotValue | null>(null);
   const presetQueue = usePersistentPresetQueue(shellOrchestration.catalog);
 
   useEffect(() => {
@@ -253,21 +273,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [sessionState.engineSnapshot]);
 
-  const engineSnapshotValue: EngineSnapshotValue = useMemo(() => {
-    const snap = sessionState.engineSnapshot;
-    const prev = coarseRef.current;
-    if (
-      prev &&
-      snap &&
-      coarseValueRef.current &&
-      coarseEngineSnapshotEqual(prev, snap)
-    ) {
-      return coarseValueRef.current;
-    }
-    coarseRef.current = snap;
-    coarseValueRef.current = { engineSnapshot: snap };
-    return coarseValueRef.current;
-  }, [sessionState.engineSnapshot]);
+  const engineSnapshotValue = useCoarseEngineSnapshotValue(
+    sessionState.engineSnapshot,
+  );
 
   const engineDataValue: EngineContextValue = useMemo(
     () => ({

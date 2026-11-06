@@ -27,6 +27,7 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { useLatestRef } from './hooks/use-latest-ref.ts';
 import { PresetIdentity } from './PresetIdentity.tsx';
 import { ReferenceFinderPanel } from './ReferenceFinderPanel.tsx';
 import { UiIcon } from './UiIcon.tsx';
@@ -244,8 +245,7 @@ export function PresetFinderPanel({
 
   // Latest mode, readable inside the async search: a window takes seconds to
   // collect, and results for a tab the user already left must not land.
-  const modeRef = useRef<FinderMode>(mode);
-  modeRef.current = mode;
+  const modeRef = useLatestRef<FinderMode>(mode);
 
   // Runs are numbered so a superseded search cannot touch state that now
   // belongs to its replacement, and each carries an AbortController so
@@ -260,6 +260,7 @@ export function PresetFinderPanel({
   // the new way without the user asking twice.
   const autoRunRef = useRef<FinderMode | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: modeRef is stable, but React Compiler must see it listed to keep this memo (#1540)
   const search = useCallback(async () => {
     // Starting a search supersedes whatever is still running: cancelling it
     // releases its collection window and request immediately, and its
@@ -359,7 +360,7 @@ export function PresetFinderPanel({
       if (isCurrent()) setError((err as Error).message);
     }
     if (isLatest()) setLoading(false);
-  }, [activePresetId, catalogEntryById, mode, ui]);
+  }, [activePresetId, catalogEntryById, mode, modeRef, ui]);
 
   const matchWithClefOmni = useCallback(async () => {
     if (!results || results.length === 0 || matchingOmni) return;
