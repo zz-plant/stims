@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { AgentErgonomicsConfig } from './config.ts';
-import type { Command } from './context.ts';
+import { argValue, type Command } from './context.ts';
 
 export type CommitMsgRules = AgentErgonomicsConfig['commitMsg'];
 
@@ -57,6 +57,37 @@ export function subjectError(
   return null;
 }
 
+/**
+ * Checks a pull-request title as the subject it becomes. A squash-merge makes
+ * the title the default-branch commit's subject and appends ` (#<number>)`, so
+ * the title gets the subject rules plus a length budget that leaves room for
+ * that suffix. Length is enforced here, unlike on branch commits: retitling a
+ * PR is a free edit, while rewording a pushed commit means rewriting history.
+ * With no number known yet, a four-digit one is assumed.
+ */
+export function prTitleError(
+  title: string,
+  rules: CommitMsgRules,
+  { prNumber }: { prNumber?: number } = {},
+): string | null {
+  const ruleError = subjectError(title, rules, { enforceLength: false });
+  if (ruleError) {
+    // "test(x), docs(y): ..." reads as two changes; history wants one.
+    return /^\w+(\([^)]+\))?!?,\s*\w+/u.test(title)
+      ? `${ruleError}\n  One type per title: name the main change, or split the PR.`
+      : ruleError;
+  }
+  const suffix = ` (#${prNumber ?? 1000})`;
+  const budget = rules.subjectLengthLimit - suffix.length;
+  if (title.length > budget) {
+    return (
+      `PR title is ${title.length} chars; keep it within ${budget} so the squash commit's ` +
+      `subject ("<title>${suffix}") fits ${rules.subjectLengthLimit}: "${title}"`
+    );
+  }
+  return null;
+}
+
 export function subjectOf(raw: string): string {
   const message = raw
     .split('\n')
@@ -66,12 +97,32 @@ export function subjectOf(raw: string): string {
   return message.split('\n')[0] ?? '';
 }
 
-/** `commit-msg <file|-> | --range <base>..<head> [--allow-long-subjects]` */
+/**
+ * `commit-msg <file|-> | --range <base>..<head> [--allow-long-subjects]
+ *  | --pr-title <title> [--pr-number <n>]`
+ */
 export const runCommitMsg: Command = async (
   args,
   { config, cwd, io, readStdin },
 ) => {
   const rules = config.commitMsg;
+
+  if (args.includes('--pr-title')) {
+    const title = argValue(args, '--pr-title');
+    const numberArg = argValue(args, '--pr-number');
+    const prNumber = numberArg === undefined ? undefined : Number(numberArg);
+    if (title === undefined || (prNumber !== undefined && !(prNumber > 0))) {
+      io.error('✖ Usage: --pr-title <title> [--pr-number <n>]');
+      return 2;
+    }
+    const error = prTitleError(title.trim(), rules, { prNumber });
+    if (error) {
+      io.error(`✖ ${error}`);
+      return 1;
+    }
+    io.log('✔ PR title works as a commit subject.');
+    return 0;
+  }
   const rangeIndex = args.indexOf('--range');
   const enforceLength = !args.includes('--allow-long-subjects');
 

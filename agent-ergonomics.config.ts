@@ -601,7 +601,6 @@ export default defineConfig({
     debtPrefix: 'DEBT:',
   },
   prBody: {
-    checklistHeading: /^## Review risk checklist/m,
     docPath:
       /^(docs\/|README\.md$|CONTRIBUTING\.md$|AGENTS\.md$|\.claude\/|\.agent\/|\.github\/AGENTS\.md$)/,
     testPath: /^tests\/.*\.test\.(?:ts|tsx|js|jsx)$/,

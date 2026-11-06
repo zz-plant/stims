@@ -16,6 +16,13 @@ generic PR rules: it covers conventions and traps specific to Stims.
   `✅ Quality gate passed` summary. `--verbose` restores the full text.
 - Commit subjects are Conventional Commits, lowercase after the colon, at most
   72 characters ([Commit conventions](../../../docs/COMMIT_CONVENTIONS.md)).
+- Squash-merging keeps the PR title (plus ` (#<number>)`) as main's subject and
+  the commit bodies as its body; the PR description does not reach `git log`
+  ([what main keeps](../../../docs/COMMIT_CONVENTIONS.md#what-main-keeps)).
+  Keep the title at most 64 characters with one type, checked by
+  `bun run check:commit-msg -- --pr-title "<title>"` and CI's "Validate PR
+  title" job, and give the commit a body that says why, wrapped at 72.
+  #1661–#1666 landed on main with trailers only.
 - Write the PR body with `bun run pr:body` (scaffold from the diff) and check
   it with `bun run pr:body -- --check <file>` before opening. CI rejects an empty
   body or one that never says how the change was verified. Write the body file
@@ -38,6 +45,8 @@ generic PR rules: it covers conventions and traps specific to Stims.
 
 ## Reading CI
 
+- **Validate PR title** (PR automation workflow) fails on the title alone.
+  Edit the title; the job re-runs on the edit, so do not push to fix it.
 - Jobs: Changed paths, Commit messages, Quality gate, Gate test suite,
   Parity corpus, one browser e2e job per file in the `integration` matrix
   (engine-mount runs as two: its preset switch test has its own runner), then

@@ -60,7 +60,7 @@ export function buildPrBody(
   ];
 
   const sections = [
-    `## Summary\n\nTODO: what changed and why (${commits.length} commit${commits.length === 1 ? '' : 's'} on this branch).`,
+    `## Summary\n\nTODO: what changed and why in a sentence or two a reviewer could stop after, then the detail (${commits.length} commit${commits.length === 1 ? '' : 's'} on this branch).`,
     `## Testing\n\n${testLines.map((line) => `- ${line}`).join('\n')}`,
     `## Docs touched\n\n${
       docs.length > 0 ? docs.map((d) => `- \`${d}\``).join('\n') : 'None'
@@ -171,8 +171,13 @@ export const runPrBody: Command = async (
 
   // Commit subjects go to stderr as a writing aid so they do not end up in
   // the body file the author pipes stdout into.
+  // A squash-merge makes the title the default branch's commit subject, with
+  // " (#<number>)" appended; say the budget while the author is choosing one.
+  const titleBudget = config.commitMsg.subjectLengthLimit - ' (#1000)'.length;
   io.error(
-    `Commits vs ${base}:\n${commits.map((c) => `  - ${c}`).join('\n')}\n`,
+    `Commits vs ${base}:\n${commits.map((c) => `  - ${c}`).join('\n')}\n\n` +
+      `Title: one Conventional Commits subject, at most ${titleBudget} chars; ` +
+      `squash-merging makes it the commit subject with " (#<number>)" appended.\n`,
   );
   io.log(
     buildPrBody(
