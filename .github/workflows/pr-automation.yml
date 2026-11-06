@@ -90,14 +90,16 @@ jobs:
   # checks the branch's commits, which squash-merging throws away.
   #
   # Here, unlike there, length fails: retitling a PR is a free edit that
-  # re-runs this job, while rewording a pushed commit rewrites history.
+  # re-runs this job, while rewording a pushed commit rewrites history. It also
+  # runs on synchronize: a job skipped on a push reports success for the new
+  # head, which would let a push wave a failing title through.
   # Mirrors `prTitleError` in packages/agent-ergonomics/src/commit-msg.ts and
   # the commitMsg types in its config; change them together. Bot titles
   # (Dependabot) are generated and nobody edits them, so they are skipped.
   validate-pr-title:
     name: Validate PR title
     if: >-
-      contains(fromJson('["opened","edited","reopened"]'), github.event.action) &&
+      contains(fromJson('["opened","edited","synchronize","reopened"]'), github.event.action) &&
       github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-latest
     steps:
