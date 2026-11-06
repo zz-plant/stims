@@ -11,6 +11,7 @@ import {
 } from '../../src/js/core/embed-snippet.ts';
 import { loadPresetMeta } from '../shared/preset-meta.ts';
 import { presentTitle } from '../shared/preset-title.ts';
+import { json, methodGuard } from './_http.ts';
 
 interface EventContext {
   request: Request;
@@ -34,19 +35,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const { request } = context;
   const requestUrl = new URL(request.url);
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  if (request.method !== 'GET') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  const rejected = methodGuard(request, 'GET');
+  if (rejected) return rejected;
 
   const targetUrlStr = requestUrl.searchParams.get('url');
   if (!targetUrlStr) {
@@ -66,13 +56,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
   try {
     targetUrl = new URL(targetUrlStr);
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid "url" parameter' }), {
-      status: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    return json({ error: 'Invalid "url" parameter' }, 400);
   }
 
   // Parse preset ID from target URL query or pathname

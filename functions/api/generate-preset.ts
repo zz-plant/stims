@@ -9,6 +9,7 @@ import {
   generatedText,
 } from './_ai-guard.ts';
 import { runDecisionQuestions } from './_decision-model.ts';
+import { json, methodGuard } from './_http.ts';
 
 interface Env {
   AI?: WorkersAI;
@@ -109,19 +110,8 @@ function cleanModelOutput(raw: string): string {
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  const rejected = methodGuard(request, 'POST');
+  if (rejected) return rejected;
 
   if (!env.AI) {
     return new Response(
@@ -224,12 +214,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       // Keep the honest generic title when title generation is unavailable.
     }
 
-    return new Response(JSON.stringify({ milkSource, title }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    return json({ milkSource, title });
   } catch (error) {
     return new Response(
       JSON.stringify({

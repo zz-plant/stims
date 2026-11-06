@@ -6,6 +6,7 @@
 
 import type { MilkdropDiagnostic as ToolchainDiagnostic } from 'milkdrop-toolchain/src/common-types.ts';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { corsPreflight, json } from './_http.ts';
 
 interface MilkdropDiagnostic {
   severity: 'error' | 'warning';
@@ -20,7 +21,7 @@ export async function onRequest(context: {
   const { request } = context;
 
   if (request.method === 'OPTIONS') {
-    return cors();
+    return corsPreflight('POST');
   }
 
   if (request.method !== 'POST') {
@@ -88,24 +89,4 @@ export function validatePresetSource(source: string) {
     errors,
     warnings,
   };
-}
-
-function cors(): Response {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
-}
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
 }

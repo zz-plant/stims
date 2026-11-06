@@ -8,6 +8,7 @@ import {
   readDecisionBody,
   runDecision,
 } from './_decision-model.ts';
+import { corsPreflight } from './_http.ts';
 
 interface Env {
   AI?: WorkersAI;
@@ -28,14 +29,7 @@ export async function onRequest(context: {
   env: Env;
 }): Promise<Response> {
   const { request, env } = context;
-  if (request.method === 'OPTIONS')
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+  if (request.method === 'OPTIONS') return corsPreflight('POST');
   if (request.method !== 'POST')
     return json({ error: 'Method not allowed. Use POST.' }, 405);
   if (!env.AI)

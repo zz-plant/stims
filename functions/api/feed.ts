@@ -2,6 +2,7 @@
 // Serves GET /api/feed
 
 import { loadPresetMeta, presetIndexing } from '../shared/preset-meta.ts';
+import { methodGuard } from './_http.ts';
 
 interface EventContext {
   request: Request;
@@ -12,19 +13,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const { request } = context;
   const url = new URL(request.url);
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  if (request.method !== 'GET') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  const rejected = methodGuard(request, 'GET');
+  if (rejected) return rejected;
 
   const presetMeta = await loadPresetMeta(context.env?.ASSETS, url.origin);
   const entries = presetMeta

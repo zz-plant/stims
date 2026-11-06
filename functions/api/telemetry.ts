@@ -16,6 +16,7 @@ import {
   TELEMETRY_SURFACES,
   type TelemetryEvent,
 } from '../../src/js/core/edge-contracts.ts';
+import { methodGuard } from './_http.ts';
 
 interface AnalyticsEngineDataset {
   writeDataPoint(point: {
@@ -48,19 +49,8 @@ function measured(input: unknown): number {
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  const rejected = methodGuard(request, 'POST');
+  if (rejected) return rejected;
 
   try {
     const data = (await request.json()) as TelemetryPayload;
