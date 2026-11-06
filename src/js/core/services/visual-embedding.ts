@@ -29,15 +29,6 @@ export const embeddingsReady = new Promise<void>((resolve) => {
   }
 });
 
-function _histogramDistance(a: number[], b: number[]): number {
-  let sum = 0;
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    sum += Math.abs(a[i] - b[i]) / 256;
-  }
-  return sum / len;
-}
-
 function createEmptyFrameStats(): FrameStats {
   return {
     histogram: new Array(24).fill(0),

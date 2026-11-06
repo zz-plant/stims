@@ -16,10 +16,6 @@ export function setEngineQualityState(state: EngineQualityState | null): void {
   currentQuality = state;
 }
 
-export function getEngineQualityState(): EngineQualityState | null {
-  return currentQuality;
-}
-
 /** Default live-tile engine cap when the stage is running at full quality. */
 export const LIVE_TILE_FULL_CAPACITY = 10;
 /** Floor: browsing keeps at least this many live previews even under load. */

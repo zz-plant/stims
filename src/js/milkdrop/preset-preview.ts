@@ -1,7 +1,5 @@
 import type { MilkdropRenderBackend } from 'milkdrop-toolchain/src/common-types.ts';
 
-export const PRESET_PREVIEW_REQUEST_LIMIT = 8;
-
 export type MilkdropPresetRenderPreviewStatus =
   | 'queued'
   | 'capturing'

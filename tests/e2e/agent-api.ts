@@ -49,7 +49,6 @@ import type { FrameStats } from '../../src/js/core/services/visual-embedding.ts'
 import type {
   AgentActionInfo,
   AgentEvent,
-  AgentEventType,
   AgentRunResult,
   AgentStateSnapshot,
 } from '../../src/js/frontend/agent-state.ts';
@@ -214,14 +213,6 @@ export async function dumpAgentDiagnostics(
     captureAgentStats(page).catch(() => null),
   ]);
   return { state, events, stats, installed: true };
-}
-
-/** Filter helper for reading a dump's event log by type — pure convenience. */
-export function eventsOfType(
-  events: AgentEvent[],
-  type: AgentEventType,
-): AgentEvent[] {
-  return events.filter((e) => e.type === type);
 }
 
 const FAILURE_ARTIFACT_ROOT = path.join(

@@ -4,7 +4,7 @@
  */
 
 import type { AnimationContext } from './animation-loop';
-import { getContextFrequencyData, virtualTimeSource } from './animation-loop';
+import { getContextFrequencyData } from './animation-loop';
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
 import { notifyFrameDrawn } from './frame-drawn.ts';
 import { createFrameGate } from './frame-pacing';
@@ -558,9 +558,7 @@ export function createToyRuntime({
       return;
     }
     previewActive = true;
-    const timeSource = virtualTimeSource
-      ? { now: virtualTimeSource }
-      : (globalThis.performance ?? { now: () => Date.now() });
+    const timeSource = globalThis.performance ?? { now: () => Date.now() };
     previewStart = timeSource.now();
     previewLastFrame = previewStart;
     let failureStreak = 0;
@@ -602,7 +600,7 @@ export function createToyRuntime({
 
     const tick = (now: number) => {
       if (!previewActive) return;
-      const currentTime = virtualTimeSource ? virtualTimeSource() : now;
+      const currentTime = now;
       if (frameHeld && heldStepsPending === 0) {
         // Keep the anchor moving so the first frame after release measures
         // a normal delta instead of the whole pause.

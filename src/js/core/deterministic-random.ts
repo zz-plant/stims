@@ -54,9 +54,3 @@ export function getSessionRandom(): () => number {
   }
   return sessionRandom ?? Math.random;
 }
-
-/** Test-only: force a reset so tests don't leak the memoized seed across cases. */
-export function resetSessionRandomForTests(): void {
-  sessionRandom = null;
-  sessionSeedRead = false;
-}

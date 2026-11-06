@@ -3,6 +3,7 @@ import {
   DEFAULT_VISUAL_SEARCH_RESULTS,
 } from '../../src/js/core/edge-contracts.ts';
 import { enforceAiRateLimit } from './_ai-guard.ts';
+import { json, methodGuard } from './_http.ts';
 
 interface Env {
   AI?: WorkersAI;
@@ -64,19 +65,8 @@ function dotProduct(a: Float32Array, b: Float32Array): number {
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  const rejected = methodGuard(request, 'POST');
+  if (rejected) return rejected;
 
   const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
   if (limited) return limited;
@@ -108,21 +98,11 @@ export async function onRequest(context: { request: Request; env: Env }) {
     }
 
     if (body.embedOnly) {
-      return new Response(JSON.stringify({ embedding: queryEmbedding }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
+      return json({ embedding: queryEmbedding });
     }
 
     if (!queryEmbedding.length) {
-      return new Response(JSON.stringify({ results: [] }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
+      return json({ results: [] });
     }
 
     if (env.VECTOR_INDEX) {
@@ -163,12 +143,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
     queryNorm = Math.sqrt(queryNorm);
 
     if (queryNorm === 0) {
-      return new Response(JSON.stringify({ results: [] }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
+      return json({ results: [] });
     }
 
     const scored: Array<{ presetId: string; score: number }> = [];

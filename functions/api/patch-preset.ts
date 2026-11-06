@@ -1,3 +1,4 @@
+import { corsPreflight, json } from './_http.ts';
 // POST /api/patch-preset
 // Applies key-value parameter overrides to MilkDrop source code deterministically
 
@@ -7,7 +8,7 @@ export async function onRequest(context: {
   const { request } = context;
 
   if (request.method === 'OPTIONS') {
-    return cors();
+    return corsPreflight('POST');
   }
 
   if (request.method !== 'POST') {
@@ -92,24 +93,4 @@ export function applyPresetPatch(
   }
 
   return updatedLines.join('\n');
-}
-
-function cors(): Response {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
-}
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
 }

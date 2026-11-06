@@ -208,11 +208,3 @@ export function stopExternalDisplay(): void {
   }
   setState({ mode: null, target: null, error: null });
 }
-
-export const __externalDisplayTestUtils = {
-  reset(): void {
-    connection = null;
-    state = { mode: null, target: null, error: null };
-    listeners.clear();
-  },
-};

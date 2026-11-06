@@ -65,21 +65,6 @@ export type MilkdropWebGpuFeatureRouting = Record<
 >;
 
 /**
- * Persist a manual safe-path override to localStorage.
- * Use `null` to clear the override and return to auto-detection.
- */
-export function setWebGpuSafePathOverride(value: boolean | null): void {
-  const storage = getBrowserStorage();
-  if (!storage) return;
-
-  if (value === null) {
-    storage.removeItem(STORAGE_KEY);
-    return;
-  }
-  storage.setItem(STORAGE_KEY, value ? '1' : '0');
-}
-
-/**
  * Get the current safe-path override from localStorage.
  * Returns `null` if no override is stored.
  */
@@ -163,15 +148,6 @@ export function shouldUseSafeMilkdropWebGpuPath(
 
   // 4. Default: full path unless the device doesn't qualify
   return !qualifiesForDefaultWebGPUPath();
-}
-
-/**
- * Convenience: check if the full (non-safe) WebGPU path is active.
- */
-export function shouldUseFullMilkdropWebGpuPath(
-  location?: Pick<Location, 'search'> | null,
-): boolean {
-  return !shouldUseSafeMilkdropWebGpuPath(location);
 }
 
 /**

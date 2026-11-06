@@ -5,7 +5,6 @@ import {
   LineBasicMaterial,
   Vector3,
 } from 'three';
-import { disposeGeometry } from '../../utils/three/three-dispose';
 import {
   isSharedGeometry,
   markSharedGeometry,
@@ -78,13 +77,6 @@ export function getProceduralMeshGeometry(density: number) {
   );
   proceduralMeshGeometryCache.set(safeDensity, geometry);
   return geometry;
-}
-
-export function clearProceduralMeshGeometryCache() {
-  for (const geometry of proceduralMeshGeometryCache.values()) {
-    disposeGeometry(geometry);
-  }
-  proceduralMeshGeometryCache.clear();
 }
 
 export function renderMesh({

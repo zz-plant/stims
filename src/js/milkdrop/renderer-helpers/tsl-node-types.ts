@@ -120,17 +120,3 @@ export function typedUniform(
 export function asColorNode(node: TslUniformNode): TslNode<'vec3'> {
   return node as unknown as TslNode<'vec3'>;
 }
-
-/**
- * A sampled texel seen as the vec4 it is.
- *
- * The aux-texture samplers are a single `select()` chain over ~15 branches,
- * every one of which constructs a vec4. three infers the chain's type as
- * `Node<'float' | 'vec4'>` — an artifact of widening across that many
- * operands, not a branch that genuinely yields a scalar — and `.rgb` is
- * unavailable on the union. Checked against the source before narrowing:
- * there is no float-returning path.
- */
-export function asVec4Node(node: TslNode<'float' | 'vec4'>): TslNode<'vec4'> {
-  return node as unknown as TslNode<'vec4'>;
-}

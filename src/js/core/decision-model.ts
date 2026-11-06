@@ -678,12 +678,6 @@ export function parseDecisionResult(
     ...(usage ? { usage } : {}),
   };
 }
-export function safeParseDecisionResult(
-  value: unknown,
-  request: DecisionRequest,
-) {
-  return safe(() => parseDecisionResult(value, request));
-}
 export function isAcceptedDecision(result: DecisionResult): boolean {
   return result.disposition === 'accepted';
 }

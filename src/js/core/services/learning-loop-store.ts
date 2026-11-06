@@ -498,6 +498,3 @@ export function createLearningLoopStore(): EpisodeStore {
   }
   return createIndexedDbEpisodeStore();
 }
-
-/** Test seam: forget the memoized module-level state between cases. */
-export function resetLearningLoopStore(): void {}

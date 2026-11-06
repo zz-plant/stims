@@ -321,15 +321,6 @@ export function renderIconSvg(
   return `<svg${className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter" focusable="false" aria-hidden="true" data-icon="${escapeAttribute(name)}">${title}${body}</svg>`;
 }
 
-export function replaceIconContents(
-  target: Element | null | undefined,
-  name: UiIconName,
-  options: RenderIconOptions = {},
-) {
-  if (!target) return;
-  target.innerHTML = renderIconSvg(name, options);
-}
-
 export function getIconNodes(name: UiIconName) {
   return ICON_NODES[name];
 }

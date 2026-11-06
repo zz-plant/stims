@@ -1,5 +1,3 @@
-import { mock } from 'bun:test';
-
 export class FakeAnalyserNode {
   frequencyBinCount: number;
   connected = false;
@@ -51,13 +49,4 @@ export function createToyContainer(id = 'toy-container') {
   };
 
   return { container, dispose };
-}
-
-export function createMockRenderer() {
-  const render = mock((payload?: unknown) => payload);
-  const dispose = mock(() => {});
-
-  const renderFrame = (payload?: unknown) => render(payload);
-
-  return { render, dispose, renderFrame };
 }

@@ -288,11 +288,9 @@ function showResults(result) {
   const statusEl = document.getElementById('results-status');
   const metricsEl = document.getElementById('results-metrics');
   const diffCanvas = document.getElementById('diff-canvas');
-  const actionsEl = document.getElementById('results-actions');
   const presetNameEl = document.getElementById('results-preset-name');
 
   panel.hidden = false;
-  actionsEl.hidden = false;
   presetNameEl.textContent = result.presetTitle;
 
   const passed = result.status === 'pass';
@@ -366,56 +364,9 @@ async function loadPresetList() {
   return BUNDLED_PRESETS;
 }
 
-async function submitResults(results) {
-  const submitBtn = document.getElementById('submit-results-btn');
-  try {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting…';
-
-    const payload = {
-      presets: results.map((result) => ({
-        presetId: result.presetId,
-        presetTitle: result.presetTitle,
-        status: result.status,
-        mismatchRatio: result.mismatchRatio,
-        mismatchPixels: result.mismatchedPixels,
-        totalPixels: result.totalPixels,
-        timestamp: new Date().toISOString(),
-      })),
-    };
-
-    const response = await fetch('/api/certify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const responseData = await response.json();
-    alert(
-      `Submitted ${responseData.count ?? payload.presets.length} results successfully.`,
-    );
-  } catch (error) {
-    alert(
-      `Submission failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  } finally {
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Submit results';
-    }
-  }
-}
-
 // ---- entry point ----
 
 (async function main() {
-  const _presets = BUNDLED_PRESETS;
-  let results = [];
-
   // Populate preset selector
   async function refreshPresetDropdown() {
     const loadedPresets = await loadPresetList();
@@ -434,29 +385,16 @@ async function submitResults(results) {
     .addEventListener('click', async () => {
       const btn = document.getElementById('certify-all-btn');
       btn.disabled = true;
-      results = [];
       for (const preset of loadedPresets) {
         btn.textContent = `Certifying ${preset.title}…`;
         try {
-          const result = await certifyPreset(preset);
-          results.push(result);
+          await certifyPreset(preset);
         } catch (error) {
           console.error(`[certify] Failed to certify ${preset.id}:`, error);
-          results.push({
-            presetId: preset.id,
-            presetTitle: preset.title,
-            status: 'error',
-            mismatchPixels: -1,
-            totalPixels: -1,
-            mismatchRatio: -1,
-            gpuCaptured: false,
-            glCaptured: false,
-          });
         }
       }
       btn.disabled = false;
       btn.textContent = 'Certify all (4 presets)';
-      document.getElementById('submit-results-btn').disabled = false;
     });
 
   // Certify one button
@@ -473,9 +411,7 @@ async function submitResults(results) {
       btn.disabled = true;
       btn.textContent = 'Capturing…';
       try {
-        const result = await certifyPreset(preset);
-        results = [result];
-        document.getElementById('submit-results-btn').disabled = false;
+        await certifyPreset(preset);
       } catch (error) {
         alert(
           `Certification failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -484,20 +420,4 @@ async function submitResults(results) {
       btn.disabled = false;
       btn.textContent = 'Certify selected';
     });
-
-  // Submit results button
-  document
-    .getElementById('submit-results-btn')
-    .addEventListener('click', async () => {
-      await submitResults(results);
-    });
-
-  // Submit single result button
-  document
-    .getElementById('submit-single-btn')
-    .addEventListener('click', async () => {
-      await submitResults(results);
-    });
-
-  await loadPresetList();
 })();

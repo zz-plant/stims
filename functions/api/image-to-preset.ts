@@ -1,5 +1,6 @@
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
 import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
+import { json, methodGuard } from './_http.ts';
 
 interface Env {
   AI: {
@@ -33,19 +34,8 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  const rejected = methodGuard(request, 'POST');
+  if (rejected) return rejected;
 
   const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
   if (limited) return limited;
@@ -131,12 +121,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
         '[preset00]\nfRating=4.0\nfDecay=0.96\nnWaveMode=1\nfZoom=1.0\nfWarp=1.0\nfRot=0.0\n';
     }
 
-    return new Response(JSON.stringify({ description, milkSource }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    return json({ description, milkSource });
   } catch (error) {
     return new Response(
       JSON.stringify({

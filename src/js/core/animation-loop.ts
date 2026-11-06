@@ -15,28 +15,7 @@ export {
   type SimulationAccumulatorOptions,
 } from './simulation-accumulator';
 
-/** Optional virtual time source for deterministic testing/capture.
- * When set, `performance.now()` is replaced by this function.
- * Expected to return monotonically increasing milliseconds. */
-export let virtualTimeSource: (() => number) | null = null;
-let virtualTimeAdvanceMs = 0;
-
-export function setVirtualTimeSource(
-  fn: (() => number) | null,
-  advanceMs = 1000 / 60,
-) {
-  virtualTimeSource = fn;
-  virtualTimeAdvanceMs = advanceMs;
-}
-
-export function getVirtualTimeAdvanceMs(): number {
-  return virtualTimeAdvanceMs;
-}
-
 export function now(): number {
-  if (virtualTimeSource) {
-    return virtualTimeSource();
-  }
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 

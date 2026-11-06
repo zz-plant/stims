@@ -4,7 +4,6 @@ import {
   classifyAudioAccessError,
   DEFAULT_MICROPHONE_CONSTRAINTS,
   type FrequencyAnalyser,
-  getMicrophonePermissionState,
   initAudio,
 } from '../audio-handler';
 
@@ -155,14 +154,6 @@ export async function acquireAudioHandle(
     stream: audio.stream,
     release,
   };
-}
-
-export async function prewarmMicrophone(constraints?: MediaStreamConstraints) {
-  const permission = await getMicrophonePermissionState();
-  if (permission !== 'granted') return permission;
-
-  await getOrCreateStream(constraints);
-  return permission;
 }
 
 export async function resetAudioPool({ stopStreams = true } = {}) {

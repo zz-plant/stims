@@ -3,8 +3,6 @@
  * and gamepad axes into a single unified input stream with gesture recognition.
  */
 
-import type { FrequencyAnalyser } from './audio-handler';
-
 export type InputSource = 'none' | 'pointer' | 'keyboard' | 'gamepad';
 
 export type UnifiedPointer = {
@@ -342,15 +340,6 @@ const isTextInput = (element: Element | null) =>
   element instanceof HTMLTextAreaElement ||
   element instanceof HTMLSelectElement ||
   (element instanceof HTMLElement && element.isContentEditable);
-
-export const createMicSnapshotProvider =
-  (
-    analyser: FrequencyAnalyser | null,
-  ): (() => { level: number; available: boolean }) =>
-  () => ({
-    level: analyser?.getRmsLevel() ?? 0,
-    available: Boolean(analyser),
-  });
 
 export function createUnifiedInput({
   target,

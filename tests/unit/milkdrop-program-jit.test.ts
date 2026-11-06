@@ -218,17 +218,6 @@ function expectSameScopes(compiled: RunResult, interpreted: RunResult) {
   );
 }
 
-function _blockFromSource(equations: string[], prefix = 'per_frame') {
-  const source = [
-    'title=JIT Fixture',
-    ...equations.map((line, index) => `${prefix}_${index + 1}=${line}`),
-  ].join('\n');
-  const preset = compileMilkdropPresetSource(source, { id: 'jit-fixture' });
-  return prefix === 'per_pixel'
-    ? preset.ir.programs.perPixel
-    : preset.ir.programs.perFrame;
-}
-
 describe('compiled milkdrop programs', () => {
   test('match the interpreter across bundled preset programs', () => {
     const presetDir = join(

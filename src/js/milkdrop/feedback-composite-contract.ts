@@ -251,10 +251,6 @@ export const COMPOSITE_SHARED_UNIFORM_DEFAULTS: Record<
   bias3: 0,
 } as const;
 
-export const COMPOSITE_SHARED_UNIFORM_NAMES = Object.keys(
-  COMPOSITE_UNIFORM_BINDINGS,
-).filter((name) => COMPOSITE_UNIFORM_BINDINGS[name] === 'shared');
-
 /** Shared deterministic names that have a value in the defaults table. */
 export const COMPOSITE_DETERMINISTIC_SHARED_NAMES = Object.keys(
   COMPOSITE_SHARED_UNIFORM_DEFAULTS,

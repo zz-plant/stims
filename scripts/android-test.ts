@@ -18,7 +18,6 @@ const args = process.argv.slice(2);
 const deviceIp = args.find((a) =>
   /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(a),
 );
-const _headless = args.includes('--headless');
 
 function log(label: string, msg: string) {
   console.log(`[${label}] ${msg}`);
@@ -189,31 +188,6 @@ async function cdpEvaluate(
         else if (data.result?.exceptionDetails)
           reject(new Error(data.result.exceptionDetails.text));
         else resolve(data.result?.result?.value);
-      }
-    };
-    ws.addEventListener('message', handler);
-    ws.send(msg);
-    setTimeout(() => {
-      ws.removeEventListener('message', handler);
-      reject(new Error('timeout'));
-    }, 10000);
-  });
-}
-
-async function _cdpNavigate(ws: WebSocket, url: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const id = Math.floor(Math.random() * 100000);
-    const msg = JSON.stringify({
-      id,
-      method: 'Page.navigate',
-      params: { url },
-    });
-    const handler = (event: MessageEvent) => {
-      const data = JSON.parse(event.data as string);
-      if (data.id === id) {
-        ws.removeEventListener('message', handler);
-        if (data.error) reject(new Error(data.error.message));
-        else resolve();
       }
     };
     ws.addEventListener('message', handler);

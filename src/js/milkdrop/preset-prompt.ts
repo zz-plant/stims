@@ -1,15 +1,3 @@
-export interface GeneratePresetRequest {
-  description: string;
-  mood?: string;
-  complexity?: 'simple' | 'moderate' | 'complex';
-}
-
-export interface GeneratedPresetResult {
-  milkSource: string;
-  title: string;
-  diagnostics: Array<{ message: string }>;
-}
-
 const MILKDROP_DSL_SPEC = `
 ## MilkDrop Expression Language
 
@@ -184,55 +172,5 @@ per_pixel_3=dy=dy + dr*sin(-ang)*0.6
 User description: "${description}"
 
 Respond with ONLY the [preset00] section:
-`;
-}
-
-export function buildRefinePrompt(
-  currentSource: string,
-  instruction: string,
-): string {
-  if (
-    instruction.toLowerCase().startsWith('explain') ||
-    instruction.toLowerCase().startsWith('describe')
-  ) {
-    return `Explain what this MilkDrop preset does visually. Describe the motion patterns, color behavior, audio reactivity, and overall aesthetic in 2-4 sentences. Do NOT modify the code.
-
-${currentSource}`;
-  }
-
-  return `
-System: You are a MilkDrop preset refiner. Improve the preset according to the instruction while preserving its core identity.
-
-## MilkDrop DSL Cheat Sheet
-audio registers: bass, mid, treb, bass_att, mid_att, treb_att, time, fps, frame
-state registers: q1-q8 (persistent across frames), t1-t32 (per-slot temp)
-per_pixel built-ins: rad (distance from center), ang (angle), x, y, dx, dy, zoom, rot, cx, cy, sx, sy
-per_frame settable: decay, zoom, rot, warp, cx, cy, dx, dy, wave_r, wave_g, wave_b, wave_a
-
-## Professional Techniques
-- use bass_att/mid_att/treb_att (attack-smoothed) instead of raw bass/mid/treb
-- volume squaring: vol*vol compresses quiet, amplifies loud
-- RC audio smoothing: smoothed = smoothed*(1-alpha) + alpha*raw ... where alpha = 0.05-0.15
-- per_pixel spatial variation: use rad and ang for center-to-edge effects
-- color cycling: offset R/G/B phases by 2π/3 (2.094, 4.188)
-- clamp color: r=min(1,max(0,r+dr)) to prevent white blowout
-- frame rate correction: multiply accumulators by (75/fps)
-- set warp=0 in per_frame, drive distortion through per_pixel instead
-- GLSL warp/comp shader: use sampler_main for feedback, sampler_noise_lq for noise, sampler_noisevol_hq for 3D noise volume at time-varying Z, clamp ret to [0,1]
-
-## Anti-Patterns to FIX (if present)
-❌ warp=1.0 with high decay → change to warp=0, add per_pixel motion
-❌ identical wave_r=wave_g=wave_b with no modulation → offset phases
-❌ raw bass/mid/treb with no smoothing → use bass_att or RC filter
-❌ zero per_pixel code → add at least one rad/ang-based per_pixel line
-❌ unchecked color overflow → clamp to [0,1]
-❌ over-reliance on video echo → use per_pixel dx/dy/rot or warp shader instead
-
-Original preset:
-${currentSource}
-
-Instruction: ${instruction}
-
-Return ONLY the complete [preset00] section. Keep any custom shapes or wavecode if present, only modify what the instruction asks for.
 `;
 }

@@ -140,12 +140,6 @@ type BorderRingInstance = {
 
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 
-/**
- * Scratch for a segment's averaged per-point colour. Segments are appended
- * synchronously inside one frame and never re-entrantly, so a module-level
- * scratch keeps the hot path allocation-free.
- */
-const segmentPointColor = { r: 0, g: 0, b: 0 };
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
 const SHAPE_OUTLINE_INNER_OFFSET = 0;
 const SHAPE_THICK_OUTLINE_OUTER_OFFSET = MILKDROP_THICK_SHAPE_PASS_OFFSET;
@@ -153,137 +147,13 @@ const PROJECTM_STEREO_OFFSET = 32 / 512;
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
 
-/**
- * Memory monitoring for WebGPU batching layer.
- * Track allocations to help diagnose memory issues.
- */
-const memoryStats = {
-  geometryCacheHits: 0,
-  geometryCacheMisses: 0,
-  bufferReallocations: 0,
-  peakBufferSize: { lineData: 0, styleData: 0, controlData: 0, joinData: 0 },
-};
-
-/**
- * Buffer pool for reusing Float32Arrays to reduce GC pressure.
- * Maintains a collection of pre-allocated buffers of various sizes.
- */
-class Float32BufferPool {
-  private pools = new Map<number, Float32Array[]>();
-  private allocations = 0;
-
-  acquire(size: number): Float32Array {
-    const bucketSize = this.getBucketSize(size);
-    const pool = this.pools.get(bucketSize) ?? [];
-    if (pool.length > 0) {
-      const buffer = pool.pop();
-      if (buffer) {
-        this.allocations++;
-        return buffer;
-      }
-    }
-    this.allocations++;
-    return new Float32Array(bucketSize);
-  }
-
-  release(buffer: Float32Array): void {
-    const bucketSize = buffer.length;
-    const pool = this.pools.get(bucketSize) ?? [];
-    pool.push(buffer);
-    this.pools.set(bucketSize, pool);
-  }
-
-  clear(): void {
-    this.pools.clear();
-    this.allocations = 0;
-  }
-
-  getAllocationCount(): number {
-    return this.allocations;
-  }
-
-  private getBucketSize(requestedSize: number): number {
-    if (requestedSize <= 64) return 64;
-    if (requestedSize <= 128) return 128;
-    if (requestedSize <= 256) return 256;
-    if (requestedSize <= 512) return 512;
-    if (requestedSize <= 1024) return 1024;
-    if (requestedSize <= 2048) return 2048;
-    if (requestedSize <= 4096) return 4096;
-    if (requestedSize <= 8192) return 8192;
-    if (requestedSize <= 16384) return 16384;
-    if (requestedSize <= 32768) return 32768;
-    if (requestedSize <= 65536) return 65536;
-    if (requestedSize <= 131072) return 131072;
-    if (requestedSize <= 262144) return 262144;
-    if (requestedSize <= 524288) return 524288;
-    return 1048576;
-  }
-}
-
-const globalBufferPool = new Float32BufferPool();
-
-/**
- * Configuration for pre-allocation of upload buffers.
- */
-export interface BufferPreallocationConfig {
-  initialLineSegments?: number;
-  initialStyleSlots?: number;
-  initialControlSlots?: number;
-  initialJoinSlots?: number;
-}
-
+/** Initial upload-buffer slots; buffers grow on demand past these. */
 const DEFAULT_PREALLOCATION_REQUIRED = {
   initialLineSegments: 256,
   initialStyleSlots: 256,
   initialControlSlots: 256,
   initialJoinSlots: 256,
 } as const;
-
-const DEFAULT_PREALLOCATION: BufferPreallocationConfig =
-  DEFAULT_PREALLOCATION_REQUIRED;
-
-let currentPreallocationConfig = { ...DEFAULT_PREALLOCATION };
-
-/**
- * Configure pre-allocation sizes for upload buffers.
- * Call this before creating batching layers to avoid reallocations.
- */
-export function configureBufferPreallocation(
-  config: BufferPreallocationConfig,
-): void {
-  currentPreallocationConfig = {
-    initialLineSegments:
-      config.initialLineSegments ?? DEFAULT_PREALLOCATION.initialLineSegments,
-    initialStyleSlots:
-      config.initialStyleSlots ?? DEFAULT_PREALLOCATION.initialStyleSlots,
-    initialControlSlots:
-      config.initialControlSlots ?? DEFAULT_PREALLOCATION.initialControlSlots,
-    initialJoinSlots:
-      config.initialJoinSlots ?? DEFAULT_PREALLOCATION.initialJoinSlots,
-  };
-}
-
-/**
- * Get current buffer preallocation configuration.
- */
-export function getBufferPreallocationConfig(): Readonly<BufferPreallocationConfig> {
-  return { ...currentPreallocationConfig };
-}
-
-/**
- * Clear the global buffer pool to free memory.
- */
-export function clearBufferPool(): void {
-  globalBufferPool.clear();
-}
-
-/**
- * Get buffer pool allocation statistics.
- */
-export function getBufferPoolStats(): { allocations: number } {
-  return { allocations: globalBufferPool.getAllocationCount() };
-}
 
 /**
  * Clears static geometry caches to free memory.
@@ -298,38 +168,6 @@ export function clearStaticGeometryCaches(): void {
     disposeGeometry(geometry);
   }
   polygonRingGeometryCache.clear();
-}
-
-/**
- * Returns current memory statistics for the batching layer.
- */
-export function getWebGPUBatchingMemoryStats(): Readonly<{
-  geometryCacheHits: number;
-  geometryCacheMisses: number;
-  bufferReallocations: number;
-  peakBufferSize: {
-    lineData: number;
-    styleData: number;
-    controlData: number;
-    joinData: number;
-  };
-}> {
-  return { ...memoryStats };
-}
-
-/**
- * Resets memory statistics (useful for testing or session tracking).
- */
-export function resetWebGPUBatchingMemoryStats(): void {
-  memoryStats.geometryCacheHits = 0;
-  memoryStats.geometryCacheMisses = 0;
-  memoryStats.bufferReallocations = 0;
-  memoryStats.peakBufferSize = {
-    lineData: 0,
-    styleData: 0,
-    controlData: 0,
-    joinData: 0,
-  };
 }
 
 function buildRingGeometryLayout(
@@ -411,10 +249,8 @@ function getUnitPolygonFillGeometry(sides: number) {
   const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonFillGeometryCache.get(safeSides);
   if (cached) {
-    memoryStats.geometryCacheHits++;
     return cached;
   }
-  memoryStats.geometryCacheMisses++;
   const vertices = getUnitPolygonVertices(safeSides);
   const positions: number[] = [];
   for (let index = 0; index < vertices.length; index += 1) {
@@ -435,10 +271,8 @@ function getUnitPolygonRingGeometry(sides: number) {
   const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonRingGeometryCache.get(safeSides);
   if (cached) {
-    memoryStats.geometryCacheHits++;
     return cached;
   }
-  memoryStats.geometryCacheMisses++;
   const vertices = getUnitPolygonVertices(safeSides);
   const geometry = buildRingGeometryLayout(
     vertices.map((vertex) => [vertex.x, vertex.y]),
@@ -555,17 +389,11 @@ class CompactSegmentUploadBuffer {
   count = 0;
 
   constructor() {
-    // Pre-allocate buffers based on configuration
-    const config = currentPreallocationConfig;
-    const defaultConfig = DEFAULT_PREALLOCATION_REQUIRED;
-    this.lineCapacity =
-      (config.initialLineSegments ?? defaultConfig.initialLineSegments) * 4;
-    this.styleCapacity =
-      (config.initialStyleSlots ?? defaultConfig.initialStyleSlots) * 4;
-    this.controlCapacity =
-      (config.initialControlSlots ?? defaultConfig.initialControlSlots) * 3;
-    this.joinCapacity =
-      (config.initialJoinSlots ?? defaultConfig.initialJoinSlots) * 4;
+    const slots = DEFAULT_PREALLOCATION_REQUIRED;
+    this.lineCapacity = slots.initialLineSegments * 4;
+    this.styleCapacity = slots.initialStyleSlots * 4;
+    this.controlCapacity = slots.initialControlSlots * 3;
+    this.joinCapacity = slots.initialJoinSlots * 4;
     this.lineData = new Float32Array(this.lineCapacity);
     this.styleData = new Float32Array(this.styleCapacity);
     this.controlData = new Float32Array(this.controlCapacity);
@@ -835,71 +663,24 @@ class CompactSegmentUploadBuffer {
   }
 
   private ensureCapacity(count: number) {
-    this.lineData = ensureFloat32Capacity(this.lineData, count * 4, 'lineData');
-    this.styleData = ensureFloat32Capacity(
-      this.styleData,
-      count * 4,
-      'styleData',
-    );
-    this.controlData = ensureFloat32Capacity(
-      this.controlData,
-      count * 3,
-      'controlData',
-    );
-    this.joinData = ensureFloat32Capacity(this.joinData, count * 4, 'joinData');
+    this.lineData = ensureFloat32Capacity(this.lineData, count * 4);
+    this.styleData = ensureFloat32Capacity(this.styleData, count * 4);
+    this.controlData = ensureFloat32Capacity(this.controlData, count * 3);
+    this.joinData = ensureFloat32Capacity(this.joinData, count * 4);
   }
 }
 
 function ensureFloat32Capacity(
   source: Float32Array<ArrayBufferLike>,
   requiredLength: number,
-  bufferType: 'lineData' | 'styleData' | 'controlData' | 'joinData',
 ) {
   if (source.length >= requiredLength) {
     return source;
   }
-  memoryStats.bufferReallocations++;
   const nextLength = Math.max(requiredLength, Math.max(4, source.length * 2));
   const resized = new Float32Array(nextLength);
   resized.set(source);
-
-  // Update peak buffer size tracking
-  if (nextLength > memoryStats.peakBufferSize[bufferType]) {
-    memoryStats.peakBufferSize[bufferType] = nextLength;
-  }
-
   return resized;
-}
-
-function normalizeDirection(dx: number, dy: number) {
-  const length = Math.hypot(dx, dy);
-  if (length <= 0.000001) {
-    return { x: 1, y: 0 };
-  }
-  return { x: dx / length, y: dy / length };
-}
-
-function computeJoinExtension(
-  previousDirection: { x: number; y: number } | null,
-  nextDirection: { x: number; y: number } | null,
-) {
-  if (!previousDirection || !nextDirection) {
-    return 1;
-  }
-
-  const bisectorX = previousDirection.x + nextDirection.x;
-  const bisectorY = previousDirection.y + nextDirection.y;
-  const bisectorLength = Math.hypot(bisectorX, bisectorY);
-  if (bisectorLength <= 0.000001) {
-    return 1;
-  }
-
-  const normalizedBisectorX = bisectorX / bisectorLength;
-  const normalizedBisectorY = bisectorY / bisectorLength;
-  const projection =
-    normalizedBisectorX * nextDirection.x +
-    normalizedBisectorY * nextDirection.y;
-  return Math.min(2.5, Math.max(1, 1 / Math.max(0.35, projection)));
 }
 
 function buildProceduralWavePoint(
@@ -2008,7 +1789,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   disposeWithCaches() {
     this.dispose();
     clearStaticGeometryCaches();
-    clearBufferPool();
   }
 }
 

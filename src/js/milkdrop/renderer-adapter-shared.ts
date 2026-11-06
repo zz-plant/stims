@@ -46,10 +46,7 @@ import type {
   MilkdropShapeVisual,
   MilkdropWaveVisual,
 } from './types';
-import {
-  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-  type MilkdropWebGpuOptimizationFlags,
-} from './webgpu-optimization-flags';
+import type { MilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags';
 
 export type RendererLike = {
   isWebGPURenderer?: boolean;
@@ -138,9 +135,6 @@ export type MilkdropFeedbackManagerFactory = (
   width: number,
   height: number,
 ) => MilkdropFeedbackManager;
-
-export const DEFAULT_ADAPTER_WEBGPU_OPTIMIZATION_FLAGS =
-  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS;
 export const MAX_MILKDROP_POLYGON_SIDES = 128;
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
@@ -795,10 +789,6 @@ export function trimGroupChildren(group: Group, keepCount: number) {
     disposeObject(child as { children?: unknown[] });
     group.remove(child);
   }
-}
-
-export function clearTrimCountCache(group: Group) {
-  trimCountCache.delete(group);
 }
 
 export function withRenderOrder<T extends { renderOrder: number }>(
