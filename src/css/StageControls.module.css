@@ -103,8 +103,8 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    color var(--transition-base),
+    background var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -159,8 +159,8 @@
   color: var(--ctl-ink-2);
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    color var(--transition-base),
+    background var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -219,8 +219,8 @@
   min-width: 0;
   overflow: hidden;
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background var(--transition-base),
+    color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -283,7 +283,7 @@
 /* The incoming title recedes until the canvas actually shows it. */
 .pill[data-transition="loading"] .titleText {
   opacity: 0.55;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-slow);
 }
 
 /* Hairline tracking the crossfade window: full sweep = blend complete.
@@ -336,8 +336,8 @@
   color: var(--ctl-ink-2);
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    color var(--transition-base),
+    background var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -489,8 +489,8 @@
   text-align: left;
   cursor: pointer;
   transition:
-    background 0.12s ease,
-    color 0.12s ease;
+    background var(--transition-base),
+    color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -582,9 +582,9 @@
   text-align: center;
   cursor: pointer;
   transition:
-    background 0.12s ease,
-    color 0.12s ease,
-    border-color 0.12s ease;
+    background var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -733,7 +733,7 @@
   transition:
     opacity 0.25s ease,
     transform var(--motion-enter),
-    border-color 0.2s ease;
+    border-color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -798,7 +798,7 @@
   transition:
     opacity 0.25s ease,
     transform var(--motion-enter),
-    border-color 0.2s ease;
+    border-color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -812,8 +812,8 @@
   transform: translateY(8px);
   visibility: hidden;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
+    opacity var(--transition-slow),
+    transform var(--transition-slow),
     visibility 0s linear 0.2s;
 }
 

@@ -553,9 +553,9 @@ body[data-page="workspace"] {
       inset 0 1px 0 rgba(255, 255, 255, 0.04),
       0 2px 6px rgba(0, 0, 0, 0.2);
     transition:
-      border-color 150ms ease,
-      box-shadow 150ms ease,
-      background 150ms ease;
+      border-color var(--transition-base),
+      box-shadow var(--transition-base),
+      background var(--transition-base);
   }
 
   .stims-shell__input:focus {
@@ -634,10 +634,10 @@ body[data-page="workspace"] {
       inset 0 1px 0 rgba(255, 255, 255, 0.03),
       0 1px 2px rgba(0, 0, 0, 0.2);
     transition:
-      transform 140ms ease,
-      border-color 140ms ease,
-      box-shadow 140ms ease,
-      background-color 140ms ease;
+      transform var(--transition-slow),
+      border-color var(--transition-base),
+      box-shadow var(--transition-base),
+      background-color var(--transition-base);
   }
 
   .stims-shell__starter-card:hover {
@@ -1913,10 +1913,10 @@ body[data-page="workspace"] {
       0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition:
-      border-color 0.15s ease,
-      background-color 0.15s ease,
-      transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1),
-      box-shadow 0.15s ease;
+      border-color var(--transition-base),
+      background-color var(--transition-base),
+      transform var(--transition-slow),
+      box-shadow var(--transition-base);
   }
 
   .stims-shell__source-card:hover:not(:disabled) {
@@ -3929,8 +3929,8 @@ body[data-page="workspace"] {
   color: var(--stims-cool);
   text-decoration: none;
   transition:
-    color 0.18s ease,
-    text-shadow 0.18s ease;
+    color var(--transition-base),
+    text-shadow var(--transition-base);
 }
 
 .stims-credits-entry-link:hover,
@@ -4084,8 +4084,8 @@ body[data-page="workspace"] {
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   transition:
-    background 0.18s ease,
-    border-color 0.18s ease;
+    background var(--transition-base),
+    border-color var(--transition-base);
 }
 
 .stims-shell__shortcut-row:hover {
@@ -4235,8 +4235,8 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.01em;
   transition:
-    opacity 150ms ease,
-    transform 150ms ease;
+    opacity var(--transition-slow),
+    transform var(--transition-slow);
 }
 
 .stims-shell__error-btn:hover {
@@ -4317,7 +4317,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   resize: vertical;
   min-height: 80px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition: border-color 150ms ease;
+  transition: border-color var(--transition-base);
 }
 
 .stims-shell__refine-textarea:focus {
@@ -4352,9 +4352,9 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    transform 150ms ease;
+    border-color var(--transition-base),
+    background var(--transition-base),
+    transform var(--transition-slow);
 }
 
 .stims-shell__refine-btn:hover:not(:disabled) {

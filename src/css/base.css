@@ -359,9 +359,9 @@ body {
   text-decoration: none;
   font-weight: var(--font-weight-bold);
   transition:
-    transform 160ms ease,
-    box-shadow 200ms ease,
-    border-color 200ms ease;
+    transform var(--transition-slow),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
   touch-action: manipulation;
 }
 
@@ -384,9 +384,9 @@ body {
   border-radius: var(--radius-pill);
   background: var(--stims-white-04);
   transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    border-color 160ms ease;
+    transform var(--transition-slow),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
 }
 
 .rendering-overlay__links a:hover,

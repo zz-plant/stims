@@ -36,7 +36,9 @@
 
   --ctl-radius: var(--radius-md);
   --ctl-radius-lg: var(--radius-lg);
-  --ctl-ease: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* The shared hover/feedback timing from tokens.css, not a private 150ms
+     curve: panel controls and the rest of the shell now move alike. */
+  --ctl-ease: var(--transition-base);
 
   /* Control sizes. Two steps: chips and toggles are compact, buttons and
      selects are standard. With a mouse they stay dense; on a touch screen
@@ -110,8 +112,8 @@ html.light .stims-shell {
     white-space: nowrap;
     cursor: pointer;
     transition:
-      background 120ms ease,
-      color 120ms ease;
+      background var(--transition-base),
+      color var(--transition-base);
   }
 
   .ctl-tab:hover {
@@ -782,8 +784,8 @@ html.light .stims-shell {
     text-align: left;
     cursor: pointer;
     transition:
-      opacity 0.1s ease,
-      transform 0.1s ease;
+      opacity var(--transition-slow),
+      transform var(--transition-slow);
   }
 
   .ctl-preset__open:active {

@@ -24,8 +24,8 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    color var(--transition-base),
+    background var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -235,8 +235,8 @@
   text-align: left;
   cursor: pointer;
   transition:
-    background 0.12s ease,
-    color 0.12s ease;
+    background var(--transition-base),
+    color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
 

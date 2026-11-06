@@ -9,7 +9,7 @@ html {
 :focus-visible {
   outline: var(--tv-focus-outline-width) solid var(--accent-color);
   outline-offset: var(--tv-focus-outline-offset);
-  transition: outline-offset 0.15s ease;
+  transition: outline-offset var(--transition-base);
 }
 
 :target {
@@ -49,11 +49,11 @@ canvas {
   box-shadow: var(--shadow-soft);
   border: 1px solid var(--surface-border);
   transition:
-    top 0.2s ease,
-    opacity 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
+    top var(--transition-slow),
+    opacity var(--transition-slow),
+    box-shadow var(--transition-base),
+    background var(--transition-base),
+    border-color var(--transition-base);
   z-index: var(--z-skip-link);
   min-height: 46px;
   min-width: 44px;
