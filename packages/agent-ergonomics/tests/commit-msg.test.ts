@@ -79,3 +79,44 @@ describe('check-commit-msg', () => {
     expect(await check('ci: gate shader parity on preset changes')).toBe(0);
   });
 });
+
+describe('pr title', () => {
+  async function checkTitle(title: string, prNumber?: string) {
+    const io = collectIo();
+    const code = await runCommitMsg(
+      ['--pr-title', title, ...(prNumber ? ['--pr-number', prNumber] : [])],
+      { config, cwd: process.cwd(), env: {}, io, readStdin: async () => '' },
+    );
+    return { code, io };
+  }
+
+  test('accepts a title that fits the subject once the squash suffix is added', async () => {
+    expect(
+      (await checkTitle('fix(audio): close context on unmount')).code,
+    ).toBe(0);
+    // 64 chars + " (#1667)" is exactly 72.
+    expect((await checkTitle(`fix: ${'a'.repeat(59)}`, '1667')).code).toBe(0);
+  });
+
+  test('rejects a title that pushes the squash subject past the limit', async () => {
+    expect((await checkTitle(`fix: ${'a'.repeat(60)}`, '1667')).code).toBe(1);
+    // A longer PR number leaves less room for the title.
+    expect((await checkTitle(`fix: ${'a'.repeat(59)}`, '10000')).code).toBe(1);
+    // Without a number, a four-digit one is assumed.
+    expect((await checkTitle(`fix: ${'a'.repeat(60)}`)).code).toBe(1);
+  });
+
+  test('applies the subject rules and names a two-type title', async () => {
+    expect((await checkTitle('Update audio handler')).code).toBe(1);
+    expect((await checkTitle('wip')).code).toBe(1);
+    const { code, io } = await checkTitle(
+      'test(frontend), docs(authoring): prompt test and lesson',
+    );
+    expect(code).toBe(1);
+    expect(io.errored.join('\n')).toContain('One type per title');
+  });
+
+  test('rejects a malformed number instead of guessing', async () => {
+    expect((await checkTitle('fix: a', 'abc')).code).toBe(2);
+  });
+});

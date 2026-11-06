@@ -79,8 +79,8 @@ The package's exported configuration types document every field and default.
 | `test-source-greps` | Reject tests that read production source as text, except paths carrying an explicit reason.                                                                                                        |
 | `branch-restart`    | Restart a feature branch after a squash merge. Refuse dirty or unpushed work; `--branch`, `--base` and `--dry-run` select the operation. Never push.                                               |
 | `worktree-new`      | Create a separate checkout from the fetched base. Take a branch, optional `--base`, `--path` and `--no-install`. Never reset an existing branch.                                                   |
-| `pr-body`           | Scaffold a description from commits and changed files; `--base` and `--footer` customize it. `--check <file\|->` validates a finished body. Never assert checks were run. |
-| `commit-msg`        | Check a message file or stdin (`-`), or `--range <base>..<head>`. Long subjects warn in hook mode; `--allow-long-subjects` waives the range ceiling.                                               |
+| `pr-body`           | Scaffold a description from commits and changed files; `--base` and `--footer` customize it. `--check <file\|->` validates a finished body. Never assert checks were run.                          |
+| `commit-msg`        | Check a message file or stdin (`-`), or `--range <base>..<head>`. Long subjects warn in hook mode; `--allow-long-subjects` waives the range ceiling. `--pr-title <title>` checks a title as its squash subject. |
 
 `--help` lists the commands without loading a config. Read-only checks return zero on success and
 nonzero on failure; the CLI returns 2 for configuration or invocation errors. `guardrails` writes

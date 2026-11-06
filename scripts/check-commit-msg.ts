@@ -18,6 +18,8 @@
  *        or:   echo "<message>" | bun run scripts/check-commit-msg.ts -
  *        or:   bun run scripts/check-commit-msg.ts --range <base>..<head>
  *              [--allow-long-subjects]
+ *        or:   bun run scripts/check-commit-msg.ts --pr-title "<title>"
+ *              [--pr-number <n>]   # the title as its squash subject
  */
 import { runCli } from 'agent-ergonomics';
 

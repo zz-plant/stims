@@ -82,3 +82,60 @@ jobs:
                 ["PR description needs more than this.", ...errors].join("\n")
               );
             }
+
+  # A squash-merge makes the PR title the subject of the commit main keeps,
+  # with " (#<number>)" appended, and nothing checked it: 19 of the 50 commits
+  # before this job ran past 72 characters, and one carried two types
+  # ("test(frontend), docs(authoring): ..."). The Commit messages job in ci.yml
+  # checks the branch's commits, which squash-merging throws away.
+  #
+  # Here, unlike there, length fails: retitling a PR is a free edit that
+  # re-runs this job, while rewording a pushed commit rewrites history. It also
+  # runs on synchronize: a job skipped on a push reports success for the new
+  # head, which would let a push wave a failing title through.
+  # Mirrors `prTitleError` in packages/agent-ergonomics/src/commit-msg.ts and
+  # the commitMsg types in its config; change them together. Bot titles
+  # (Dependabot) are generated and nobody edits them, so they are skipped.
+  validate-pr-title:
+    name: Validate PR title
+    if: >-
+      contains(fromJson('["opened","edited","synchronize","reopened"]'), github.event.action) &&
+      github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the title as the squash commit's subject
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { title, number } = context.payload.pull_request;
+            const types = ["feat", "fix", "refactor", "chore", "docs", "test",
+              "style", "perf", "ci", "build", "revert", "hotfix"];
+            const limit = 72;
+            const subject = `${title} (#${number})`;
+            const conventional = new RegExp(`^(${types.join("|")})(\\([^)]+\\))?!?: .+`);
+            const vague = /^(fixes|fixed|stims|various fixes|certainly this works|hopefully works|hopefully|it works|works now|wip)$/i;
+            const gitRevert = /^Revert ".+"$/;
+
+            const errors = [];
+            if (vague.test(title) || /\b(certainly|hopefully)\b/i.test(title)) {
+              errors.push(`"${title}" does not say what changed. Describe the change and why.`);
+            } else if (!gitRevert.test(title) && !conventional.test(title)) {
+              errors.push(
+                `"${title}" is not a Conventional Commits subject. Use type(scope): summary, ` +
+                `e.g. fix(audio): close context on unmount.` +
+                (/^\w+(\([^)]+\))?!?,\s*\w+/.test(title)
+                  ? " One type per title: name the main change, or split the PR."
+                  : "")
+              );
+            }
+            if (subject.length > limit) {
+              errors.push(
+                `Squashed, this becomes "${subject}" (${subject.length} chars). ` +
+                `Shorten the title to ${limit - (subject.length - title.length)} chars or fewer.`
+              );
+            }
+            if (errors.length) {
+              core.setFailed(
+                ["The PR title becomes main's commit subject. Edit the title; no push is needed.", ...errors].join("\n")
+              );
+            }
