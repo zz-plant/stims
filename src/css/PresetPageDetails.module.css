@@ -42,7 +42,7 @@
   margin: 0;
   font-family: var(--stims-display);
   font-size: clamp(1.75rem, 3.2vw, 2.5rem);
-  font-weight: 760;
+  font-weight: var(--font-weight-display);
   font-stretch: 86%;
   line-height: 1.05;
   letter-spacing: -0.012em;

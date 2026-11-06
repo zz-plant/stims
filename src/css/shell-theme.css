@@ -102,15 +102,25 @@ html.light .stims-shell .cta-button {
   box-shadow: 0 4px 10px rgba(35, 48, 56, 0.08);
 }
 
+/* The light accent, not the success green it used to borrow: one primary
+   colour per theme. White on #a44723 is 5.99:1. --stims-on-accent stays dark
+   in light mode, so the ink is set here. */
 html.light .stims-shell .cta-button.primary {
-  border-color: #12543b;
-  background: #176b49;
+  border-color: color-mix(in srgb, var(--stims-accent) 82%, #000000);
+  background: var(--stims-accent);
   color: #ffffff;
-  box-shadow: 0 6px 14px rgba(23, 107, 73, 0.22);
+  box-shadow: 0 6px 14px var(--stims-accent-soft);
 }
 
 html.light .stims-shell .cta-button.primary:hover:not(:disabled) {
-  background: #12543b;
+  background: color-mix(in srgb, var(--stims-accent) 84%, #000000);
+}
+
+/* TV: a bigger target for a remote's focus ring, as index.css used to set. */
+body.tv-mode .stims-shell .cta-button {
+  min-height: 56px;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
 }
 
 html.light .stims-shell .cta-button:disabled,

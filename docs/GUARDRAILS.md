@@ -22,7 +22,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:catalog-integrity`](#checkcatalog-integrity) | `check:quick` | Validates the bundled MilkDrop catalog: every entry's required fields, the preset file on disk, and its preview image. |
 | [`check:ci-config`](#checkci-config) | `check:quick` | Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, git hooks blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them. |
 | [`check:commit-msg`](#checkcommit-msg) | on demand | Reject non-descriptive commit messages — the "hopeful commit" pattern that signalled debugging-by-trial without root-cause isolation and clustered before follow-up fix flurries: "certainly this works", "hopefully works", "fixes", "fixed", "stims", "Various fixes". |
-| [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius` and `font-size` values that are not on the scale. |
+| [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius`, `font-size` and `font-weight` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
 | [`check:design`](#checkdesign) | `check:quick` | Fail on UI anti-patterns the token and scale checks don't model. |
@@ -228,7 +228,7 @@ Run it directly: `bun run check:commit-msg`
 
 ## check:css-scale
 
-Fail on `border-radius` and `font-size` values that are not on the scale.
+Fail on `border-radius`, `font-size` and `font-weight` values that are not on the scale.
 
 Both scales existed on paper and neither was followed. The radius block in
 tokens.css described a "sharp and angular" system topping out at 6px while
@@ -240,6 +240,9 @@ Nothing caught either, because a stylesheet with a hand-picked radius is
 still valid CSS that renders fine on its own — it only shows up as
 incoherence across surfaces. No single diff reveals that. Hence this
 check: the scale is only real if something enforces it.
+
+Weights joined later for the same reason: 600 was the most common weight
+in the app and had no token, and 650, 760 and 820 sat beside it unnamed.
 
 A literal is allowed when it lands on a scale step. Preferring the token
 (`var(--radius-md)`) is better still and always passes, since this only

@@ -199,7 +199,7 @@ html.light .stims-editor {
 .stims-editor__legend {
   display: block;
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -222,7 +222,7 @@ html.light .stims-editor {
   align-items: center;
   gap: 7px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.02em;
   color: var(--ed-muted);
 }
@@ -276,7 +276,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--ed-muted);
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
@@ -321,7 +321,7 @@ html.light .stims-editor {
   color: var(--ed-muted);
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -566,7 +566,7 @@ html.light .stims-editor {
   border-bottom: 1px solid var(--stims-line-soft);
   color: var(--stims-cool);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -724,7 +724,7 @@ html.light .stims-editor {
   width: 3.4em;
   font-family: var(--font-family-mono);
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -791,7 +791,7 @@ html.light .stims-editor {
   color: var(--ed-dim);
   font: inherit;
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -915,7 +915,7 @@ html.light .stims-editor {
 
 .stims-editor__slider-label {
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--ed-muted);
   cursor: pointer;
 }
@@ -1191,7 +1191,7 @@ html.light .stims-editor {
   border-color: var(--stims-accent);
   background: var(--stims-accent);
   color: var(--ed-on-accent);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ── Segmented mode pickers ───────────────────────────────────────── */
@@ -1235,7 +1235,7 @@ html.light .stims-editor {
   border-color: var(--stims-accent);
   background: var(--stims-accent);
   color: var(--ed-on-accent);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ── Dual-handle ranges ───────────────────────────────────────────────
@@ -1425,7 +1425,7 @@ html.light .stims-editor {
   border-top: 1px solid var(--stims-line);
   color: var(--ed-muted);
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -1804,7 +1804,7 @@ html.light .stims-editor {
   border-radius: var(--stims-radius-control);
   color: var(--stims-accent);
   font-size: var(--text-2xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
 }
 
@@ -1886,7 +1886,7 @@ html.light .stims-editor {
 
 .stims-editor__compat-headline {
   margin: 0 0 4px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stims-editor__compat {
@@ -1937,7 +1937,7 @@ button.stims-editor__compat-row:focus-visible {
 .stims-editor__compat-section {
   margin: 16px 0 4px;
   font-size: var(--text-2xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -1976,7 +1976,7 @@ button.stims-editor__compat-row:focus-visible {
 
 .stims-editor__texture-headline {
   margin: 0 0 4px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stims-editor__textures {
@@ -2235,7 +2235,7 @@ button.stims-editor__compat-row:focus-visible {
 
 .stims-editor__version-listen strong {
   color: var(--ed-dim);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 /* ── Outline: shader translation ──────────────────────────────────── */

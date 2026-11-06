@@ -123,107 +123,11 @@ header {
   position: relative;
 }
 
-.cta-button {
-  padding: 0.7rem 1.25rem;
-  border-radius: var(--radius-lg);
-  background: var(--interactive-bg);
-  color: var(--text-color);
-  text-decoration: none;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid var(--interactive-border);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 1px 0 var(--stims-white-04) inset;
-  transition:
-    transform var(--motion-enter),
-    box-shadow 0.2s ease,
-    background-color 0.25s ease,
-    color 0.25s ease,
-    border-color 0.25s ease,
-    filter 0.35s ease;
-  background-size: auto;
-  animation: none;
-  touch-action: manipulation;
-  min-height: 44px;
-  min-width: 44px;
-  justify-content: center;
-}
-
-.cta-button:active {
-  transform: scale(0.97);
-  transition-duration: 60ms;
-}
-
-.cta-button.primary {
-  background: linear-gradient(
-    130deg,
-    color-mix(in srgb, var(--accent-color) 74%, #4f86d9),
-    color-mix(in srgb, var(--accent-purple) 58%, #1d4ed8)
-  );
-  color: var(--accent-contrast);
-  border-color: color-mix(in srgb, #1d4ed8 52%, var(--surface-border));
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
-}
-
-.cta-button.ghost {
-  background: color-mix(in srgb, var(--interactive-bg) 92%, transparent);
-  border-color: var(--interactive-border);
-  color: var(--text-color);
-}
-
-.cta-button:hover {
-  filter: none;
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 0 var(--stims-white-04) inset,
-    var(--interactive-shadow);
-  color: var(--text-color);
-}
-
-.cta-button.primary:hover {
-  color: var(--accent-contrast);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.34);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cta-button {
-    backdrop-filter: none;
-    transition: none;
-    transform: none;
-  }
-
-  .cta-button:hover {
-    transform: none;
-  }
-}
-
-.cta-button:focus-visible {
-  outline: var(--tv-focus-outline-width) solid var(--accent-color);
-  outline-offset: var(--tv-focus-outline-offset);
-}
-
-.cta-button::after {
-  content: none;
-}
-
 h1 {
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   margin-bottom: 1rem;
   color: var(--text-color);
-}
-
-html.light .cta-button.ghost {
-  border-color: rgba(43, 56, 77, 0.2);
-  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
-}
-
-html.light .cta-button.primary {
-  background: linear-gradient(130deg, #3f6ea8, #315f97);
-  border-color: rgba(29, 78, 216, 0.54);
 }
 
 footer {
@@ -268,53 +172,9 @@ footer {
   #site-footer {
     padding-inline: 0.95rem;
   }
-
-  .cta-button {
-    width: 100%;
-    justify-content: center;
-    padding: 0.75rem 0.95rem;
-    font-size: 0.9375rem;
-  }
-}
-
-body.tv-mode .cta-button {
-  min-height: 56px;
-  padding-block: 0.8rem;
-  padding-inline: 1rem;
-  font-size: 1rem;
 }
 
 /* UI polish v2: stronger hierarchy, better readability, and less cramped cards */
-
-.cta-button {
-  border-radius: var(--radius-lg);
-  padding: 0.78rem 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  box-shadow: 0 1px 0 var(--stims-white-04) inset;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
-.cta-button.primary {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent-color) 78%, #4f86d9),
-    color-mix(in srgb, var(--accent-magenta) 42%, #315f97)
-  );
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
-}
-
-.cta-button:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 1px 0 var(--stims-white-05) inset,
-    0 14px 24px rgba(0, 0, 0, 0.18);
-}
-
-.cta-button.primary:hover {
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.26);
-}
 
 footer {
   margin-top: calc(var(--section-gap) * 1.05);
@@ -364,94 +224,13 @@ html {
   backdrop-filter: none;
 }
 
-.cta-button,
 .control-panel__label {
   font-family: var(--font-family-mono);
-}
-
-.cta-button {
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-stretch: var(--font-stretch-legend);
-}
-
-.cta-button {
-  min-height: 46px;
-  border-radius: var(--radius-md);
-  padding: 0.82rem 1.05rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: color-mix(in srgb, var(--panel-solid) 92%, transparent);
-  border-color: color-mix(
-    in srgb,
-    var(--accent-color) 26%,
-    var(--surface-border)
-  );
-  box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 var(--stims-white-05);
-}
-
-.cta-button.primary {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent-color) 92%, #d6fbe8),
-    color-mix(in srgb, var(--accent-magenta) 74%, #ffd19f)
-  );
-  border-color: color-mix(in srgb, var(--accent-magenta) 42%, #ffffff);
-  color: #071315;
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.24),
-    0 0 0 1px var(--stims-white-12) inset;
-}
-
-.cta-button.ghost {
-  background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
-}
-
-.cta-button:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 16px 28px rgba(0, 0, 0, 0.26),
-    inset 0 1px 0 var(--stims-white-06);
-}
-
-.cta-button.primary:hover {
-  box-shadow:
-    0 18px 32px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.16) inset;
 }
 
 .control-panel,
 .active-toy-status__content {
   border-radius: var(--radius-xl);
-}
-
-@media (hover: none), (pointer: coarse) {
-  .cta-button:hover {
-    transform: none;
-    color: inherit;
-    box-shadow: 0 1px 0 var(--stims-white-04) inset;
-  }
-
-  .cta-button.primary:hover {
-    box-shadow:
-      0 12px 28px rgba(0, 0, 0, 0.24),
-      0 0 0 1px var(--stims-white-12) inset;
-  }
-}
-
-@media (max-width: 760px) {
-  .cta-button {
-    letter-spacing: 0.05em;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cta-button {
-    animation: none;
-    transition: none;
-  }
 }
 
 .control-panel,
@@ -480,39 +259,6 @@ html {
   pointer-events: none;
 }
 
-.cta-button {
-  border-radius: var(--radius-sm);
-}
-
-.cta-button {
-  background: #273654;
-  border-color: rgba(208, 220, 255, 0.34);
-  color: var(--text-color);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.18) inset,
-    0 -1px 0 rgba(2, 5, 12, 0.45) inset,
-    0 12px 24px rgba(4, 9, 18, 0.22);
-}
-
-.cta-button.primary {
-  background: #7dd83f;
-  border-color: rgba(228, 255, 208, 0.62);
-  color: #081108;
-  text-shadow: none;
-}
-
-.cta-button.ghost {
-  background: #2e3a5d;
-}
-
-.cta-button:hover {
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.2) inset,
-    0 -1px 0 rgba(2, 5, 12, 0.45) inset,
-    0 16px 28px rgba(4, 9, 18, 0.26);
-}
-
 .control-panel,
 .active-toy-status__content {
   border-radius: var(--radius-sm);
@@ -529,17 +275,4 @@ html {
   right: 8px;
   top: 8px;
   height: 2px;
-}
-
-.cta-button {
-  font-size: 0.75rem;
-}
-
-.cta-button {
-  border-radius: var(--radius-xs);
-}
-
-.cta-button {
-  padding: 0.72rem 0.95rem;
-  letter-spacing: 0.11em;
 }

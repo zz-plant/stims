@@ -24,7 +24,10 @@ import {
 } from './file-audio.ts';
 import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import { UiIcon } from './UiIcon.tsx';
-import { useWorkspace } from './workspace-context.tsx';
+import {
+  useWorkspace,
+  type WorkspaceContextValue,
+} from './workspace-context.tsx';
 
 /** Every source the panel can offer, by the id its button starts. */
 export type AudioSourceId = 'demo' | 'microphone' | 'file' | 'tab' | 'youtube';
@@ -123,6 +126,26 @@ function describeSourceNote(
   return sentences.join(' ');
 }
 
+/**
+ * The element the YouTube player mounts into. Its own component so the
+ * workspace's ref is attached here rather than in AudioSourcePanel: a ref
+ * read off the `ui` object as a JSX `ref` made React Compiler treat every
+ * other `ui` field as a ref too, and skip the panel (#1540).
+ */
+function YouTubePreviewHost({
+  id,
+  host,
+}: {
+  id: string;
+  host: WorkspaceContextValue['youtubePreviewRef'];
+}) {
+  return (
+    <div id={id} ref={host} className="stims-shell__youtube-preview" hidden>
+      <div data-youtube-player></div>
+    </div>
+  );
+}
+
 export function AudioSourcePanel({
   showHelp = true,
   layout = 'cards',
@@ -154,7 +177,6 @@ export function AudioSourcePanel({
   const youtubeFeedback = ui.youtubeFeedback;
   const youtubeInputInvalid = ui.youtubeInputInvalid;
   const youtubeLoading = ui.youtubeLoading;
-  const youtubePreviewRef = ui.youtubePreviewRef;
   const youtubeReady = ui.youtubeReady;
   const youtubeTransport = ui.youtubeTransport;
   const youtubeTransportControls = ui.youtubeTransportControls;
@@ -459,14 +481,7 @@ export function AudioSourcePanel({
           </div>
         </div>
       ) : null}
-      <div
-        id={youtubeContainerId}
-        ref={youtubePreviewRef}
-        className="stims-shell__youtube-preview"
-        hidden
-      >
-        <div data-youtube-player></div>
-      </div>
+      <YouTubePreviewHost id={youtubeContainerId} host={ui.youtubePreviewRef} />
     </div>
   );
 

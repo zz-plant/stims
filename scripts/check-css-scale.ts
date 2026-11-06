@@ -1,5 +1,5 @@
 /**
- * Fail on `border-radius` and `font-size` values that are not on the scale.
+ * Fail on `border-radius`, `font-size` and `font-weight` values that are not on the scale.
  *
  * Both scales existed on paper and neither was followed. The radius block in
  * tokens.css described a "sharp and angular" system topping out at 6px while
@@ -11,6 +11,9 @@
  * still valid CSS that renders fine on its own — it only shows up as
  * incoherence across surfaces. No single diff reveals that. Hence this
  * check: the scale is only real if something enforces it.
+ *
+ * Weights joined later for the same reason: 600 was the most common weight
+ * in the app and had no token, and 650, 760 and 820 sat beside it unnamed.
  *
  * A literal is allowed when it lands on a scale step. Preferring the token
  * (`var(--radius-md)`) is better still and always passes, since this only
@@ -34,6 +37,9 @@ const RADIUS_STEPS = new Set([0, 2, 4, 6, 10, 14, 20, 28, 999]);
 const TEXT_STEPS = new Set([
   0.6875, 0.75, 0.8125, 0.875, 0.9375, 1, 1.125, 1.25, 1.5, 1.875, 2.5,
 ]);
+
+/** Steps from the --font-weight-* ladder in tokens.css. */
+const WEIGHT_STEPS = new Set([400, 500, 600, 700, 760, 820]);
 
 /**
  * Values that are deliberately off-scale, with the reason.
@@ -137,6 +143,20 @@ for (const file of CSS_ROOTS.flatMap((r) => walk(r))) {
         nearest: nearestOf(Number(m[1]), TEXT_STEPS, 'rem'),
       });
     }
+    // A single numeric weight. An @font-face range (`100 900`) has two
+    // numbers and is a capability of the font file, not a choice of weight.
+    for (const m of line.matchAll(
+      /font-weight:\s*([0-9]+)\s*(?:!important\s*)?;/g,
+    )) {
+      if (WEIGHT_STEPS.has(Number(m[1])) || isAllowed(file, m[1])) continue;
+      offences.push({
+        file,
+        line: i + 1,
+        property: 'font-weight',
+        value: m[1],
+        nearest: nearestOf(Number(m[1]), WEIGHT_STEPS, ''),
+      });
+    }
   });
 }
 
@@ -150,7 +170,7 @@ if (offences.length > 0) {
     );
   }
   console.error(
-    '\nUse a scale token (--radius-* / --text-*) from src/css/tokens.css, or',
+    '\nUse a scale token (--radius-* / --text-* / --font-weight-*) from src/css/tokens.css, or',
   );
   console.error(
     'the nearest step above. If the value genuinely is not a control corner',
@@ -162,5 +182,5 @@ if (offences.length > 0) {
 }
 
 console.log(
-  '✔ every border-radius and font-size sits on the scale (src/css/tokens.css)',
+  '✔ every border-radius, font-size and font-weight sits on the scale (src/css/tokens.css)',
 );

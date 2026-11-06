@@ -307,7 +307,7 @@
 .stims-preset-signals__chip--flash {
   border-color: var(--stims-accent);
   color: var(--stims-accent);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* The hero recedes while a panel is open. It is still the page's backdrop —

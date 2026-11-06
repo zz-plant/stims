@@ -39,6 +39,20 @@
   /* The shared hover/feedback timing from tokens.css, not a private 150ms
      curve: panel controls and the rest of the shell now move alike. */
   --ctl-ease: var(--transition-base);
+
+  /* Control sizes. Two steps: chips and toggles are compact, buttons and
+     selects are standard. With a mouse they stay dense; on a touch screen
+     both rise to the 44px target in tokens.css, which these controls used
+     to miss (chips measured 34px, selects 38px on a phone). */
+  --ctl-size-sm: 32px;
+  --ctl-size-md: 38px;
+}
+
+@media (pointer: coarse) {
+  .stims-shell {
+    --ctl-size-sm: var(--touch-target-min);
+    --ctl-size-md: var(--touch-target-min);
+  }
 }
 
 html.light .stims-shell {
@@ -94,7 +108,7 @@ html.light .stims-shell {
     background: transparent;
     color: var(--ctl-ink-2);
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     white-space: nowrap;
     cursor: pointer;
     transition:
@@ -110,7 +124,7 @@ html.light .stims-shell {
   .ctl-tab--active {
     background: var(--ctl-fill-hover);
     color: var(--ctl-ink);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
@@ -145,7 +159,7 @@ html.light .stims-shell {
     margin: 0;
     color: var(--ctl-ink-2);
     font-size: 0.6875rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.09em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -182,7 +196,7 @@ html.light .stims-shell {
   .ctl-row__label {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.3;
   }
 
@@ -333,7 +347,7 @@ html.light .stims-shell {
   .ctl-midi-learn-input {
     flex: 1;
     min-width: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -386,7 +400,7 @@ html.light .stims-shell {
   .ctl-option__label {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.3;
   }
 
@@ -415,7 +429,7 @@ html.light .stims-shell {
   .ctl-select {
     appearance: none;
     width: 100%;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 32px 8px 11px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -456,7 +470,7 @@ html.light .stims-shell {
   .ctl-field {
     width: 100%;
     min-width: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -505,7 +519,7 @@ html.light .stims-shell {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 13px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -513,7 +527,7 @@ html.light .stims-shell {
     color: var(--ctl-ink);
     font: inherit;
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     white-space: nowrap;
     cursor: pointer;
     transition:
@@ -545,8 +559,8 @@ html.light .stims-shell {
 
   .ctl-btn--icon {
     flex-shrink: 0;
-    width: 38px;
-    min-width: 38px;
+    width: var(--ctl-size-md);
+    min-width: var(--ctl-size-md);
     padding: 0;
   }
 
@@ -648,7 +662,7 @@ html.light .stims-shell {
 
   .ctl-chip {
     flex-shrink: 0;
-    min-height: 32px;
+    min-height: var(--ctl-size-sm);
     padding: 6px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--radius-round);
@@ -677,7 +691,7 @@ html.light .stims-shell {
     border-color: var(--ctl-accent);
     background: var(--ctl-accent);
     color: var(--ctl-on-accent);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-chip:disabled {
@@ -836,7 +850,7 @@ html.light .stims-shell {
     overflow: hidden;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.35;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1054,7 +1068,7 @@ html.light .stims-shell {
     margin: 0 0 5px;
     color: var(--ctl-ink-3);
     font-size: 0.6875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     letter-spacing: 0.02em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1132,7 +1146,7 @@ html.light .stims-shell {
     margin: 0;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-lineage__list {
@@ -1246,7 +1260,7 @@ html.light .stims-shell {
   .ctl-empty__title {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-empty__body {
@@ -1449,6 +1463,26 @@ html.light .stims-shell {
     outline-offset: 1px;
   }
 
+  @media (pointer: coarse) {
+    /* The clear button stays a 26px mark inside the field; on touch its hit
+       area grows to the 44px target, the way the grid's star does
+       (shell/preset-grid.css). The field's right padding already keeps
+       text out from under it. */
+    .ctl-browse-searchclear::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: var(--touch-target-min);
+      height: var(--touch-target-min);
+      transform: translate(-50%, -50%);
+    }
+
+    .ctl-viewtoggle__btn {
+      width: var(--touch-target-min);
+    }
+  }
+
   /* Pushed to the row's end so that when the buttons do wrap they sit under
      the field's right edge instead of drifting to the left margin. */
   .ctl-browse-searchrow .ctl-viewtoggle {
@@ -1505,7 +1539,7 @@ html.light .stims-shell {
   }
 
   .ctl-browse-applied .ctl-btn {
-    min-height: 30px;
+    min-height: var(--ctl-size-sm);
     padding: 4px 9px;
   }
 
@@ -1529,7 +1563,7 @@ html.light .stims-shell {
     margin: 0;
     color: var(--ctl-ink-2);
     font-size: 0.6875rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.09em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
@@ -1540,13 +1574,13 @@ html.light .stims-shell {
     margin-bottom: 6px;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__input {
     width: 100%;
     min-width: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -1575,7 +1609,7 @@ html.light .stims-shell {
 
   .ctl-section .cta-button {
     flex-shrink: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 14px;
     border: 1px solid transparent;
     border-radius: var(--ctl-radius);
@@ -1605,7 +1639,7 @@ html.light .stims-shell {
      the token flips correctly in light theme. */
   .ctl-section .stims-shell__youtube-feedback[data-state="invalid"] {
     color: var(--stims-bad, #ff9d8a);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__meta-copy {
@@ -1668,7 +1702,7 @@ html.light .stims-shell {
   .ctl-section .stims-shell__source-card strong {
     color: var(--ctl-ink);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__source-card > span:last-child {
@@ -1691,7 +1725,7 @@ html.light .stims-shell {
     padding: 10px 12px;
     color: var(--ctl-ink);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   .ctl-section .stims-shell__settings-summary .stims-shell__meta-copy {
@@ -1713,7 +1747,7 @@ html.light .stims-shell {
   }
 
   .ctl-section .stims-shell__chip {
-    min-height: 30px;
+    min-height: var(--ctl-size-sm);
     padding: 5px 10px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--radius-round);
@@ -1731,7 +1765,7 @@ html.light .stims-shell {
   }
 
   .ctl-section .stims-shell__chip strong {
-    font-weight: 400;
+    font-weight: var(--font-weight-normal);
   }
 
   .ctl-section .stims-shell__youtube-recent-header {
