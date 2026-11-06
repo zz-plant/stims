@@ -554,6 +554,60 @@ chromeTest(
 );
 
 chromeTest(
+  'browse controls reach the 44px touch target on a phone, and stay compact with a mouse',
+  async () => {
+    // tokens.css sets --touch-target-min: 44px, but chips (34px), selects
+    // (38px) and the applied-filter button (30px) never used it, so on a
+    // phone a near-miss on a chip landed on its neighbour.
+    const measure = async (touch: boolean) => {
+      const page = await (browser as Browser).newPage(
+        touch
+          ? {
+              viewport: { width: 390, height: 844 },
+              isMobile: true,
+              hasTouch: true,
+            }
+          : { viewport: { width: 1280, height: 900 } },
+      );
+      try {
+        await page.goto(`${server?.url}/?agent=true&panel=browse`, {
+          waitUntil: 'domcontentloaded',
+        });
+        await page.waitForSelector('.ctl-browse-filters .ctl-chip', {
+          timeout: 30000,
+        });
+        await settle(page, '[class*="_panel_"]');
+        return await page.evaluate(() => {
+          const size = (selector: string) => {
+            const el = document.querySelector(selector);
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { h: Math.round(r.height), w: Math.round(r.width) };
+          };
+          return {
+            chip: size('.ctl-browse-filters .ctl-chip'),
+            select: size('.ctl-browse-filters .ctl-select'),
+            toggle: size('.ctl-viewtoggle__btn'),
+          };
+        });
+      } finally {
+        await page.close();
+      }
+    };
+
+    const phone = await measure(true);
+    expect(phone.chip?.h ?? 0).toBeGreaterThanOrEqual(44);
+    expect(phone.select?.h ?? 0).toBeGreaterThanOrEqual(44);
+    expect(phone.toggle?.w ?? 0).toBeGreaterThanOrEqual(44);
+
+    const desktop = await measure(false);
+    expect(desktop.chip?.h ?? 99).toBeLessThan(44);
+    expect(desktop.select?.h ?? 99).toBeLessThan(44);
+  },
+  90000,
+);
+
+chromeTest(
   'performance table fits a phone without clipping',
   async () => {
     // At 640px and below the table stacks. Its cells default to content-box,
