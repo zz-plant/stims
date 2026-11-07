@@ -329,12 +329,17 @@ export function noteShaderExecution(
 /**
  * Records that the app substituted something for what the visitor asked for:
  * the fallback preset replaced a deep link, the renderer fell back to WebGL,
- * or a requested preset failed to load outright. Substitutions are the
+ * a requested preset failed to load outright, or the flash sampler gave up on
+ * its worker and now reads on the main thread. Substitutions are the
  * failures users never report — they don't know anything went wrong — so
  * without this signal their frequency in production is unknowable.
  */
 export function noteSubstitution(
-  kind: 'fallback-preset' | 'backend-fallback' | 'preset-load-failed',
+  kind:
+    | 'fallback-preset'
+    | 'backend-fallback'
+    | 'preset-load-failed'
+    | 'flash-sampler-main-thread',
   detail: string,
 ) {
   if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;

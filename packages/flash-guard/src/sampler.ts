@@ -68,21 +68,28 @@
  * Max, 2026-10-13), converting a field went from 0.055ms to 0.060ms, and
  * `governor.sample` added 0.06ms on a still frame and on random noise alike.
  *
+ * Those figures understated the arrival cost for what mattered. Measured as
+ * delivered frames at 6x CPU throttle on a production build (2026-11-04,
+ * `lab:flash-sampler-bench -- --delivered`), capture and readback lost none,
+ * while conversion and judging took about 9ms per capture on the main thread
+ * and held presets with 8ms of frame work to 40-50fps instead of 60. So
+ * `judging` does both in the worker, which leaves about 0.03ms per reply on
+ * the main thread. `createFlashController` uses it when it can.
+ *
  * The worker is `readback.worker.ts`, published as `flash-guard/worker`. The
  * default loads it with `new URL('./readback.worker.js', import.meta.url)`,
  * which every modern bundler understands; pass `createWorker` to load it
  * some other way.
  */
+import { createFields, fillFields } from './fields.ts';
 import {
+  type FlashGovernorDecision,
+  type FlashGovernorOptions,
   type FlashRedField,
   RECOMMENDED_GRID,
   RECOMMENDED_SAMPLE_DENSITY,
 } from './governor.ts';
-import {
-  isSaturatedRed,
-  LINEAR_CHANNEL_LUT,
-  redFlashValue,
-} from './thresholds.ts';
+import type { FlashWorkerReply } from './worker-core.ts';
 
 /**
  * Receives a captured frame's luminance field, or null if it could not be
@@ -114,7 +121,36 @@ export type FlashSampler = {
   readonly density: number;
   /** Whether captures are read off the main thread right now. */
   readonly offThread: boolean;
+  /**
+   * Judges captures off the main thread as well. Absent on a sampler that
+   * only reads, which leaves judging to the caller.
+   */
+  judging?: FlashOffThreadJudge;
   dispose: () => void;
+};
+
+/**
+ * A governor living in the sampler's worker. `createFlashController` uses it
+ * while `active`, and keeps its own governor for the time it is not.
+ */
+export type FlashOffThreadJudge = {
+  /** Whether a capture now would be judged in the worker. */
+  readonly active: boolean;
+  /** The governor options, resent to each worker the sampler starts. */
+  configure: (governor?: FlashGovernorOptions) => void;
+  /**
+   * Snapshots the canvas now, so call it inside the draw, and hands the
+   * worker's decision to `onDecision`, or null if the frame could not be
+   * judged. Decisions arrive in capture order. Returns false, capturing
+   * nothing, while MAX_CAPTURES_IN_FLIGHT captures are outstanding.
+   */
+  capture: (
+    canvas: HTMLCanvasElement,
+    frame: { nowMs: number; viewScale: number },
+    onDecision: (decision: FlashGovernorDecision | null) => void,
+  ) => boolean;
+  prime: (hold: number) => void;
+  reset: () => void;
 };
 
 /**
@@ -124,39 +160,23 @@ export type FlashSampler = {
  */
 const READBACK_TIMEOUT_MS = 1000;
 
-/** A luminance field and the red-flash field read from the same pixels. */
-type SampledFields = {
-  luminance: Float32Array;
-  red: { values: Float32Array; saturated: Uint8Array };
-};
+/**
+ * How long an overdue capture must stay unanswered once seen. A main thread
+ * blocked for a second (a preset compile, say) finds the worker's reply still
+ * queued behind the frame that notices the timeout, so the first sighting
+ * alone cannot tell a lost worker from a busy page.
+ */
+const STALL_GRACE_MS = 100;
 
-function createFields(count: number): SampledFields {
-  return {
-    luminance: new Float32Array(count),
-    red: { values: new Float32Array(count), saturated: new Uint8Array(count) },
-  };
-}
-
-function fillFields(target: SampledFields, pixels: Uint8ClampedArray) {
-  const { luminance, red } = target;
-  const redValues = red.values;
-  const redSaturated = red.saturated;
-  const len = luminance.length;
-  let idx = 0;
-  for (let i = 0; i < len; i += 1) {
-    const r = pixels[idx] as number;
-    const g = pixels[idx + 1] as number;
-    const b = pixels[idx + 2] as number;
-    idx += 4;
-    luminance[i] =
-      0.2126 * (LINEAR_CHANNEL_LUT[r] as number) +
-      0.7152 * (LINEAR_CHANNEL_LUT[g] as number) +
-      0.0722 * (LINEAR_CHANNEL_LUT[b] as number);
-    redValues[i] = redFlashValue(r, g, b);
-    redSaturated[i] = isSaturatedRed(r, g, b) ? 1 : 0;
-  }
-  return target;
-}
+/**
+ * Backoff before trying the worker again after giving up on it. The fallback
+ * is the most expensive path on the devices most likely to reach it, so it
+ * should not last the whole session. A worker that served this long before
+ * failing starts the backoff over.
+ */
+const RETRY_INITIAL_MS = 30_000;
+const RETRY_MAX_MS = 300_000;
+const RETRY_RESET_AFTER_MS = 60_000;
 
 /**
  * Reads the canvas on the calling thread and waits for the GPU to finish
@@ -268,6 +288,12 @@ export type FlashSamplerOptions = {
    * pattern. Return null to force the main-thread read.
    */
   createWorker?: () => Worker | null;
+  /**
+   * Called when reads move off the main thread or back, not for the initial
+   * state. Worth reporting: `false` means a device is paying for the
+   * synchronous read.
+   */
+  onOffThreadChange?: (offThread: boolean) => void;
 };
 
 function defaultWorker(): Worker {
@@ -295,10 +321,11 @@ export const MAX_CAPTURES_IN_FLIGHT = 3;
 
 type InFlightCapture = {
   id: number;
-  onGrid: FlashGridCallback;
   since: number;
-  /** Undefined until the worker answers; null if it could not read it. */
-  pixels?: Uint8ClampedArray | null;
+  /** Takes the worker's reply, or null if there is none to take. */
+  finish: (reply: FlashWorkerReply | null) => void;
+  /** Undefined until settled; null if the frame could not be read. */
+  reply?: FlashWorkerReply | null;
 };
 
 export function createFlashSampler(
@@ -319,35 +346,75 @@ export function createFlashSampler(
   const inFlight: InFlightCapture[] = [];
   let nextId = 0;
   let disposed = false;
+  let suspect: { id: number; at: number } | null = null;
+  let retryAt: number | null = null;
+  let retryDelayMs = RETRY_INITIAL_MS;
+  let offThreadSince = 0;
+  let governorOptions: FlashGovernorOptions | undefined;
+  let configuredWorker: Worker | null = null;
+  let judgeGeneration = 0;
+  /** Whether the worker's governor holds anything a reset would clear. */
+  let judgeDirty = false;
+  /** Judged snapshots post in capture order, whatever order they resolve in. */
+  let judgePosting: Promise<void> = Promise.resolve();
 
   function deliver() {
-    while (inFlight.length > 0 && inFlight[0]?.pixels !== undefined) {
-      const { onGrid, pixels } = inFlight.shift() as InFlightCapture;
+    while (inFlight.length > 0 && inFlight[0]?.reply !== undefined) {
+      const { finish, reply } = inFlight.shift() as InFlightCapture;
       if (disposed) return;
-      if (pixels) {
-        fillFields(fields, pixels);
-        onGrid(fields.luminance, fields.red);
-      } else {
-        onGrid(null);
-      }
+      finish(reply as FlashWorkerReply | null);
     }
   }
 
-  function settle(id: number, pixels: Uint8ClampedArray | null) {
+  function settle(id: number, reply: FlashWorkerReply | null) {
     const capture = inFlight.find((entry) => entry.id === id);
     if (!capture) return;
-    capture.pixels = pixels;
+    capture.reply = reply;
     deliver();
   }
 
   function abandonOffThread() {
+    const wasOffThread = offThread;
+    if (wasOffThread) {
+      const now = performance.now();
+      if (now - offThreadSince >= RETRY_RESET_AFTER_MS) {
+        retryDelayMs = RETRY_INITIAL_MS;
+      }
+      retryAt = now + retryDelayMs;
+      retryDelayMs = Math.min(RETRY_MAX_MS, retryDelayMs * 2);
+    }
     offThread = false;
+    suspect = null;
     worker?.terminate();
     worker = null;
     for (const capture of inFlight) {
-      if (capture.pixels === undefined) capture.pixels = null;
+      if (capture.reply === undefined) capture.reply = null;
     }
     deliver();
+    if (wasOffThread) resolved.onOffThreadChange?.(false);
+  }
+
+  function retryOffThreadIfDue() {
+    if (retryAt === null || performance.now() < retryAt) return;
+    retryAt = null;
+    offThread = true;
+    offThreadSince = performance.now();
+    if (ensureWorker()) resolved.onOffThreadChange?.(true);
+    else offThread = false;
+  }
+
+  function abandonIfStalled() {
+    const oldest = inFlight[0];
+    const now = performance.now();
+    if (!oldest || now - oldest.since <= READBACK_TIMEOUT_MS) {
+      suspect = null;
+      return;
+    }
+    if (suspect?.id !== oldest.id) {
+      suspect = { id: oldest.id, at: now };
+    } else if (now - suspect.at >= STALL_GRACE_MS) {
+      abandonOffThread();
+    }
   }
 
   function ensureWorker(): Worker | null {
@@ -358,23 +425,34 @@ export function createFlashSampler(
       return null;
     }
     if (!worker) return null;
-    worker.onmessage = (
-      event: MessageEvent<{ id: number; pixels: Uint8ClampedArray | null }>,
-    ) => {
-      settle(event.data.id, event.data.pixels);
+    worker.onmessage = (event: MessageEvent<FlashWorkerReply>) => {
+      settle(event.data.id, event.data);
     };
     worker.onerror = () => abandonOffThread();
     return worker;
+  }
+
+  /** Each worker gets its governor before the first frame it is to judge. */
+  function configureJudge(target: Worker) {
+    if (configuredWorker === target) return;
+    configuredWorker = target;
+    judgeDirty = false;
+    target.postMessage({
+      type: 'configure',
+      cols,
+      rows,
+      density: mainThread.density,
+      generation: judgeGeneration,
+      governor: governorOptions,
+    });
   }
 
   function capture(
     canvas: HTMLCanvasElement,
     onGrid: FlashGridCallback,
   ): boolean {
-    const oldest = inFlight[0];
-    if (oldest && performance.now() - oldest.since > READBACK_TIMEOUT_MS) {
-      abandonOffThread();
-    }
+    retryOffThreadIfDue();
+    abandonIfStalled();
     if (inFlight.length >= MAX_CAPTURES_IN_FLIGHT) return false;
     if (canvas.width <= 0 || canvas.height <= 0) {
       onGrid(null);
@@ -390,23 +468,26 @@ export function createFlashSampler(
       return true;
     }
 
-    let snapshot: Promise<ImageBitmap>;
-    try {
-      // The snapshot is taken now, in the draw; only the bitmap resolves
-      // later. 'pixelated' is nearest neighbour, matching the main-thread
-      // read with smoothing off.
-      snapshot = createImageBitmap(canvas, {
-        resizeWidth: width,
-        resizeHeight: height,
-        resizeQuality: 'pixelated',
-      });
-    } catch {
+    const snapshot = takeSnapshot(canvas);
+    if (!snapshot) {
       onGrid(null);
       return true;
     }
     const id = nextId;
     nextId += 1;
-    inFlight.push({ id, onGrid, since: performance.now() });
+    inFlight.push({
+      id,
+      since: performance.now(),
+      finish: (reply) => {
+        const pixels = reply && 'pixels' in reply ? reply.pixels : null;
+        if (pixels) {
+          fillFields(fields, pixels);
+          onGrid(fields.luminance, fields.red);
+        } else {
+          onGrid(null);
+        }
+      },
+    });
     snapshot.then(
       (bitmap) => {
         if (disposed || worker !== target) {
@@ -419,6 +500,93 @@ export function createFlashSampler(
     );
     return true;
   }
+
+  /**
+   * The snapshot is taken now, in the draw; only the bitmap resolves later.
+   * 'pixelated' is nearest neighbour, matching the main-thread read with
+   * smoothing off.
+   */
+  function takeSnapshot(canvas: HTMLCanvasElement) {
+    try {
+      return createImageBitmap(canvas, {
+        resizeWidth: width,
+        resizeHeight: height,
+        resizeQuality: 'pixelated',
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  const judging: FlashOffThreadJudge = {
+    get active() {
+      retryOffThreadIfDue();
+      abandonIfStalled();
+      if (!offThread) return false;
+      const target = ensureWorker();
+      if (target) {
+        configureJudge(target);
+        return true;
+      }
+      offThread = false;
+      return false;
+    },
+    configure(governor) {
+      governorOptions = governor;
+      configuredWorker = null;
+    },
+    capture(canvas, { nowMs, viewScale }, onDecision) {
+      if (inFlight.length >= MAX_CAPTURES_IN_FLIGHT) return false;
+      if (canvas.width <= 0 || canvas.height <= 0 || !worker) {
+        onDecision(null);
+        return true;
+      }
+      const target = worker;
+      const snapshot = takeSnapshot(canvas);
+      if (!snapshot) {
+        onDecision(null);
+        return true;
+      }
+      const id = nextId;
+      nextId += 1;
+      const generation = judgeGeneration;
+      judgeDirty = true;
+      inFlight.push({
+        id,
+        since: performance.now(),
+        finish: (reply) => {
+          onDecision(reply && 'decision' in reply ? reply.decision : null);
+        },
+      });
+      judgePosting = judgePosting
+        .then(() => snapshot)
+        .then(
+          (bitmap) => {
+            if (disposed || worker !== target) {
+              bitmap.close();
+              return;
+            }
+            target.postMessage(
+              { type: 'judge', id, bitmap, nowMs, viewScale, generation },
+              [bitmap],
+            );
+          },
+          () => settle(id, null),
+        );
+      return true;
+    },
+    prime(hold) {
+      judgeDirty = true;
+      worker?.postMessage({ type: 'prime', hold });
+    },
+    reset() {
+      // A closed gate resets every frame; only a change needs the message.
+      if (!judgeDirty) return;
+      judgeDirty = false;
+      judgeGeneration += 1;
+      worker?.postMessage({ type: 'reset', generation: judgeGeneration });
+    },
+  };
 
   function dispose() {
     disposed = true;
@@ -433,6 +601,7 @@ export function createFlashSampler(
     cols,
     rows,
     density: mainThread.density,
+    judging,
     get offThread() {
       return offThread;
     },

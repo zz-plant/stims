@@ -138,7 +138,13 @@ export function createFlashController(
     minSampleIntervalMs = MIN_SAMPLE_INTERVAL_MS,
   } = options;
 
+  // The governor used while the sampler cannot judge off the main thread.
   const governor = createFlashGovernor(options.governor);
+  const judging = sampler.judging ?? null;
+  judging?.configure(options.governor);
+  let judgedOffThread = false;
+  /** The worker's latest answer; the local governor has not seen these frames. */
+  let lastJudged: FlashGovernorDecision | null = null;
   let unsubscribeFrames: (() => void) | null = null;
   let lastApplied = 1;
   let lastSampleMs = Number.NEGATIVE_INFINITY;
@@ -157,7 +163,28 @@ export function createFlashController(
   function release() {
     generation += 1;
     governor.reset();
+    judging?.reset();
+    lastJudged = null;
     apply(1);
+  }
+
+  /**
+   * Which governor judges this frame. Moving between them carries the hold
+   * across: the new one has no history, and starting it undimmed would let a
+   * strobe through at full strength until it had counted enough flashes.
+   */
+  function judgesOffThread(): boolean {
+    const offThread = judging?.active ?? false;
+    if (offThread === judgedOffThread) return offThread;
+    judgedOffThread = offThread;
+    if (offThread) {
+      judging?.prime(governor.getState().hold);
+    } else if (lastJudged) {
+      governor.reset();
+      governor.prime(lastJudged.hold);
+      lastJudged = null;
+    }
+    return offThread;
   }
 
   function tick(nowMs: number): FlashGovernorDecision | null {
@@ -180,6 +207,19 @@ export function createFlashController(
     // the mitigation may have moved, and this frame was seen through this one.
     const applied = compositedScale ? compositedScale() : lastApplied;
     const capturedIn = generation;
+    if (judgesOffThread() && judging) {
+      const captured = judging.capture(
+        canvas,
+        { nowMs, viewScale: applied },
+        (judged) => {
+          if (!judged || capturedIn !== generation) return;
+          lastJudged = judged;
+          apply(judged.luminanceScale);
+        },
+      );
+      if (captured) lastSampleMs = nowMs;
+      return null;
+    }
     let decision: FlashGovernorDecision | null = null;
     const captured = sampler.capture(canvas, (samples, red) => {
       if (!samples || capturedIn !== generation) return;
@@ -221,10 +261,12 @@ export function createFlashController(
       // clamp within about a second of the first flash either way.
       if (!isEnabled()) return;
       governor.prime(initialHold);
+      lastJudged = null;
+      if (judgedOffThread) judging?.prime(initialHold);
     },
     release,
     tick,
-    getState: () => governor.getState(),
+    getState: () => lastJudged ?? governor.getState(),
     isRunning: () => unsubscribeFrames !== null,
   };
 }

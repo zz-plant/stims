@@ -191,6 +191,114 @@ function expectSameFrame(result: Comparison) {
   expect(result.maxDifference).toBeLessThan(0.002);
 }
 
+/** Judges live frames in the real worker, as the running guard does. */
+async function judgeInWorker(renderer: 'webgl' | 'webgpu') {
+  const browser = await chromium.launch({
+    headless: HEADLESS,
+    args:
+      renderer === 'webgpu'
+        ? [...WEBGL_RENDERER_ARGS, '--enable-unsafe-webgpu']
+        : WEBGL_RENDERER_ARGS,
+  });
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 1,
+    });
+    await page.goto(`${SERVER_URL}/?mockAudio=1&renderer=${renderer}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.waitForFunction(
+      () => {
+        const canvas = document.querySelector('canvas');
+        return Boolean(canvas && canvas.width >= 640 && canvas.height >= 360);
+      },
+      { timeout: 60000 },
+    );
+    return await page.evaluate(async (frames) => {
+      const load = <T>(path: string) =>
+        import(/* @vite-ignore */ path) as Promise<T>;
+      type Decision = { hold: number; luminanceScale: number };
+      const { createFlashSampler } = await load<{
+        createFlashSampler: () => {
+          offThread: boolean;
+          judging: {
+            active: boolean;
+            capture: (
+              canvas: HTMLCanvasElement,
+              frame: { nowMs: number; viewScale: number },
+              onDecision: (decision: Decision | null) => void,
+            ) => boolean;
+          };
+          dispose: () => void;
+        };
+      }>('/packages/flash-guard/src/sampler.ts');
+      const { subscribeToFrameDrawn } = await load<{
+        subscribeToFrameDrawn: (listener: () => void) => () => void;
+      }>('/src/js/core/frame-drawn.ts');
+      const canvas = document.querySelector('canvas') as HTMLCanvasElement;
+      const sampler = createFlashSampler();
+      const decisions: Array<Decision | null> = [];
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error(`${decisions.length} decisions in 30s`)),
+          30_000,
+        );
+        const stop = subscribeToFrameDrawn(() => {
+          if (sampler.judging.active) {
+            sampler.judging.capture(
+              canvas,
+              { nowMs: performance.now(), viewScale: 1 },
+              (decision) => decisions.push(decision),
+            );
+          }
+          if (decisions.length >= frames) {
+            clearTimeout(timer);
+            stop();
+            resolve();
+          }
+        });
+      });
+      const offThread = sampler.offThread;
+      sampler.dispose();
+      return {
+        offThread,
+        judged: decisions.filter((decision) => decision !== null).length,
+        scale: decisions.at(-1)?.luminanceScale ?? null,
+      };
+    }, FRAMES);
+  } finally {
+    await browser.close();
+  }
+}
+
+function expectJudgedOffThread(result: {
+  offThread: boolean;
+  judged: number;
+  scale: number | null;
+}) {
+  expect(result.offThread).toBe(true);
+  // A null decision is a frame the worker could not read or judge.
+  expect(result.judged).toBeGreaterThanOrEqual(FRAMES);
+  expect(result.scale).toBeGreaterThan(0);
+}
+
+requiredBrowserTest(
+  'on WebGL the worker judges live frames',
+  async () => {
+    expectJudgedOffThread(await judgeInWorker('webgl'));
+  },
+  { timeout: 120000 },
+);
+
+localOnlyBrowserTest(
+  'on WebGPU the worker judges live frames',
+  async () => {
+    expectJudgedOffThread(await judgeInWorker('webgpu'));
+  },
+  { timeout: 120000 },
+);
+
 requiredBrowserTest(
   'on WebGL the worker reads the same frame the draw produced',
   async () => {

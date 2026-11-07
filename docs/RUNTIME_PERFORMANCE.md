@@ -380,6 +380,32 @@ claim: this preset, this hardware, one quality step; the microbench on
 presets that reference nearly all built-ins read ±1% (noise), as expected —
 their per-vertex loops are unchanged.
 
+## 2026-11-04 Flash guard frame cost (#1640)
+
+Reduce flashing, on by default, cost up to 25 fps at 6x CPU throttle, and the frame tracker did not see it: `averageFrameMs` moved by about 1 ms. The filter was not the cause. Converting and judging each sample on the main thread was, so both moved into the sampler's worker.
+
+Host: Apple M1 Max, headless Chromium, production build, 1280x720, demo audio, CDP 6x throttle. `bun run lab:flash-sampler-bench -- --delivered` prints this table, walking one page through the stages in A-B-B-A order. Each cell is two 6-second windows.
+
+| Backend | Preset | Reduce flashing off | Before | After | Main-thread ms per reply, before → after |
+| --- | --- | --- | --- | --- | --- |
+| WebGL | `martin-journey-into-space` | 60, 60 | 45, 47 | 60, 60 | 9.02 → 0.03 |
+| WebGL | `martin-dune-racer` | 60, 60 | 49, 51 | 60, 56 | 9.42 → 0.01 |
+| WebGPU | `martin-journey-into-space` | 60, 59 | 43, 39 | 60, 60 | not measured → 0.04 |
+| WebGPU | `martin-dune-racer` | 60, 60 | 51, 51 | 60, 60 | not measured → 0.02 |
+
+Before the move, capture alone held 60 fps, and so did a worker readback with its result discarded (60, 60 on three rows and 60, 57 on the other), which is what located the cost. Skipping the filter write did not help on WebGL (46, 43 and 49, 51), and these presets made no filter writes in those windows.
+
+Captures rose with it, from 34–49 a second to 55–60, so the governor now compares more consecutive frames on these presets. Decisions came back 5–14 ms after the snapshot was posted to the worker.
+
+**What this does not establish:**
+
+- CDP throttles the main thread and not the worker, so that latency is a floor for a slow device, and the worker's own cost on one is unmeasured. No phone or tablet was measured.
+- Without throttling, `martin-journey-into-space` showed no clear loss before the change.
+
+Live dimming on two strobing presets on both backends, 25 s each without throttle, stayed comparable: the lowest brightness was 0.06–0.09 after and 0.05–0.11 before, and the stage was dimmed for 81–99% of the run either way.
+
+**The permanent fallback was reachable.** The sampler gave up on its worker when one capture went unanswered for a second, and a main thread blocked that long had the reply still queued behind the frame that noticed. In a dev server run on WebGPU, one heavy preset made 1,030 synchronous reads in 20 s (3,369 ms), and a WebGL profile of it showed `getImageData` at 36% of main-thread time. The sampler now waits to see the capture stay unanswered, and the same WebGPU run made none, which fits that cause without proving it. How often production reached it is unknown, and `substitution-flash-sampler-main-thread` now counts it. A lost worker is retried after 30 s, doubling to at most 5 minutes.
+
 ## 2026-11-04 WebGPU platform features (#1541)
 
 Each item in [#1541](https://github.com/zz-plant/stims/issues/1541) gets a decision
