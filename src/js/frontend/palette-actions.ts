@@ -84,10 +84,14 @@ const TUNE_SUFFIX = ' (edits this preset)';
 import type { WorkspaceContextValue } from './workspace-context.tsx';
 
 export type PaletteActionContext = {
-  engineRef: { readonly current: EngineContextValue };
-  engineBridgeRef: { readonly current: EngineContextValue };
-  engineSnapshotRef: { readonly current: EngineSnapshot | null };
-  uiRef: { readonly current: WorkspaceContextValue };
+  engineRef?: { readonly current: EngineContextValue };
+  engineBridgeRef?: { readonly current: EngineContextValue };
+  engineSnapshotRef?: { readonly current: EngineSnapshot | null };
+  uiRef?: { readonly current: WorkspaceContextValue };
+  readEngine?: () => EngineContextValue;
+  readEngineBridge?: () => EngineContextValue;
+  readEngineSnapshot?: () => EngineSnapshot | null;
+  readUi?: () => WorkspaceContextValue;
   paletteSurface: Parameters<typeof togglePanel>[0];
   handleToggleFullscreen: () => void;
   setShowShortcuts: (show: boolean) => void;
@@ -112,14 +116,24 @@ function themeName(choice: ThemeChoice): string {
   return choice === 'system' ? 'match system' : choice;
 }
 
+export function usePaletteActions(
+  context: PaletteActionContext,
+): CommandAction[] {
+  return buildPaletteActions(context);
+}
+
 export function buildPaletteActions(
   context: PaletteActionContext,
 ): CommandAction[] {
   const {
-    engineRef,
-    engineBridgeRef,
-    engineSnapshotRef,
-    uiRef,
+    engineRef: rawEngineRef,
+    engineBridgeRef: rawEngineBridgeRef,
+    engineSnapshotRef: rawEngineSnapshotRef,
+    uiRef: rawUiRef,
+    readEngine,
+    readEngineBridge,
+    readEngineSnapshot,
+    readUi,
     paletteSurface,
     handleToggleFullscreen,
     setShowShortcuts,
@@ -131,6 +145,26 @@ export function buildPaletteActions(
     editorDirty,
     playbackPaused,
   } = context;
+  const engineRef = rawEngineRef ?? {
+    get current() {
+      return readEngine?.() as EngineContextValue;
+    },
+  };
+  const engineBridgeRef = rawEngineBridgeRef ?? {
+    get current() {
+      return readEngineBridge?.() as EngineContextValue;
+    },
+  };
+  const engineSnapshotRef = rawEngineSnapshotRef ?? {
+    get current() {
+      return readEngineSnapshot?.() ?? null;
+    },
+  };
+  const uiRef = rawUiRef ?? {
+    get current() {
+      return readUi?.() as WorkspaceContextValue;
+    },
+  };
   const routePanel = () => uiRef.current.routeState?.panel ?? null;
   const currentPresetSaved = () => {
     const engine = engineBridgeRef.current;
