@@ -85,6 +85,7 @@ import {
 import { GlobalMediaIntake } from './GlobalMediaIntake.tsx';
 import { HudOverlay } from './HudOverlay.tsx';
 import { useAgentStateInstall } from './hooks/use-agent-state-install.ts';
+import { useLatestRef } from './hooks/use-latest-ref.ts';
 import { useMediaSession } from './hooks/use-media-session.ts';
 import { usePerformanceHardware } from './hooks/use-performance-hardware.ts';
 import {
@@ -104,7 +105,7 @@ import {
   usePresetPageContent,
 } from './PresetPageDetails.tsx';
 import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
-import { buildPaletteActions } from './palette-actions.ts';
+import { usePaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
 import { getPanelDescriptor, getPanelTitle } from './panel-registry.ts';
 import {
@@ -288,8 +289,7 @@ function StimsWorkspaceAppShell() {
   // Latest-value ref: the live-performance runtime is installed once per
   // engine, but needs the current route when it starts Strudel audio. Reading
   // `ui` directly would rebuild the runtime on every route change.
-  const uiRef = useRef(ui);
-  uiRef.current = ui;
+  const uiRef = useLatestRef(ui);
   // Same latest-value pattern for the engine handlers: the palette action
   // list below is memoized on the few inputs that change a row's label or
   // presence, so anything it calls must be read at run time. Capturing
@@ -297,8 +297,7 @@ function StimsWorkspaceAppShell() {
   // catalog and `handleShowCurrentLink` with the boot-time route, so the
   // palette, the agent API and every shortcut bound to a palette id did
   // nothing (or shared the wrong URL) until an unrelated dep refreshed it.
-  const engineRef = useRef(engine);
-  engineRef.current = engine;
+  const engineRef = useLatestRef(engine);
   const { engineSnapshot } = useEngineSnapshot();
   const awaitingAudioGesture = useAudioAwaitingGesture();
   const growthLandingEventsRef = useRef<Set<string>>(new Set());
@@ -355,10 +354,8 @@ function StimsWorkspaceAppShell() {
   // effect on every snapshot emit, and each re-run tore the window `message`
   // listener down for seconds (deferToIdle) — agent/automation messages
   // (preview capture, MCP) landing in the gap were silently dropped.
-  const engineBridgeRef = useRef(engine);
-  engineBridgeRef.current = engine;
-  const engineSnapshotRef = useRef(engineSnapshot);
-  engineSnapshotRef.current = engineSnapshot;
+  const engineBridgeRef = useLatestRef(engine);
+  const engineSnapshotRef = useLatestRef(engineSnapshot);
 
   const { isFullscreen, handleToggleFullscreen } = useFullscreen(
     ui.stageRef,
@@ -367,9 +364,10 @@ function StimsWorkspaceAppShell() {
 
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [revealReduceFlashing, setRevealReduceFlashing] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setState setter is stable, listed for React Compiler manual memo preservation (#1540)
   const clearRevealReduceFlashing = useCallback(
     () => setRevealReduceFlashing(false),
-    [],
+    [setRevealReduceFlashing],
   );
   const [browseTrying, setBrowseTrying] = useState(false);
   const [showManageSets, setShowManageSets] = useState(false);
@@ -403,8 +401,7 @@ function StimsWorkspaceAppShell() {
       byline: display.byline,
     };
   }, [audioMatch, engine.catalog]);
-  const catalogRef = useRef(engine.catalog);
-  catalogRef.current = engine.catalog;
+  const catalogRef = useLatestRef(engine.catalog);
   const [thumbMode, setThumbMode] = useState(() => {
     const stored = readStored('stims:mobile-thumb-mode');
     return stored !== null ? stored === 'true' : prefersThumbModeByDefault();
@@ -467,8 +464,7 @@ function StimsWorkspaceAppShell() {
   // Read inside effects below, which must not re-run as the hint changes:
   // it is handed to a lazy panel, and a new function each time a hint changes
   // would re-render that panel for no reason.
-  const visibleHintRef = useRef(visibleHint);
-  visibleHintRef.current = visibleHint;
+  const visibleHintRef = useLatestRef(visibleHint);
 
   // Stable identity matters here: SidePanel's open-effect keys off this
   // callback's reference (`[open, onOpen]`), so an inline arrow function
@@ -549,13 +545,14 @@ function StimsWorkspaceAppShell() {
 
   // Stable panel surface for the shared action bodies: reads through the
   // ref so the memoized action list never goes stale on route changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: uiRef is stable, listed for React Compiler manual memo preservation (#1540)
   const paletteSurface = useMemo(
     () => ({
       updatePanel: (panel: Parameters<typeof ui.updatePanel>[0]) =>
         uiRef.current.updatePanel(panel),
       routePanel: () => uiRef.current.routeState.panel ?? null,
     }),
-    [],
+    [uiRef],
   );
 
   const syncSession = useSyncExternalStore(
@@ -574,41 +571,31 @@ function StimsWorkspaceAppShell() {
   // Behavior bodies live in workspace-actions.ts, shared with the stage
   // dock menu — a verb must not do different things depending on which
   // surface invoked it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are read through uiRef/engineRef when a row runs; the list only needs to rebuild when a label or the row set changes (live/fullscreen/hosting/theme/editor state)
-  const paletteActions: CommandAction[] = useMemo(
-    () =>
-      buildPaletteActions({
-        engineRef,
-        engineBridgeRef,
-        engineSnapshotRef,
-        uiRef,
-        paletteSurface,
-        handleToggleFullscreen,
-        setShowShortcuts,
-        setShowManageSets,
-        toggleFavoriteCurrentPreset,
-        liveMode,
-        isFullscreen,
-        hostingWatchParty,
-        themeChoice,
-        editorDirty,
-        playbackPaused,
-      }),
-    [
-      liveMode,
-      isFullscreen,
-      hostingWatchParty,
-      themeChoice,
-      editorDirty,
-      playbackPaused,
-    ],
-  );
+  const paletteActions = usePaletteActions({
+    engineRef,
+    engineBridgeRef,
+    engineSnapshotRef,
+    uiRef,
+    paletteSurface,
+    handleToggleFullscreen,
+    setShowShortcuts,
+    setShowManageSets,
+    toggleFavoriteCurrentPreset,
+    liveMode,
+    isFullscreen,
+    hostingWatchParty,
+    themeChoice,
+    editorDirty,
+    playbackPaused,
+  });
 
   // Machine-readable state for automation: window.__stims_agent (snapshot,
   // status log, run-palette-action-by-id) plus a selector-waitable
   // data-engine-state attribute on <body>. Providers read refs, so this
   // installs exactly once.
-  paletteActionsRef.current = paletteActions;
+  useEffect(() => {
+    paletteActionsRef.current = paletteActions;
+  }, [paletteActions]);
   const buildAgentCoreSnapshot = useAgentStateInstall({
     paletteActionsRef,
     engineSnapshotRef,
@@ -919,7 +906,7 @@ function StimsWorkspaceAppShell() {
   const handleCloseSharedSet = useCallback(() => {
     setSharedSetDismissed(true);
     ui.commitRoute((current) => ({ ...current, sharedSet: null }));
-  }, [ui.commitRoute]);
+  }, [ui]);
 
   const handleLoadSharedSetQueue = useCallback(
     (presetIds: string[]) => {
@@ -929,12 +916,7 @@ function StimsWorkspaceAppShell() {
       );
       handleCloseSharedSet();
     },
-    [
-      ui.presetQueue,
-      sharedSetPayload,
-      handleCloseSharedSet,
-      ui.setStatusMessage,
-    ],
+    [ui, sharedSetPayload, handleCloseSharedSet],
   );
 
   const handleSaveSharedSet = useCallback(
@@ -942,7 +924,7 @@ function StimsWorkspaceAppShell() {
       saveNamedSet(title, presetIds);
       ui.setStatusMessage(`Saved "${title}" to your preset sets.`);
     },
-    [ui.setStatusMessage],
+    [ui],
   );
 
   const showSharedSetDialog = Boolean(
@@ -1066,16 +1048,25 @@ function StimsWorkspaceAppShell() {
     };
   }, [liveMode]);
 
-  const updateThumbMode = useCallback((enabled: boolean) => {
-    setThumbMode(enabled);
-    writeStored('stims:mobile-thumb-mode', String(enabled));
-  }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setState setter is stable, listed for React Compiler manual memo preservation (#1540)
+  const updateThumbMode = useCallback(
+    (enabled: boolean) => {
+      setThumbMode(enabled);
+      writeStored('stims:mobile-thumb-mode', String(enabled));
+    },
+    [setThumbMode],
+  );
 
-  const updateHapticsEnabled = useCallback((enabled: boolean) => {
-    setHapticsEnabled(enabled);
-    writeStored('stims:mobile-haptics', String(enabled));
-  }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setState setter is stable, listed for React Compiler manual memo preservation (#1540)
+  const updateHapticsEnabled = useCallback(
+    (enabled: boolean) => {
+      setHapticsEnabled(enabled);
+      writeStored('stims:mobile-haptics', String(enabled));
+    },
+    [setHapticsEnabled],
+  );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setState setter is stable, listed for React Compiler manual memo preservation (#1540)
   const handleInstallApp = useCallback(() => {
     const prompt = installPrompt as
       | (Event & { prompt?: () => Promise<void> })
@@ -1083,7 +1074,7 @@ function StimsWorkspaceAppShell() {
     if (!prompt?.prompt) return;
     void prompt.prompt();
     setInstallPrompt(null);
-  }, [installPrompt]);
+  }, [installPrompt, setInstallPrompt]);
 
   useEffect(() => {
     return connectWakeLock(() => {
