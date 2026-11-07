@@ -68,6 +68,8 @@ export interface PerformanceURLParams {
    * renders natively.
    */
   nativeResolution: boolean;
+  /** `?warpUvMap=0` draws the WebGL per-pixel warp with the old scatter mesh. */
+  warpUvMap: boolean;
   /**
    * Forces the power-saver mode (`auto`/`on`/`off`) for this session, so a QA
    * link can pin the frame cap instead of waiting for a laptop to discharge.
@@ -399,6 +401,7 @@ export function parseURLParams(
       // touching mesh/wave density. Parity captures use it so a frame is not
       // supersampled and downsampled against a reference rendered natively.
       nativeResolution: get('nativeResolution')?.trim() === '1',
+      warpUvMap: get('warpUvMap')?.trim() !== '0',
       powerSaver: get('powerSaver')?.trim() || null,
     },
     audioMock: {

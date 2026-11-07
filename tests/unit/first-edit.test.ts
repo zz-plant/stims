@@ -95,7 +95,7 @@ function warpOnFrame(source: string, frames = 12) {
     state = vm.step(stepSignals(frame));
   }
   return {
-    grid: state.warpField ? Array.from(state.warpField.positions) : null,
+    grid: state.warpField ? Array.from(state.warpField.sampleUvs) : null,
     rot: state.variables.rot as number,
   };
 }

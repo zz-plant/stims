@@ -46,7 +46,7 @@ function signals(frame: number): MilkdropRuntimeSignals {
   } as unknown as MilkdropRuntimeSignals;
 }
 
-function warpFieldFor(perPixel: string) {
+function warpFieldFor(perPixel: string, aspect = 1) {
   const preset = compileMilkdropPresetSource(
     [
       '[preset00]',
@@ -60,13 +60,13 @@ function warpFieldFor(perPixel: string) {
     ].join('\n'),
     { id: 'warp-field-sample-uvs', origin: 'bundled' },
   );
-  const frame = createMilkdropVM(preset).step(signals(0));
+  const frame = createMilkdropVM(preset).step({ ...signals(0), aspect });
   return frame;
 }
 
 describe('warp field sample coordinates', () => {
   test('a per-pixel zoom of 2 samples halfway toward the centre', () => {
-    const frame = warpFieldFor('zoom = 2;');
+    const frame = warpFieldFor('zoom = 2; warp = 0;');
     const field = frame.warpField;
     expect(field).toBeTruthy();
     const { uvs, sampleUvs } = field as NonNullable<typeof field>;
@@ -75,6 +75,90 @@ describe('warp field sample coordinates', () => {
       const lattice = uvs[index] ?? 0;
       expect(sampleUvs[index]).toBeCloseTo(0.5 + (lattice - 0.5) / 2, 4);
     }
+  });
+
+  // butterchurn 2.6.7's runPixelEquations, term for term: this is the reference
+  // the gather has to equal, at any aspect and with every output written.
+  function butterchurnSample(
+    gridX: number,
+    gridY: number,
+    aspectX: number,
+    aspectY: number,
+    out: {
+      zoom: number;
+      zoomexp: number;
+      rot: number;
+      cx: number;
+      cy: number;
+      sx: number;
+      sy: number;
+      dx: number;
+      dy: number;
+    },
+  ) {
+    const rad = Math.hypot(gridX * aspectX, gridY * aspectY);
+    const zoom = out.zoom ** (out.zoomexp ** (rad * 2 - 1));
+    let u = (gridX * 0.5 * aspectX) / zoom + 0.5;
+    let v = (-gridY * 0.5 * aspectY) / zoom + 0.5;
+    u = (u - out.cx) / out.sx + out.cx;
+    v = (v - out.cy) / out.sy + out.cy;
+    const fromU = u - out.cx;
+    const fromV = v - out.cy;
+    const cos = Math.cos(out.rot);
+    const sin = Math.sin(out.rot);
+    u = fromU * cos - fromV * sin + out.cx - out.dx;
+    v = fromU * sin + fromV * cos + out.cy - out.dy;
+    return { u: (u - 0.5) / aspectX + 0.5, v: 1 - ((v - 0.5) / aspectY + 0.5) };
+  }
+
+  test.each([
+    ['landscape', 16 / 9, 1, 9 / 16],
+    ['square', 1, 1, 1],
+    ['portrait', 390 / 844, 390 / 844, 1],
+  ])(
+    'equals butterchurn on a %s screen',
+    (_label, aspect, aspectX, aspectY) => {
+      const out = {
+        zoom: 1.3,
+        zoomexp: 1.4,
+        rot: 0.35,
+        cx: 0.62,
+        cy: 0.41,
+        sx: 1.1,
+        sy: 0.9,
+        dx: 0.03,
+        dy: -0.02,
+      };
+      const frame = warpFieldFor(
+        'warp = 0; zoom = 1.3; zoomexp = 1.4; rot = 0.35; cx = 0.62; cy = 0.41; sx = 1.1; sy = 0.9; dx = 0.03; dy = -0.02;',
+        aspect,
+      );
+      const { uvs, sampleUvs } = frame.warpField as NonNullable<
+        MilkdropFrameState['warpField']
+      >;
+      for (let index = 0; index < uvs.length; index += 2) {
+        const expected = butterchurnSample(
+          (uvs[index] ?? 0) * 2 - 1,
+          (uvs[index + 1] ?? 0) * 2 - 1,
+          aspectX,
+          aspectY,
+          out,
+        );
+        expect(sampleUvs[index]).toBeCloseTo(expected.u, 4);
+        expect(sampleUvs[index + 1]).toBeCloseTo(expected.v, 4);
+      }
+    },
+  );
+
+  test('a centre far off screen leaves every vertex sampling something', () => {
+    // krash-rovastar-cerebral-demons-stars sends its scatter vertices off
+    // screen this way. Each gather vertex keeps its own place on the lattice.
+    const frame = warpFieldFor('warp = 0; cx = 40; cy = -40; rot = 0.02;');
+    const { uvs, sampleUvs } = frame.warpField as NonNullable<
+      MilkdropFrameState['warpField']
+    >;
+    expect(new Set(uvs).size).toBeGreaterThan(1);
+    for (const value of sampleUvs) expect(Number.isFinite(value)).toBe(true);
   });
 
   test('the motion dampener pulls sample coordinates back to the lattice', () => {

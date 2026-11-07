@@ -296,3 +296,115 @@ for (const { backend, run } of BACKENDS) {
     );
   });
 }
+
+/**
+ * A per-pixel warp without a warp shader, through the UV map. On
+ * krash-rovastar-cerebral-demons-stars the scatter mesh put about 1% of its
+ * vertices on screen, so most of the picture was never warped at all and a
+ * first edit couldn't show. The harness steps the real VM against a moving
+ * source quad, so two runs of one preset match exactly and a control edit
+ * reads 0.
+ */
+describe('WebGL per-pixel warp through the UV map', () => {
+  const measure = async (query: string) => {
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: WEBGL_RENDERER_ARGS,
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`${HOST_PAGE}${query}`, {
+        waitUntil: 'domcontentloaded',
+      });
+      return await withDeadline(
+        page.evaluate(async (harnessModule) => {
+          const { createFeedbackHarness } = (await import(
+            harnessModule
+          )) as HarnessModule;
+          const source = await (
+            await fetch(
+              '/milkdrop-presets/krash-rovastar-cerebral-demons-stars.milk',
+            )
+          ).text();
+          const run = async (line: string) => {
+            const edited = `${source}\n${line}\n`;
+            const harness = await createFeedbackHarness('webgl');
+            await harness.applyPreset(edited);
+            const step = harness.fieldStepper(edited);
+            let pixels = new Uint8Array(0);
+            for (let frame = 0; frame < 60; frame += 1) {
+              harness.setQuadStyle((((frame * 37) % 200) + 40) / 255, 1);
+              harness.moveQuad(
+                Math.sin(frame * 0.7) * 0.8,
+                Math.cos(frame * 1.1) * 0.8,
+              );
+              pixels = await step();
+            }
+            return pixels;
+          };
+          const difference = (a: Uint8Array, b: Uint8Array) => {
+            let sum = 0;
+            for (let index = 0; index < a.length; index += 1) {
+              if (index % 4 !== 3) {
+                sum += Math.abs((a[index] ?? 0) - (b[index] ?? 0));
+              }
+            }
+            return sum / ((a.length / 4) * 3);
+          };
+          // The VM's per-preset constants draw from Math.random at load.
+          const seeded = async (line: string) => {
+            let state = 7;
+            Math.random = () => {
+              state = (state * 16807) % 2147483647;
+              return state / 2147483647;
+            };
+            return run(line);
+          };
+          const original = await seeded('');
+          let lit = 0;
+          for (let index = 0; index < original.length; index += 4) {
+            const brightness =
+              (original[index] ?? 0) +
+              (original[index + 1] ?? 0) +
+              (original[index + 2] ?? 0);
+            if (brightness > 6) lit += 1;
+          }
+          return {
+            litShare: lit / (original.length / 4),
+            control: difference(
+              original,
+              await seeded('per_pixel_900=rot=rot+0;'),
+            ),
+            edit: difference(
+              original,
+              await seeded('per_pixel_900=rot=rot+0.02;'),
+            ),
+          };
+        }, '/tests/e2e/feedback-continuity-harness.ts'),
+        120000,
+        'measuring the UV map warp',
+      );
+    } finally {
+      await closeQuietly(browser);
+    }
+  };
+
+  requiredBrowserTest(
+    'covers the whole picture, and a first edit reaches it',
+    async () => {
+      const { litShare, control, edit } = await measure('');
+      expect(litShare).toBe(1);
+      expect(edit).toBeGreaterThan(Math.max(control * 3, 0.5));
+    },
+    180000,
+  );
+
+  requiredBrowserTest(
+    'the scatter mesh left uncovered, which is the bug this replaced',
+    async () => {
+      const { litShare } = await measure('?warpUvMap=0');
+      expect(litShare).toBeLessThan(0.9);
+    },
+    180000,
+  );
+});
