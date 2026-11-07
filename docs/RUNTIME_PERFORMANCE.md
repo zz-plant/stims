@@ -406,6 +406,65 @@ Live dimming on two strobing presets on both backends, 25 s each without throttl
 
 **The permanent fallback was reachable.** The sampler gave up on its worker when one capture went unanswered for a second, and a main thread blocked that long had the reply still queued behind the frame that noticed. In a dev server run on WebGPU, one heavy preset made 1,030 synchronous reads in 20 s (3,369 ms), and a WebGL profile of it showed `getImageData` at 36% of main-thread time. The sampler now waits to see the capture stay unanswered, and the same WebGPU run made none, which fits that cause without proving it. How often production reached it is unknown, and `substitution-flash-sampler-main-thread` now counts it. A lost worker is retried after 30 s, doubling to at most 5 minutes.
 
+## 2026-11-07 CPU JIT spike (#1642)
+
+This spike compared three independent edits to the generated JavaScript for
+the catalog versions of four presets. Each trial used the Vite production build
+from `07a7e719` with the spike wired in, headless Chromium 156.0.8078.4, WebGL
+via ANGLE Metal on an Apple M1 Max, CDP 6× CPU throttle, a 1280×720 viewport,
+demo audio and a locked balanced quality step (2). Every condition started in
+a fresh browser context with autoplay disabled. After 2.5 seconds of warmup,
+the runtime tracker collected at least 120 more frames. Each trial reports the
+mean simulation phase over its final 120 frames. The four rounds rotated preset
+order and counterbalanced condition order so each condition occupied each
+position once per preset.
+
+- **Local promotion** kept private wave and mesh temporaries in JS `let`
+  bindings. Writes that feed later points, draw output, and RNG state stayed
+  on the existing path.
+- **Frame hoisting** moved Glassworms' frame-dependent rotations and register
+  terms and Curlique's sine coefficients into a per-pass prelude. Glowsticks'
+  eligible terms were register reads.
+- **Vertex caching** reused Float64 arrays for sample-only terms in the waves
+  and for Curlique's fixed mesh basis. Curlique's dynamic motion-vector
+  positions still evaluated the original expressions. The arrays were rebuilt
+  when the sample count or mesh lattice changed.
+- **Bridge of Khazad-Dum** served as a control. Its per-pixel program writes
+  three constants directly to output fields, so all four conditions used the
+  same generated body.
+
+Times are median trial means in milliseconds, with min–max in brackets.
+Positive percentages indicate a reduction from the same preset's baseline.
+
+| Preset | Baseline | Local promotion | Frame hoisting | Vertex caching |
+| --- | ---: | ---: | ---: | ---: |
+| `shifter-glassworms-flare` | 10.09 [9.25–10.46] | 6.57 [6.23–7.22], +34.9% | 8.66 [8.39–8.91], +14.2% | 9.25 [9.08–9.54], +8.3% |
+| `eos-glowsticks-v2-03-music` | 11.70 [11.35–12.99] | 7.21 [6.74–7.47], +38.4% | 11.80 [11.67–11.99], -0.9% | 12.27 [11.67–12.76], -4.9% |
+| `shifter-curlique` | 7.14 [6.30–7.44] | 6.97 [6.34–7.16], +2.4% | 6.28 [5.99–7.06], +12.1% | 7.13 [6.48–7.54], +0.2% |
+| `martin-the-bridge-of-khazad-dum` | 9.61 [9.16–11.47] | 10.34 [8.95–10.75], -7.6% | 10.36 [10.09–12.12], -7.9% | 9.90 [8.88–11.87], -3.0% |
+
+**Local promotion cleared the 15% gate** on Glassworms and Glowsticks. The
+reduction was at least 31% in every round on both presets. Curlique's 2.4%
+median reduction fell below the gate.
+
+**Frame hoisting and vertex caching fell below the gate.** Hoisting came
+closest on Glassworms (14.2%) and Curlique (12.1%). Vertex caching peaked at
+8.3% on Glassworms. Bridge's unchanged program varied between 8.88 and
+12.12 ms across conditions, which gives a sense of the timing noise in a
+single trial.
+
+For correctness, each candidate and the baseline JIT matched the interpreter
+bit for bit on 120 deterministic WebGL VM frames per preset, using the
+`lab:replay` beat-pulse inputs and changing aspect ratio and detail scale
+mid-run. The comparison included numeric frame state and geometry buffers.
+A separate production Chromium run requested local promotion with
+`script-src 'self'`. The VM's JIT probe was blocked, and Glassworms kept
+rendering in WebGL through the interpreter.
+
+The tracked change records the spike. The four-preset result qualifies
+local promotion for the issue's separate compiler-pass evaluation on a
+12-preset sample.
+
 ## 2026-11-04 WebGPU platform features (#1541)
 
 Each item in [#1541](https://github.com/zz-plant/stims/issues/1541) gets a decision
