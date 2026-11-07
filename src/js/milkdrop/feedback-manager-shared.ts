@@ -52,6 +52,7 @@ import {
 } from 'three';
 import { isAgentMode } from '../core/agent-api.ts';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
+import { getPerformanceOverrideParams } from '../core/url-params.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import type {
   FeedbackBackendProfile,
@@ -79,6 +80,7 @@ import {
   MILKDROP_WARP_MESH_FRAGMENT_SHADER,
   MILKDROP_WARP_MESH_VERTEX_SHADER,
   MILKDROP_WARP_UV_FRAGMENT_SHADER,
+  MILKDROP_WARP_UV_SAMPLE_FRAGMENT_SHADER,
   MILKDROP_WARP_UV_VERTEX_SHADER,
   Q_UNIFORM_NAMES,
   Q_VAR_NAMES,
@@ -1138,6 +1140,11 @@ class SharedMilkdropFeedbackManager
   readonly warpUvTarget: WebGLRenderTarget;
   readonly warpUvGeometry: BufferGeometry;
   readonly warpUvScene: Scene;
+  /** A preset with no warp shader, reading the previous frame through the map. */
+  readonly warpUvSampleMaterial: ShaderMaterial;
+  readonly warpUvSampleScene: Scene;
+  /** Null until a renderer is seen; see canRenderWarpUvMap. */
+  private warpUvMapSupported: boolean | null = null;
   private warpFieldDensity = 0;
   private warpFieldReady = false;
   private unsubscribeTextureOverrides: (() => void) | null = null;
@@ -1418,6 +1425,27 @@ class SharedMilkdropFeedbackManager
     this.warpUvScene = new Scene();
     this.warpUvScene.add(warpUvMesh);
     this.warpUvScene.matrixAutoUpdate = false;
+    this.warpUvSampleMaterial = new ShaderMaterial({
+      uniforms: {
+        previousTex: { value: this.targets[0].texture },
+        warpUvTex: { value: this.warpUvTarget.texture },
+        textureWrap: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: MILKDROP_WARP_UV_SAMPLE_FRAGMENT_SHADER,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.warpUvSampleScene = new Scene();
+    this.warpUvSampleScene.add(
+      new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpUvSampleMaterial),
+    );
     this.feedbackBlendMaterial = new ShaderMaterial({
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
@@ -2355,6 +2383,25 @@ class SharedMilkdropFeedbackManager
     return this.renderFrame(renderer, sourceScene, sourceCamera, false);
   }
 
+  /**
+   * Whether the half-float UV target can be drawn to. `?warpUvMap=0` turns the
+   * map off, and the scatter mesh stands in for both.
+   */
+  private canRenderWarpUvMap(renderer: FeedbackFrameRenderer) {
+    if (this.warpUvMapSupported === null) {
+      const extensions = (
+        renderer as { extensions?: { has?: (name: string) => boolean } }
+      ).extensions;
+      this.warpUvMapSupported =
+        getPerformanceOverrideParams().warpUvMap &&
+        Boolean(
+          extensions?.has?.('EXT_color_buffer_float') ||
+            extensions?.has?.('EXT_color_buffer_half_float'),
+        );
+    }
+    return this.warpUvMapSupported;
+  }
+
   private renderFrame(
     renderer: FeedbackFrameRenderer,
     sourceScene: Scene,
@@ -2378,7 +2425,11 @@ class SharedMilkdropFeedbackManager
     const warpShaderOwnsTransform =
       (this.warpMaterial.uniforms.hasDirectWarp.value as number) > 0.5;
     const warpShaderReadsField = this.warpFieldReady && warpShaderOwnsTransform;
-    if (warpShaderReadsField) {
+    const warpReadsUvMap =
+      this.warpFieldReady &&
+      !warpShaderOwnsTransform &&
+      this.canRenderWarpUvMap(renderer);
+    if (warpShaderReadsField || warpReadsUvMap) {
       renderer.setRenderTarget(this.warpUvTarget);
       renderer.render(this.warpUvScene, this.camera);
     }
@@ -2387,7 +2438,15 @@ class SharedMilkdropFeedbackManager
       ? 1
       : 0;
     renderer.setRenderTarget(this.warpTarget);
-    if (this.warpFieldReady && !warpShaderOwnsTransform) {
+    if (warpReadsUvMap) {
+      this.warpUvSampleMaterial.uniforms.previousTex.value =
+        this.readTarget.texture;
+      this.warpUvSampleMaterial.uniforms.warpUvTex.value =
+        this.warpUvTarget.texture;
+      this.warpUvSampleMaterial.uniforms.textureWrap.value =
+        this.warpMaterial.uniforms.textureWrap.value;
+      renderer.render(this.warpUvSampleScene, this.camera);
+    } else if (this.warpFieldReady && !warpShaderOwnsTransform) {
       // The grid already carries the preset's whole transform, per-pixel code
       // included; re-deriving it from uniforms here would apply it twice.
       this.warpMeshMaterial.uniforms.previousTex.value =
@@ -2552,6 +2611,7 @@ class SharedMilkdropFeedbackManager
     this.sceneTarget.dispose();
     this.warpTarget.dispose();
     this.warpUvTarget.dispose();
+    this.warpUvSampleMaterial.dispose();
     this.warpUvGeometry.dispose();
     this.targets.forEach((target) => target.dispose());
     this.displayTarget.dispose();

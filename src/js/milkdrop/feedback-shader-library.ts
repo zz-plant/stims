@@ -558,20 +558,37 @@ export const MILKDROP_FEEDBACK_WARP_HELPER = `
 // The gather lattice: each vertex sits at its own lattice position and
 // carries the coordinate MilkDrop samples the previous frame from there.
 // Rasterised, that is a per-pixel "where does this pixel read from" map — the
-// \`uv\` a warp shader sees. The scatter mesh below serves presets without one.
+// \`uv\` a warp shader sees, and what MILKDROP_WARP_UV_SAMPLE_FRAGMENT_SHADER
+// reads for a preset without one. It stores the displacement from the pixel, not
+// the coordinate: half-float steps are about 1/2000 of the frame near 1, and over
+// a feedback loop that much error drifts, while most displacements are small.
 export const MILKDROP_WARP_UV_VERTEX_SHADER = `
         attribute vec2 sampleUvAttr;
-        varying vec2 vSampleUv;
+        varying vec2 vDisplacement;
         void main() {
-          vSampleUv = sampleUvAttr;
+          vDisplacement = sampleUvAttr - (position.xy * 0.5 + 0.5);
           gl_Position = vec4(position.xy, 0.0, 1.0);
         }
       `;
 
 export const MILKDROP_WARP_UV_FRAGMENT_SHADER = `
-        varying vec2 vSampleUv;
+        varying vec2 vDisplacement;
         void main() {
-          gl_FragColor = vec4(vSampleUv, 0.0, 1.0);
+          gl_FragColor = vec4(vDisplacement, 0.0, 1.0);
+        }
+      `;
+
+/** The warp for a preset with no warp shader: every pixel reads the previous
+ * frame through the UV map, so coverage can't depend on where vertices land. */
+export const MILKDROP_WARP_UV_SAMPLE_FRAGMENT_SHADER = `
+        uniform sampler2D previousTex;
+        uniform sampler2D warpUvTex;
+        uniform float textureWrap;
+        varying vec2 vUv;
+        void main() {
+          vec2 sampleUv = vUv + texture2D(warpUvTex, vUv).xy;
+          vec2 uv = textureWrap > 0.5 ? fract(sampleUv) : clamp(sampleUv, 0.0, 1.0);
+          gl_FragColor = vec4(texture2D(previousTex, uv).rgb, 1.0);
         }
       `;
 
@@ -1108,7 +1125,7 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           // was rasterised into warpUvTex; otherwise the per-frame uniforms
           // are the whole transform.
           vec2 uv = hasWarpUvField > 0.5
-            ? texture2D(warpUvTex, vUv).xy
+            ? vUv + texture2D(warpUvTex, vUv).xy
             : transformedUv + 0.5;
           vec2 uv_orig = vUv;
           vec3 ret = texture2D(currentTex, sampleUv(uv, textureWrap)).rgb;

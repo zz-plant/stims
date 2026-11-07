@@ -214,6 +214,8 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
   let renderer: HarnessRenderer;
   let readFrame: () => Promise<QuadrantLuminance>;
   let disposeReadback = () => {};
+  /** The last frame `readFrame` read, as RGBA. WebGL only. */
+  let pixelsForCanvas: () => Uint8Array = () => new Uint8Array(0);
 
   if (backend === 'webgpu') {
     const webgpu = new WebGPURenderer({ canvas, antialias: false });
@@ -247,6 +249,7 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
     renderer = webgl as unknown as HarnessRenderer;
     const gl = webgl.getContext();
     const pixels = new Uint8Array(WIDTH * HEIGHT * 4);
+    pixelsForCanvas = () => pixels;
     readFrame = async () => {
       gl.readPixels(0, 0, WIDTH, HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
       return quadrantLuminance(pixels, true);
@@ -395,6 +398,39 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
     setScene: source.setScene,
     setQuadStyle: source.setQuadStyle,
     moveQuad: source.moveQuad,
+    /**
+     * Steps a preset's VM and hands its warp field to the manager, as the
+     * renderer adapter does on WebGL, so per-pixel warps can be measured with
+     * nothing else changing between runs. Returns the call for each next frame.
+     */
+    fieldStepper(presetSource: string) {
+      const vm = createMilkdropVM(
+        compileMilkdropPresetSource(presetSource, { id: 'feedback-harness' }),
+      );
+      vm.setRenderBackend?.('webgl');
+      const tracker = createMilkdropSignalTracker();
+      let frame = 0;
+      return async () => {
+        const frameState = vm.step(
+          tracker.update({
+            time: frame / 60,
+            deltaMs: 1000 / 60,
+            analyser: null,
+            frequencyData: new Uint8Array(64),
+            waveformData: new Uint8Array(64).fill(128),
+          }),
+        );
+        frame += 1;
+        (
+          manager as unknown as {
+            setWarpField(field: typeof frameState.warpField): void;
+          }
+        ).setWarpField(frameState.warpField ?? null);
+        manager.render(renderer, scene, camera);
+        await readFrame();
+        return new Uint8Array(pixelsForCanvas());
+      };
+    },
     /**
      * Gives the manager a preset's feedback state — its warp and comp
      * shaders, fDecay, gamma — the way the renderer adapter does: compile,

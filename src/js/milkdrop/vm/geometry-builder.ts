@@ -35,6 +35,10 @@ import type {
   MilkdropWarpFieldVisual,
 } from '../types';
 import {
+  computeWarpZoomDivisor,
+  floorWarpZoomDivisor,
+} from '../warp-sample-transform.ts';
+import {
   clamp,
   color,
   type GeometryBuilderState,
@@ -407,10 +411,16 @@ type MeshTransformFrame = {
   scaleY: number;
   translateX: number;
   translateY: number;
-  gatherScale: number;
-  invScaleX: number;
-  invScaleY: number;
   isIdentity: boolean;
+  /** Only a preset that ships a warp field reads the gather coordinate. */
+  computesGather: boolean;
+  /** butterchurn's per-frame ripple terms; see writeMilkdropGather. */
+  warpTimeV: number;
+  warpScaleInv: number;
+  warpF0: number;
+  warpF1: number;
+  warpF2: number;
+  warpF3: number;
   // Per-frame BASE values of the built-in per-pixel variables, read raw off
   // `state` once per pass. Only the ones the per-pixel program WRITES are
   // still reset per vertex (the per-pixel code may overwrite them and the
@@ -488,6 +498,7 @@ function createMeshTransformFrame({
   const hasPerPixel = perPixel.statements.length > 0;
   const mask = getMeshBuiltinMask(perPixel);
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
+  const warpTimeV = signals.time * (state.warpanimspeed ?? 1);
   const rot = state.rot ?? 0;
   const warp = state.warp ?? 0;
   const scratch = geometryState.pointScratch;
@@ -567,10 +578,14 @@ function createMeshTransformFrame({
     scaleY,
     translateX,
     translateY,
-    gatherScale: 1 / signedZoomScale(zoom, zoomExponent),
-    invScaleX: 1 / (scaleX || 1),
-    invScaleY: 1 / (scaleY || 1),
     isIdentity,
+    computesGather: presetNeedsWarpMesh(preset),
+    warpTimeV,
+    warpScaleInv: 1 / (state.warpscale || 1),
+    warpF0: 11.68 + 4 * Math.cos(warpTimeV * 1.413 + 10),
+    warpF1: 8.77 + 3 * Math.cos(warpTimeV * 1.113 + 7),
+    warpF2: 10.54 + 3 * Math.cos(warpTimeV * 1.233 + 3),
+    warpF3: 11.49 + 4 * Math.cos(warpTimeV * 0.933 + 5),
     baseZoom,
     baseZoomExp,
     baseRot: rot,
@@ -625,6 +640,88 @@ const transientLatticeSample: LatticeSample = {
   rad: 0,
   ang: 0,
 };
+
+/** Far off screen either way, and still representable in the UV map. */
+const GATHER_LIMIT = 10000;
+
+/**
+ * The coordinate the warp pass reads the previous frame from at this vertex,
+ * written to `transientGatherResult` in renderer space.
+ *
+ * This is butterchurn's `runPixelEquations`, the MilkDrop 2 port, term for
+ * term. It is not the inverse of the scatter above, whose order and centres
+ * differ: zoom is about the screen centre, sx/sy and rot about cx/cy, and
+ * rotation and dx/dy run in MilkDrop's aspect-squeezed space. Comparing the
+ * two across the corpus is how the earlier gather's errors were found. The
+ * values are the program's raw outputs, not the clamped ones the scatter uses,
+ * so a negative zoom stays a mirror.
+ */
+function writeMilkdropGather(
+  frame: MeshTransformFrame,
+  gridX: number,
+  gridY: number,
+  latticeSample: LatticeSample | null,
+  cosRot: number,
+  sinRot: number,
+) {
+  const aspectX = frame.aspectX;
+  const aspectY = frame.aspectY;
+  const local = frame.perPixelProgram ? frame.scratch : null;
+  const read = (writes: boolean, value: number | undefined, base: number) =>
+    local && writes && Number.isFinite(value) ? (value as number) : base;
+  const zoom = read(frame.writesZoom, local?.zoom, frame.baseZoom);
+  const zoomExp = read(frame.writesZoomExp, local?.zoomexp, frame.baseZoomExp);
+  const warp = read(frame.writesWarp, local?.warp, frame.baseWarp);
+  const cx = read(frame.writesCx, local?.cx, frame.baseCx);
+  const cy = read(frame.writesCy, local?.cy, frame.baseCy);
+  const sx = read(frame.writesSx, local?.sx, frame.baseSx) || 1;
+  const sy = read(frame.writesSy, local?.sy, frame.baseSy) || 1;
+  const dx = read(frame.writesDx, local?.dx, frame.baseDx);
+  const dy = read(frame.writesDy, local?.dy, frame.baseDy);
+  const rad = latticeSample
+    ? latticeSample.rad
+    : Math.sqrt(
+        gridX * aspectX * (gridX * aspectX) +
+          gridY * aspectY * (gridY * aspectY),
+      );
+
+  const zoomInverse =
+    1 / floorWarpZoomDivisor(computeWarpZoomDivisor(zoom, zoomExp, rad));
+  let u = (gridX * 0.5 * aspectX * zoomInverse + 0.5 - cx) / sx + cx;
+  let v = (-gridY * 0.5 * aspectY * zoomInverse + 0.5 - cy) / sy + cy;
+  if (warp !== 0) {
+    const inverse = frame.warpScaleInv;
+    const time = frame.warpTimeV;
+    const amount = warp * 0.0035;
+    const f0 = frame.warpF0;
+    const f1 = frame.warpF1;
+    const f2 = frame.warpF2;
+    const f3 = frame.warpF3;
+    u +=
+      amount *
+      (Math.sin(time * 0.333 + inverse * (gridX * f0 - gridY * f3)) +
+        Math.cos(time * 0.753 - inverse * (gridX * f1 - gridY * f2)));
+    v +=
+      amount *
+      (Math.cos(time * 0.375 - inverse * (gridX * f2 + gridY * f1)) +
+        Math.sin(time * 0.825 + inverse * (gridX * f0 + gridY * f3)));
+  }
+  const fromCentreU = u - cx;
+  const fromCentreV = v - cy;
+  u = fromCentreU * cosRot - fromCentreV * sinRot + cx - dx;
+  v = fromCentreU * sinRot + fromCentreV * cosRot + cy - dy;
+  // MilkDrop's v runs down the screen; the renderer's y runs up.
+  const gatherX = ((u - 0.5) / aspectX) * 2;
+  const gatherY = -((v - 0.5) / aspectY) * 2;
+  // Extreme authored zooms reach 1e19. The map is half-float, whose largest
+  // finite value is 65504, and an infinity there samples as NaN.
+  transientGatherResult.x = Number.isFinite(gatherX)
+    ? clamp(gatherX, -GATHER_LIMIT, GATHER_LIMIT)
+    : gridX;
+  transientGatherResult.y = Number.isFinite(gatherY)
+    ? clamp(gatherY, -GATHER_LIMIT, GATHER_LIMIT)
+    : gridY;
+}
 
 function transformMeshPoint(
   frame: MeshTransformFrame,
@@ -862,24 +959,9 @@ function transformMeshPoint(
   transformed.x = (tx - centerX) * scaleX + centerX;
   transformed.y = (ty - centerY) * scaleY + centerY;
 
-  // Sampling coordinate for the warp pass: MilkDrop *gathers* — a vertex sits
-  // at its lattice position and reads the previous frame from where the
-  // transform came from — so the same per-vertex zoom/rot/dx/dy assemble the
-  // inverse of the scatter above. Drawing the scatter instead folds the grid
-  // and loses coverage wherever it leaves the screen, which cost presets that
-  // the uniform path already rendered correctly.
-  const gatherScale =
-    frame.writesZoom || frame.writesZoomExp
-      ? 1 / signedZoomScale(zoom, zoomExponent)
-      : frame.gatherScale;
-  const invScaleX = frame.writesSx ? 1 / (scaleX || 1) : frame.invScaleX;
-  const invScaleY = frame.writesSy ? 1 / (scaleY || 1) : frame.invScaleY;
-  const unrotX = relX * cosRot + relY * sinRot;
-  const unrotY = -relX * sinRot + relY * cosRot;
-  transientGatherResult.x =
-    centerX + unrotX * gatherScale * invScaleX - translateX;
-  transientGatherResult.y =
-    centerY + unrotY * gatherScale * invScaleY - translateY;
+  if (frame.computesGather) {
+    writeMilkdropGather(frame, gridX, gridY, latticeSample, cosRot, sinRot);
+  }
   return transformed;
 }
 
@@ -1572,10 +1654,7 @@ export function buildWarpField(
     // matching how the feedback targets are sampled elsewhere.
     //
     // Vertices carry the transformed position and read from the lattice — a
-    // scatter. MilkDrop gathers instead, and the gather variant was written
-    // and measured here: it came out worse on the one preset class this path
-    // serves (87.0% vs 82.9% against the projectM reference), so the scatter
-    // stands until the gather's sign and aspect conventions are pinned down.
+    // scatter, drawn only as the fallback when the UV map can't be rendered.
     uvBuffer[offset] = (point.sourceX + 1) * 0.5;
     uvBuffer[offset + 1] = (point.sourceY + 1) * 0.5;
     // The gather coordinate transformMeshPoint computed for this vertex, in
