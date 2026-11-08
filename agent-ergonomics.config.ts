@@ -322,7 +322,10 @@ export default defineConfig({
   },
   gate: {
     quietEnv: 'STIMS_QUIET',
-    agentEnvs: ['CLAUDECODE'],
+    // Harnesses that set a session marker to `1`. Quiet output is the whole
+    // point of the marker: full text costs ~10x the tokens for the same
+    // result, and the failure path still prints the failing step in full.
+    agentEnvs: ['CLAUDECODE', 'OPENCODE', 'CURSOR_AGENT', 'GEMINI_CLI'],
     summaryLabel: 'Quality gate',
     preflight: [
       {
