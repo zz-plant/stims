@@ -14,8 +14,12 @@ export interface CanvasGestureOptions {
   stageRef: { current: HTMLDivElement | null };
   /** Called to live-set a preset variable (zoom/rot). */
   setField: (key: string, value: number) => void;
-  /** Read the current value of a preset variable (for relative deltas). */
-  getField: (key: string) => number | undefined;
+  /**
+   * Read the per-frame base value a `setField` write lands in. Must be the
+   * base, not the evaluated state: an equation that recomputes the field
+   * would otherwise apply a second time on top of the gesture.
+   */
+  getFieldBase: (key: string) => number | undefined;
 }
 
 /** A touchscreen reports at most a handful of simultaneous pointers. */
@@ -25,7 +29,7 @@ const PINCH_SENSITIVITY = 1.0;
 const TWIRL_SENSITIVITY = 1.0;
 
 export function useCanvasGestures(options: CanvasGestureOptions): void {
-  const { enabled, stageRef, setField, getField } = options;
+  const { enabled, stageRef, setField, getFieldBase } = options;
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const gestureRef = useRef<{
     initialDistance: number;
@@ -46,19 +50,29 @@ export function useCanvasGestures(options: CanvasGestureOptions): void {
     const angle = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       Math.atan2(b.y - a.y, b.x - a.x);
 
+    // Re-anchor on every change of the pointer pair. A third finger joining
+    // or one of the original pair lifting must restart the baseline, or the
+    // next move computes a transform for a different pair against stale
+    // distance, angle, and field values.
+    const anchor = () => {
+      if (pointersRef.current.size !== 2) {
+        gestureRef.current = null;
+        return;
+      }
+      const pts = Array.from(pointersRef.current.values());
+      gestureRef.current = {
+        initialDistance: distance(pts[0], pts[1]),
+        initialAngle: angle(pts[0], pts[1]),
+        initialZoom: getFieldBase('zoom') ?? 1,
+        initialRot: getFieldBase('rot') ?? 0,
+      };
+    };
+
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       if (pointersRef.current.size >= MAX_ACTIVE_POINTERS) return;
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pointersRef.current.size === 2) {
-        const pts = Array.from(pointersRef.current.values());
-        gestureRef.current = {
-          initialDistance: distance(pts[0], pts[1]),
-          initialAngle: angle(pts[0], pts[1]),
-          initialZoom: getField('zoom') ?? 1,
-          initialRot: getField('rot') ?? 0,
-        };
-      }
+      anchor();
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -84,9 +98,7 @@ export function useCanvasGestures(options: CanvasGestureOptions): void {
     const onPointerUp = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       pointersRef.current.delete(e.pointerId);
-      if (pointersRef.current.size < 2) {
-        gestureRef.current = null;
-      }
+      anchor();
     };
 
     stage.addEventListener('pointerdown', onPointerDown, { passive: true });
@@ -102,5 +114,5 @@ export function useCanvasGestures(options: CanvasGestureOptions): void {
       pointersRef.current.clear();
       gestureRef.current = null;
     };
-  }, [enabled, stageRef, setField, getField]);
+  }, [enabled, stageRef, setField, getFieldBase]);
 }

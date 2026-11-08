@@ -1494,6 +1494,12 @@ function buildExperienceController(
       return deps.vm.getField(key);
     },
 
+    /** Read the per-frame base `setLiveField` writes. A gesture that writes
+     * back must start here, so an equation does not apply twice. */
+    getBaseLiveField(key: string): number | undefined {
+      return deps.vm.getBaseField(key);
+    },
+
     setQualityPreset(presetId: string) {
       const preset = deps.setQualityPresetById(presetId, {
         presets: deps.qualityControl.presets,

@@ -391,15 +391,15 @@ export function useWorkspaceSessionState({
   const setGestureField = useCallback((key: string, value: number) => {
     engineRef.current?.updateFieldLive(key, value);
   }, []);
-  const getGestureField = useCallback(
-    (key: string) => engineRef.current?.getFieldLive(key),
+  const getGestureFieldBase = useCallback(
+    (key: string) => engineRef.current?.getBaseFieldLive(key),
     [],
   );
   useCanvasGestures({
     enabled: true,
     stageRef,
     setField: setGestureField,
-    getField: getGestureField,
+    getFieldBase: getGestureFieldBase,
   });
 
   useEffect(() => {

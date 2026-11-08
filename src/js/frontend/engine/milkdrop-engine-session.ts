@@ -565,6 +565,11 @@ export function createMilkdropEngineAdapter() {
       return experience?.getLiveField?.(key);
     },
 
+    /** Read the per-frame base a gesture will write back to. */
+    getBaseFieldLive(key: string): number | undefined {
+      return experience?.getBaseLiveField?.(key);
+    },
+
     /** Read-only debug accessor for the active preset's compiled IR. */
     getActiveCompiledPreset() {
       return experience?.getActiveCompiledPreset() ?? null;
