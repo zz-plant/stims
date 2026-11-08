@@ -10,6 +10,10 @@ import {
   createStageCompositedScale,
   createStageLuminanceApplier,
 } from '../../core/services/flash-safety.ts';
+import {
+  getSensoryBrightnessCeiling,
+  subscribeToSensoryMoodKnobs,
+} from '../../core/services/sensory-translation.ts';
 import { setStageLuminanceChannel } from '../../core/services/stage-luminance.ts';
 
 /**
@@ -154,6 +158,39 @@ export function useStageBrightness(stageRef: {
       // actually wrote to: by teardown the ref may already be null.
       const stage = appliedToRef.current;
       if (stage) setStageLuminanceChannel(stage, 'ceiling', 1);
+      appliedToRef.current = null;
+    };
+  }, [stageRef]);
+}
+
+/**
+ * Holds the sensory mood dial's brightness ceiling on the stage, composing
+ * with the visitor's comfort ceiling and the flash governor. Multiplicative,
+ * same as the other channels.
+ */
+export function useStageSensoryBrightness(stageRef: {
+  current: HTMLDivElement | null;
+}) {
+  const appliedToRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    appliedToRef.current = stage;
+    setStageLuminanceChannel(stage, 'sensory', getSensoryBrightnessCeiling());
+  });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSensoryMoodKnobs(() => {
+      const stage = stageRef.current ?? appliedToRef.current;
+      if (!stage) return;
+      setStageLuminanceChannel(stage, 'sensory', getSensoryBrightnessCeiling());
+    });
+
+    return () => {
+      unsubscribe();
+      const stage = appliedToRef.current;
+      if (stage) setStageLuminanceChannel(stage, 'sensory', 1);
       appliedToRef.current = null;
     };
   }, [stageRef]);

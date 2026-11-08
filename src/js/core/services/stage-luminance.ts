@@ -16,9 +16,18 @@
  * no other channel can talk the stage back up while it is engaged.
  */
 
-export type StageLuminanceChannel = 'governor' | 'ceiling' | 'presentation';
+export type StageLuminanceChannel =
+  | 'governor'
+  | 'ceiling'
+  | 'presentation'
+  | 'sensory';
 
-type Channels = { governor: number; ceiling: number; presentation: number };
+type Channels = {
+  governor: number;
+  ceiling: number;
+  presentation: number;
+  sensory: number;
+};
 
 const channelsByStage = new WeakMap<HTMLElement, Channels>();
 
@@ -44,7 +53,7 @@ export function subscribeToFlashGovernorDimming(listener: () => void) {
 function channelsFor(stage: HTMLElement): Channels {
   let channels = channelsByStage.get(stage);
   if (!channels) {
-    channels = { governor: 1, ceiling: 1, presentation: 1 };
+    channels = { governor: 1, ceiling: 1, presentation: 1, sensory: 1 };
     channelsByStage.set(stage, channels);
   }
   return channels;
@@ -68,7 +77,12 @@ export function stageLuminanceScale(
   const channels = channelsByStage.get(stage);
   if (!channels) return 1;
   if (!only) {
-    return channels.governor * channels.ceiling * channels.presentation;
+    return (
+      channels.governor *
+      channels.ceiling *
+      channels.presentation *
+      channels.sensory
+    );
   }
   let scale = 1;
   for (const channel of only) scale *= channels[channel];
@@ -92,7 +106,11 @@ export function setStageLuminanceChannel(
     }
   }
 
-  const composed = channels.governor * channels.ceiling * channels.presentation;
+  const composed =
+    channels.governor *
+    channels.ceiling *
+    channels.presentation *
+    channels.sensory;
   // Clearing rather than writing brightness(1) keeps the stage off the
   // filter path entirely in the overwhelmingly common case where neither
   // channel is engaged — a filter, even an identity one, forces a

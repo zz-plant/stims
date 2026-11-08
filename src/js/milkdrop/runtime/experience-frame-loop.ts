@@ -15,6 +15,10 @@ import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-
 import { isMilkdropCapturedVideoReady } from '../../core/services/captured-video-texture.ts';
 import { createGpuRenderTimingSampler } from '../../core/services/gpu-render-timing.ts';
 import { notePresetFrame } from '../../core/services/preset-telemetry.ts';
+import {
+  calculateBreathingLFO,
+  getSensoryTranslationService,
+} from '../../core/services/sensory-translation.ts';
 import type {
   ToyRuntimeFrame,
   ToyRuntimeInstance,
@@ -52,7 +56,11 @@ import {
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
-import { applyMotionDampening } from './motion-dampener.ts';
+import {
+  applyBreathingExpansion,
+  applyMotionDampening,
+  applyPredictabilitySmoothing,
+} from './motion-dampener.ts';
 import { estimateFrameBlendWorkload, MAX_BLEND_WORKLOAD } from './session.ts';
 import type { MilkdropTraceRecorder } from './trace-recorder.ts';
 import type { MilkdropTransitionController } from './transition-controller.ts';
@@ -417,10 +425,19 @@ export function createMilkdropExperienceFrameLoop({
         // After the interaction response, so a viewer's own drag or pinch
         // is dampened by the same amount as the preset's motion.
         const currentFrameState = applyMotionDampening(
-          applyMilkdropInteractionResponse(
-            rawFrameState,
-            frame.input,
-            activeBackend,
+          applyBreathingExpansion(
+            applyPredictabilitySmoothing(
+              applyMilkdropInteractionResponse(
+                rawFrameState,
+                frame.input,
+                activeBackend,
+              ),
+              getSensoryTranslationService().getKnobs().predictability,
+            ),
+            calculateBreathingLFO(
+              frame.time ?? 0,
+              getSensoryTranslationService().getKnobs().breathingCadenceSeconds,
+            ),
           ),
           getMotionScale(),
         );
@@ -457,10 +474,20 @@ export function createMilkdropExperienceFrameLoop({
             const outgoingFrame = applyMilkdropEnhancedEffectsPolicy({
               frameState: buildRenderFrameState({
                 frameState: applyMotionDampening(
-                  applyMilkdropInteractionResponse(
-                    outgoingVm.step(signals),
-                    frame.input,
-                    activeBackend,
+                  applyBreathingExpansion(
+                    applyPredictabilitySmoothing(
+                      applyMilkdropInteractionResponse(
+                        outgoingVm.step(signals),
+                        frame.input,
+                        activeBackend,
+                      ),
+                      getSensoryTranslationService().getKnobs().predictability,
+                    ),
+                    calculateBreathingLFO(
+                      frame.time ?? 0,
+                      getSensoryTranslationService().getKnobs()
+                        .breathingCadenceSeconds,
+                    ),
                   ),
                   getMotionScale(),
                 ),
