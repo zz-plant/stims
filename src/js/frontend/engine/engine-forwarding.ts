@@ -33,6 +33,8 @@ const FORWARDED = {
   setBlendDuration: { fallback: undefined },
   updateEditorSource: { fallback: undefined },
   updateFieldLive: { fallback: undefined },
+  getFieldLive: { fallback: undefined },
+  getBaseFieldLive: { fallback: undefined },
   stepPlaybackFrame: { fallback: false },
   applyEditorSourceAwaited: { fallback: null, async: true },
   applyEditorFieldsAwaited: { fallback: null, async: true },

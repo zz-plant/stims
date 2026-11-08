@@ -716,6 +716,35 @@ class MilkdropPresetVM implements MilkdropVM {
     this.frameVariablesSnapshot = null;
   }
 
+  /**
+   * Read a live field's current value. Mirrors `setField`'s normalisation so
+   * a caller that writes with one name can read it back with the same name.
+   * Returns undefined for a name the preset does not currently hold.
+   */
+  getField(key: string): number | undefined {
+    const normalized = normalizeProgramAssignmentTarget(key);
+    const value = this.state[normalized];
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : undefined;
+  }
+
+  /**
+   * Read the per-frame base value `setField` writes, before the preset's own
+   * equations run. A gesture that will write back through `setField` must
+   * start from this value, not the evaluated state, or an equation that
+   * recomputes the field applies twice.
+   */
+  getBaseField(key: string): number | undefined {
+    const normalized = normalizeProgramAssignmentTarget(key);
+    const value = this.perFrameBaseValues[normalized];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const state = this.state[normalized];
+    return typeof state === 'number' && Number.isFinite(state)
+      ? state
+      : undefined;
+  }
+
   getStateSnapshot() {
     const snapshot: MutableState = {
       ...this.state,
