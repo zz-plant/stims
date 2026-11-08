@@ -1,0 +1,57 @@
+.ctl-browse-compass {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.ctl-compass {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctl-compass__pad {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border: 1px solid var(--ctl-border, rgba(255, 255, 255, 0.18));
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.ctl-compass__puck {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ctl-accent, #7cc4ff);
+  box-shadow: 0 0 0 3px rgba(124, 196, 255, 0.25);
+  pointer-events: none;
+}
+
+.ctl-compass__axes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  font-size: 0.75rem;
+  color: var(--ctl-muted, rgba(255, 255, 255, 0.55));
+}
+
+.ctl-compass__axes span:nth-child(1),
+.ctl-compass__axes span:nth-child(2) {
+  text-align: center;
+  grid-column: span 1;
+}
+
+.ctl-compass__axes span:nth-child(3) {
+  text-align: left;
+}
+
+.ctl-compass__axes span:nth-child(4) {
+  text-align: right;
+}

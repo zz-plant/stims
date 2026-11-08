@@ -28,6 +28,7 @@ import {
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import { currentFoldLayout } from '../utils/foldable-viewport.ts';
+import { AestheticCompassPad } from './AestheticCompassPad.tsx';
 import { BrowsePresetList } from './BrowsePresetList.tsx';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
@@ -398,6 +399,7 @@ export function BrowseSheetPanel({
     setAuthorFilter(routeState.discovery?.author ?? null);
   }, [routeState.discovery?.author]);
   const [gridView, setGridView] = useState(readGridView);
+  const [showCompass, setShowCompass] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
 
   // Wrapper for PresetGrid — only passes presetId and audioSource
@@ -765,6 +767,24 @@ export function BrowseSheetPanel({
       // and was never part of this change.
       data-view={gridView ? 'grid' : 'list'}
     >
+      <div className="ctl-browse-compass">
+        <button
+          type="button"
+          className="ctl-btn ctl-btn--ghost"
+          aria-expanded={showCompass}
+          onClick={() => setShowCompass((open) => !open)}
+        >
+          {showCompass ? 'Hide aesthetic compass' : 'Aesthetic compass'}
+        </button>
+        {showCompass ? (
+          <AestheticCompassPad
+            onSelectPreset={(presetId) => {
+              void handlePresetSelection(presetId);
+              onPresetChosen?.(presetId);
+            }}
+          />
+        ) : null}
+      </div>
       <section className="ctl-browse-filters">
         <div className="ctl-browse-searchrow">
           <div className="ctl-browse-searchfield">
