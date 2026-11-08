@@ -28,6 +28,7 @@ import {
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import { currentFoldLayout } from '../utils/foldable-viewport.ts';
+import { AestheticCompassPad } from './AestheticCompassPad.tsx';
 import { BrowsePresetList } from './BrowsePresetList.tsx';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
@@ -398,6 +399,7 @@ export function BrowseSheetPanel({
     setAuthorFilter(routeState.discovery?.author ?? null);
   }, [routeState.discovery?.author]);
   const [gridView, setGridView] = useState(readGridView);
+  const [showCompass, setShowCompass] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
 
   // Wrapper for PresetGrid — only passes presetId and audioSource
@@ -548,6 +550,17 @@ export function BrowseSheetPanel({
     authorFilter,
     reduceFlashing,
   ]);
+
+  // Presets the flash preference hides from the list. The compass must skip
+  // them too, or Reduce flashing would still route a visitor to a strobe.
+  const hiddenByFlash = useMemo(() => {
+    const hidden = new Set<string>();
+    if (!reduceFlashing) return hidden;
+    for (const entry of catalog) {
+      if (!passesFlashPreference(entry, true)) hidden.add(entry.id);
+    }
+    return hidden;
+  }, [catalog, reduceFlashing]);
 
   // Saved presets, most recently opened first: the anchors 'like-saved'
   // ranks against. Joined into a key so the affinity pass reruns only when
@@ -834,6 +847,20 @@ export function BrowseSheetPanel({
           >
             <UiIcon
               name="shuffle"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            type="button"
+            className="ctl-btn ctl-btn--icon"
+            aria-expanded={showCompass}
+            aria-label="Aesthetic compass"
+            title="Aesthetic compass: pick a look by dragging"
+            onClick={() => setShowCompass((open) => !open)}
+          >
+            <UiIcon
+              name="sparkles"
               className="stims-icon-slot stims-icon-slot--sm"
               aria-hidden="true"
             />
@@ -1128,6 +1155,15 @@ export function BrowseSheetPanel({
           </p>
         ) : null}
       </section>
+
+      {showCompass ? (
+        <section className="ctl-browse-compass" aria-label="Aesthetic compass">
+          <AestheticCompassPad
+            onSelectPreset={selectPreset}
+            isSelectable={(id) => !hiddenByFlash.has(id)}
+          />
+        </section>
+      ) : null}
 
       {/* Two, not one: the rail costs a labelled row plus thumbnails — 17%
           of the panel's height — and a single tile is not a history worth
