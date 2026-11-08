@@ -45,6 +45,7 @@ import {
   GENERATED_SITEMAP_INDEX_PATH,
   SITE_SHELL_PATH,
 } from './generate-seo.ts';
+import { findStaleWhatsNewFiles } from './generate-whats-new.ts';
 import { PRESET_INDEX_OUT_FILE } from './preset-index-page.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -517,6 +518,7 @@ export async function runSeoChecks(rootDir = repoRoot) {
   });
 
   await pushLearnPageChecks(rootDir, String(sitemapChunk), results);
+  await pushWhatsNewChecks(rootDir, String(sitemapChunk), results);
   await pushAgentDiscoveryChecks(rootDir, results);
 
   return results;
@@ -599,6 +601,55 @@ async function pushLearnPageChecks(
  * block that public/_headers stamps on the preset index pages (the only HTML
  * that skips the worker, so its discovery links cannot come from middleware).
  */
+/**
+ * The /whats-new/ page is generated from CHANGELOG.md and docs/updates/*.md.
+ * A stale page would show old screenshots and an activity strip that no
+ * longer matches the changelog, so it is checked like the learn pages.
+ */
+async function pushWhatsNewChecks(
+  rootDir: string,
+  sitemapChunk: string,
+  results: CheckResult[],
+) {
+  const stale = findStaleWhatsNewFiles(rootDir);
+  results.push({
+    name: "What's new page matches generate:whats-new output",
+    passed: stale.length === 0,
+    details:
+      stale.length > 0
+        ? `stale: ${stale.join(', ')} — run bun run generate:whats-new`
+        : 'current',
+  });
+
+  const file = 'public/whats-new/index.html';
+  const html = await fs
+    .readFile(path.join(rootDir, file), 'utf8')
+    .catch(() => '');
+  const url = `${DEFAULT_BASE_URL}/whats-new/`;
+  const problems = [
+    html.includes(`<link rel="canonical" href="${url}" />`)
+      ? null
+      : 'canonical',
+    (html.match(/<h1[ >]/gu) ?? []).length === 1 ? null : 'exactly one h1',
+    /<title>[^<]+ \| Stims<\/title>/u.test(html) ? null : 'title',
+    html.includes('<meta name="description" content="') ? null : 'description',
+    html.includes('<meta name="robots" content="index,follow" />')
+      ? null
+      : 'robots',
+    sitemapChunk.includes(`<loc>${url}</loc>`) ? null : 'sitemap entry',
+    html.includes(
+      `<link rel="alternate" type="text/markdown" href="${DEFAULT_BASE_URL}/whats-new.md"`,
+    )
+      ? null
+      : 'markdown alternate link',
+  ].filter((problem): problem is string => problem !== null);
+  results.push({
+    name: "What's new page is indexable and well-formed",
+    passed: problems.length === 0,
+    details: problems.length > 0 ? problems.join('; ') : file,
+  });
+}
+
 async function pushAgentDiscoveryChecks(
   rootDir: string,
   results: CheckResult[],

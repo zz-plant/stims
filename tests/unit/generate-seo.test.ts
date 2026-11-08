@@ -42,17 +42,18 @@ describe('generate-seo sitemap routes', () => {
       .map((route) => route.path);
 
     expect(canonicalPaths).not.toContain('/milkdrop/');
-    expect(canonicalPaths.slice(0, 3)).toEqual([
+    expect(canonicalPaths.slice(0, 4)).toEqual([
       '/',
+      '/whats-new/',
       '/performance/',
       PRESET_INDEX_PATH,
     ]);
     // Curated /discover/ hubs join the sitemap; every one must be on the
     // middleware allowlist so the sitemap never advertises a slug the edge
-    // won't rewrite. /learn/ routes and /presets/ must each be a generated
-    // static page.
+    // won't rewrite. /learn/ routes, /whats-new/ and /presets/ must each be a
+    // generated static page.
     const learnPaths = new Set(LEARN_PAGES.map(learnPagePath));
-    for (const path of canonicalPaths.slice(2)) {
+    for (const path of canonicalPaths.slice(4)) {
       const allowed = path.startsWith('/learn/')
         ? learnPaths.has(path)
         : path === PRESET_INDEX_PATH
@@ -63,6 +64,9 @@ describe('generate-seo sitemap routes', () => {
               isAllowedAuthorSlug(path.slice('/author/'.length));
       expect(allowed).toBe(true);
     }
+    expect(
+      existsSync(join(import.meta.dir, '../../public/whats-new/index.html')),
+    ).toBe(true);
   });
 
   test('builds sitemap entries for the canonical route with the launch OG image', async () => {
@@ -70,12 +74,18 @@ describe('generate-seo sitemap routes', () => {
       resolveLastmod: async () => '2026-04-04',
     });
 
-    expect(entries.slice(0, 2)).toEqual([
+    expect(entries.slice(0, 3)).toEqual([
       expect.objectContaining({
         loc: 'https://toil.fyi/',
         lastmod: '2026-04-04',
         imageLoc: 'https://toil.fyi/og/milkdrop.png',
         imageTitle: 'MilkDrop Visualizer | Stims',
+      }),
+      expect.objectContaining({
+        loc: 'https://toil.fyi/whats-new/',
+        lastmod: '2026-04-04',
+        imageLoc: 'https://toil.fyi/og/milkdrop.png',
+        imageTitle: "What's new in Stims | Stims",
       }),
       expect.objectContaining({
         loc: 'https://toil.fyi/performance/',
