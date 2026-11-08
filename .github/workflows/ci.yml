@@ -238,6 +238,10 @@ jobs:
     # remainder keeps the file's original job name and selects "everything but
     # the switch" rather than listing the tests it runs, so a test added to the
     # file later lands in it instead of in neither.
+    #
+    # step-budget has the same shape: its Browse comparison takes ~76s of a
+    # ~170s file, and it was the matrix's slowest job. Split it the same way
+    # so the long test cannot hold the rest of the file's coverage.
     strategy:
       fail-fast: false
       matrix:
@@ -250,6 +254,10 @@ jobs:
           - file: landing-route.test.ts
           - file: open-one-up.test.ts
           - file: step-budget.test.ts
+            tests: "^(?!desktop: comparing three presets)"
+          - file: step-budget.test.ts
+            part: browse comparison
+            tests: "^desktop: comparing three presets"
           - file: foldable-layout.test.ts
           - file: e2e-engine-mount.test.ts
             tests: "^(?!switches preset)"

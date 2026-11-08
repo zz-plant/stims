@@ -256,11 +256,12 @@ requiredBrowserTest(
       await step(() => tile.tap());
 
       // The sheet has shrunk to show the stage, with the card left in place.
-      // Measured in one page call straight after the tap: the sheet folds a
-      // fixed time after the pick, and a preset that loads slowly on a busy
-      // runner can take longer than that.
-      const shrunk = await page.waitForFunction(
-        (cardId) => {
+      // Wait for the fold to settle, not just for the panel to cross 150px:
+      // sampling on that edge caught the card mid-animation on a busy runner
+      // and read a 776px move that was not there a frame later.
+      const shrunk = await page.evaluate(async (cardId) => {
+        const frame = () => new Promise(requestAnimationFrame);
+        const read = () => {
           const panel = document.querySelector('[role="dialog"]');
           const card = panel?.querySelector(`a[data-preset-id="${cardId}"]`);
           if (!panel || !card) return null;
@@ -268,13 +269,27 @@ requiredBrowserTest(
           return panelTop > 150
             ? { panelTop, cardTop: card.getBoundingClientRect().y }
             : null;
-        },
-        id,
-        { timeout: 15000 },
-      );
-      const { cardTop } = (await shrunk.jsonValue()) as { cardTop: number };
+        };
+        let previous = read();
+        for (let attempt = 0; attempt < 180; attempt++) {
+          await frame();
+          const current = read();
+          if (
+            current !== null &&
+            previous !== null &&
+            Math.abs(current.cardTop - previous.cardTop) < 0.5
+          ) {
+            return current;
+          }
+          previous = current;
+        }
+        return null;
+      }, id);
+      if (!shrunk) {
+        throw new Error('the Browse sheet never settled after the pick');
+      }
       // A few pixels are a card's own hover and press styling.
-      expect(Math.abs(cardTop - (top ?? 0))).toBeLessThan(6);
+      expect(Math.abs(shrunk.cardTop - (top ?? 0))).toBeLessThan(6);
 
       await waitForPresetOtherThan(page, before);
       await browseDialog(page).waitFor({ state: 'detached', timeout: 15000 });
