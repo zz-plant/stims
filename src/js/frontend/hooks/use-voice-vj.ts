@@ -84,13 +84,33 @@ export function useVoiceVJ(options: VoiceVJOptions): {
     // Keep audio on-device. Only reachable when the browser exposes the flag
     // (see `supported`), so this is never a silent no-op under a remote path.
     rec.processLocally = true;
+    if (rec.processLocally !== true) {
+      // The recognizer did not accept local mode. Fail closed rather than
+      // risk microphone audio reaching a remote service under a local-only
+      // promise.
+      setListening(false);
+      return;
+    }
     rec.onresult = (e) => {
       const last = e.results[e.results.length - 1];
       if (!last?.isFinal) return;
       const transcript = last[0]?.transcript?.trim().toLowerCase() ?? '';
       if (transcript) onCommand(transcript);
     };
-    rec.onerror = () => {
+    rec.onerror = (e) => {
+      // A missing local language pack must not silently fall back to remote
+      // recognition. Stop and stay stopped until the visitor re-enables.
+      if (
+        e.error === 'language-not-supported' ||
+        e.error === 'service-not-allowed'
+      ) {
+        recognitionRef.current = null;
+        try {
+          rec.stop();
+        } catch {
+          // ignore
+        }
+      }
       setListening(false);
     };
     rec.onend = () => {
