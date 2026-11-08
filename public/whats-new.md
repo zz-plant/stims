@@ -13,7 +13,7 @@ source: https://github.com/zz-plant/stims/blob/main/CHANGELOG.md
 
 ### The aesthetic compass (2026-11-08)
 
-![The aesthetic compass](https://toil.fyi/screenshots/whats-new/aesthetic-compass.png)
+![The aesthetic compass](https://toil.fyi/screenshots/whats-new/aesthetic-compass.webp)
 
 A draggable map of every previewed preset, projected from the same visual embeddings that power search. Drag from organic liquid to geometric wireframe, or from hypnotic and minimal to reactive and chaotic, and the nearest look plays.
 
@@ -21,7 +21,7 @@ A draggable map of every previewed preset, projected from the same visual embedd
 
 ### Pinch and twirl the stage (2026-11-08)
 
-![Pinch and twirl the stage](https://toil.fyi/screenshots/whats-new/canvas-gestures.png)
+![Pinch and twirl the stage](https://toil.fyi/screenshots/whats-new/canvas-gestures.webp)
 
 On a touchscreen, two fingers now steer the picture: pinch to zoom and twirl to rotate, starting from whatever the preset is already doing. One-finger swipes still change presets.
 
@@ -29,7 +29,7 @@ On a touchscreen, two fingers now steer the picture: pinch to zoom and twirl to 
 
 ### Sensory mood dials (2026-11-08)
 
-![Sensory mood dials](https://toil.fyi/screenshots/whats-new/sensory-dials.png)
+![Sensory mood dials](https://toil.fyi/screenshots/whats-new/sensory-dials.webp)
 
 Grounding vs stimulation, harmonic predictability, and a paced breathing guide. The dials lower the brightness ceiling, soften motion and contrast, smooth sudden jumps, and can breathe with you — and they can never raise the stage above the flash governor's limit.
 
@@ -37,7 +37,7 @@ Grounding vs stimulation, harmonic predictability, and a paced breathing guide. 
 
 ### Hands-free voice commands (2026-11-08)
 
-![Hands-free voice commands](https://toil.fyi/screenshots/whats-new/voice-commands.png)
+![Hands-free voice commands](https://toil.fyi/screenshots/whats-new/voice-commands.webp)
 
 Say "next", "calm", "breathe" or "full screen". Recognition runs on your device with the browser's local speech mode, and the switch only appears where the browser can keep audio from leaving it.
 

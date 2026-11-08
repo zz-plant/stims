@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
+import sharp from 'sharp';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { spawnDevServer } from './dev-server.ts';
 
@@ -35,8 +36,16 @@ async function run(page: Page, action: string) {
 }
 
 async function shoot(page: Page, name: string, opts?: { fullPage?: boolean }) {
-  const file = path.join(OUT_DIR, name);
-  await page.screenshot({ path: file, fullPage: opts?.fullPage ?? false });
+  // WebP at 1200px: the card shows the image ~500px wide, and a raw 2x PNG
+  // was 2–3 MB per shot. This keeps the page light without visible loss.
+  const buffer = await page.screenshot({
+    fullPage: opts?.fullPage ?? false,
+  });
+  const file = path.join(OUT_DIR, name.replace(/\.png$/u, '.webp'));
+  await sharp(buffer)
+    .resize({ width: 1200, withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toFile(file);
   console.log(`wrote ${file}`);
 }
 
