@@ -21,6 +21,10 @@ import {
 import { getProjectorState } from '../core/services/projector-window-service.ts';
 import { isRecordingActive } from '../core/services/recording-state.ts';
 import {
+  getSensoryMoodKnobs,
+  setSensoryMoodKnobs,
+} from '../core/services/sensory-translation.ts';
+import {
   stageUtilityMode,
   toggleBlackout,
 } from '../core/services/stage-utilities.ts';
@@ -755,6 +759,61 @@ export function buildPaletteActions(
       },
       keywords: ['flash', 'strobe', 'seizure', 'photosensitive', 'safety'],
       run: () => toggleReduceFlashingAction(uiRef.current.setStatusMessage),
+    },
+    {
+      id: 'sensory-calm',
+      group: 'View',
+      label: 'Calm the visuals (lower brightness, motion, contrast)',
+      keywords: ['sensory', 'calm', 'grounding', 'overload', 'neurodivergent'],
+      run: () => {
+        setSensoryMoodKnobs({ overloadCeiling: 0.3 });
+        uiRef.current.setStatusMessage('Visuals calmed.');
+      },
+    },
+    {
+      id: 'sensory-stimulate',
+      group: 'View',
+      label: 'Stimulate the visuals (full brightness and motion)',
+      keywords: ['sensory', 'stimulate', 'energize'],
+      run: () => {
+        setSensoryMoodKnobs({ overloadCeiling: 1.0 });
+        uiRef.current.setStatusMessage('Visuals stimulated.');
+      },
+    },
+    {
+      id: 'sensory-reset',
+      group: 'View',
+      label: 'Reset sensory mood dials',
+      keywords: ['sensory', 'reset', 'default'],
+      run: () => {
+        setSensoryMoodKnobs({
+          overloadCeiling: 1.0,
+          predictability: 0.5,
+          breathingCadenceSeconds: null,
+        });
+        uiRef.current.setStatusMessage('Sensory mood reset.');
+      },
+    },
+    {
+      id: 'sensory-breathing-toggle',
+      group: 'View',
+      get label() {
+        return getSensoryMoodKnobs().breathingCadenceSeconds === null
+          ? 'Turn on paced breathing guide'
+          : 'Turn off paced breathing guide';
+      },
+      keywords: ['sensory', 'breathing', 'pace', 'breath'],
+      run: () => {
+        const current = getSensoryMoodKnobs().breathingCadenceSeconds;
+        setSensoryMoodKnobs({
+          breathingCadenceSeconds: current === null ? 6.0 : null,
+        });
+        uiRef.current.setStatusMessage(
+          current === null
+            ? 'Paced breathing guide on.'
+            : 'Paced breathing guide off.',
+        );
+      },
     },
     {
       id: 'toggle-autoplay',

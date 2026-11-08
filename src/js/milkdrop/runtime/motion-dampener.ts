@@ -25,6 +25,8 @@
  * per-frame base is dampened, its per-pixel offsets are not). Both need a
  * uniform inside the feedback pass itself.
  */
+
+import { translatePredictability } from '../../core/services/sensory-translation.ts';
 import type { MilkdropFrameState } from '../renderer-types.ts';
 
 /** Above this the dampener is a no-op and the frame passes through untouched. */
@@ -103,6 +105,96 @@ function dampenFieldTransform(
  * place, as the interaction response before it does; returns the same
  * frame state so it composes at the call site.
  */
+/**
+ * Apply a slow breathing expansion to the frame's zoom, driven by the
+ * sensory mood dial's breathing cadence LFO. The factor is small (±0.02)
+ * and multiplies the existing zoom so it composes with motion dampening
+ * and the preset's own zoom.
+ */
+export function applyBreathingExpansion(
+  frameState: MilkdropFrameState,
+  expansionFactor: number,
+): MilkdropFrameState {
+  if (!Number.isFinite(expansionFactor) || Math.abs(expansionFactor) < 1e-6) {
+    return frameState;
+  }
+  const factor = 1 + expansionFactor;
+
+  const { gpuGeometry, post } = frameState;
+  if (gpuGeometry.meshField) {
+    gpuGeometry.meshField.zoom = (gpuGeometry.meshField.zoom ?? 1) * factor;
+  }
+  if (gpuGeometry.motionVectorField) {
+    gpuGeometry.motionVectorField.zoom =
+      (gpuGeometry.motionVectorField.zoom ?? 1) * factor;
+  }
+  post.shaderControls.zoom = (post.shaderControls.zoom ?? 1) * factor;
+  if (post.warp !== undefined) {
+    // leave warp alone; breathing is a scale, not a warp
+  }
+  // variables proxy: overlay zoom if present
+  const variables = frameState.variables as Record<string, number> | undefined;
+  if (variables && typeof variables.zoom === 'number') {
+    // variables is a proxy in dampened case; write through is not safe, so
+    // skip variable overlay here — the controls.zoom path covers the common case.
+  }
+  return frameState;
+}
+
+const predictabilityPrevious = new WeakMap<object, Record<string, number>>();
+
+/**
+ * Smooth sudden jumps in the preset's q-variables according to the
+ * predictability dial. A low-pass filter blends each q value toward its
+ * new target instead of stepping instantly, favouring steady rhythmic
+ * motion over random flicker. Composes with motion dampening (which
+ * overlays warp transforms) by wrapping the variables object in its own
+ * proxy, leaving the underlying VM state untouched.
+ */
+export function applyPredictabilitySmoothing(
+  frameState: MilkdropFrameState,
+  predictability: number,
+): MilkdropFrameState {
+  const { smoothingAlpha } = translatePredictability(predictability);
+  // alpha === 1.0 means no smoothing (instant response); skip the proxy.
+  if (smoothingAlpha >= 0.999) {
+    return frameState;
+  }
+
+  const variables = frameState.variables as Record<string, number> | null;
+  if (!variables || typeof variables !== 'object') {
+    return frameState;
+  }
+
+  let previous = predictabilityPrevious.get(variables);
+  if (!previous) {
+    previous = {};
+    predictabilityPrevious.set(variables, previous);
+  }
+  const prev = previous;
+
+  frameState.variables = new Proxy(variables, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (
+        typeof prop === 'string' &&
+        /^q\d+$/.test(prop) &&
+        typeof value === 'number' &&
+        Number.isFinite(value)
+      ) {
+        const prevVal =
+          prop in prev && Number.isFinite(prev[prop]) ? prev[prop] : value;
+        const smoothed = prevVal + smoothingAlpha * (value - prevVal);
+        prev[prop] = smoothed;
+        return smoothed;
+      }
+      return value;
+    },
+  }) as typeof frameState.variables;
+
+  return frameState;
+}
+
 export function applyMotionDampening(
   frameState: MilkdropFrameState,
   motionScale: number,

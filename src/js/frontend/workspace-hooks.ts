@@ -47,6 +47,7 @@ import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
 import {
   useFlashSafety,
   useStageBrightness,
+  useStageSensoryBrightness,
 } from './hooks/use-flash-safety.ts';
 import { usePresetPreviews } from './hooks/use-preset-previews.ts';
 import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
@@ -386,6 +387,7 @@ export function useWorkspaceSessionState({
   );
   useFlashSafety(stageRef, activeSensoryProfile);
   useStageBrightness(stageRef);
+  useStageSensoryBrightness(stageRef);
 
   useEffect(() => {
     if (routeState.panel === 'browse') {

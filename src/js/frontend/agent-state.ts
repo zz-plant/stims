@@ -28,6 +28,7 @@ import {
   type ManualTempoSource,
 } from '../core/manual-tempo.ts';
 import { getPerformanceRevision } from '../core/performance-revision.ts';
+import { setSensoryMoodKnobs } from '../core/services/sensory-translation.ts';
 import {
   extractFrameStats,
   type FrameStats,
@@ -493,6 +494,16 @@ export const AGENT_VERBS: readonly AgentActionInfo[] = [
     label: 'Unpin a parameter from the performance surface',
     params: { field: 'string: a pinnable parameter name' },
   },
+  {
+    id: 'set-sensory-knob',
+    label:
+      'Set a sensory mood dial (overload ceiling, predictability, breathing cadence)',
+    params: {
+      knob: 'string: "overloadCeiling" | "predictability" | "breathingCadenceSeconds"',
+      value:
+        'number 0–1 for overloadCeiling/predictability, or seconds 4–12 (or null) for breathingCadenceSeconds',
+    },
+  },
 ];
 
 function editDistance(a: string, b: string): number {
@@ -807,6 +818,47 @@ export function installAgentStateGlobal(
         };
       }
       providers.setField(key, value);
+      return null;
+    }
+    if (actionId === 'set-sensory-knob') {
+      const knob = params?.knob;
+      const value = params?.value;
+      if (typeof knob !== 'string') {
+        return {
+          ok: false,
+          error: 'set-sensory-knob requires params.knob (string).',
+        };
+      }
+      if (
+        knob !== 'overloadCeiling' &&
+        knob !== 'predictability' &&
+        knob !== 'breathingCadenceSeconds'
+      ) {
+        return {
+          ok: false,
+          error: `set-sensory-knob: unknown knob "${knob}".`,
+        };
+      }
+      if (knob === 'breathingCadenceSeconds') {
+        if (
+          value !== null &&
+          (typeof value !== 'number' || !Number.isFinite(value))
+        ) {
+          return {
+            ok: false,
+            error:
+              'set-sensory-knob: breathingCadenceSeconds must be a number or null.',
+          };
+        }
+      } else if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return {
+          ok: false,
+          error: 'set-sensory-knob: value must be a finite number.',
+        };
+      }
+      setSensoryMoodKnobs({ [knob]: value } as Parameters<
+        typeof setSensoryMoodKnobs
+      >[0]);
       return null;
     }
     if (actionId === 'crossfade') {

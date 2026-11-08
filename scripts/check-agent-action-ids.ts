@@ -101,6 +101,13 @@ const PALETTE_ONLY_EXEMPT = new Set([
   // the file). The HUD plots over the stage from the palette; its watch set
   // comes from the editor's Inspect pins, not from a dock control.
   'toggle-watcher-hud',
+  // Sensory mood dials: palette-only quick moods; the full controls live in
+  // Settings → Accessibility → Sensory mood. Dock buttons would invite
+  // mid-show accidental changes to a self-regulation control.
+  'sensory-calm',
+  'sensory-stimulate',
+  'sensory-reset',
+  'sensory-breathing-toggle',
   // Keyboard-first tuning of the playing preset (shortcut-registry.ts binds
   // H, W, I, O, J and < >). The dock's transition control opens the ladder
   // of durations, which covers blend-vs-cut; a bar button per nudge would

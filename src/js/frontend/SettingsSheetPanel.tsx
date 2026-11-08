@@ -29,6 +29,20 @@ import {
   setWebGPUCompatibilityGapOverride,
 } from '../core/renderer-query-override.ts';
 import { getLastRendererFallbackReason } from '../core/renderer-telemetry.ts';
+import {
+  DEFAULT_BREATHING_CADENCE_SECONDS,
+  DEFAULT_OVERLOAD_CEILING,
+  DEFAULT_PREDICTABILITY,
+  getSensoryMoodKnobs,
+  MAX_BREATHING_CADENCE_SECONDS,
+  MAX_OVERLOAD_CEILING,
+  MAX_PREDICTABILITY,
+  MIN_BREATHING_CADENCE_SECONDS,
+  MIN_OVERLOAD_CEILING,
+  MIN_PREDICTABILITY,
+  setSensoryMoodKnobs,
+  subscribeToSensoryMoodKnobs,
+} from '../core/services/sensory-translation.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import {
   getStageOverlayPreference,
@@ -165,10 +179,15 @@ function AccessibilitySection({
   onOpenCredits: () => void;
 }) {
   const [prefs, setPrefs] = useState(() => getActiveAccessibilityPreference());
+  const [sensory, setSensory] = useState(() => getSensoryMoodKnobs());
 
   useEffect(() => {
     applyAccessibility(prefs);
   }, [prefs]);
+
+  useEffect(() => {
+    return subscribeToSensoryMoodKnobs((next) => setSensory(next));
+  }, []);
 
   return (
     <section className="ctl-section">
@@ -291,6 +310,118 @@ function AccessibilitySection({
       {/* Named for both halves of what it opens: on a touch device the
           gestures are the only useful half, and "Keyboard shortcuts" is
           exactly the label a phone user skips. */}
+      <section className="ctl-section">
+        <div className="ctl-section__head">
+          <h3 className="ctl-section__title">Sensory mood</h3>
+        </div>
+        <div className="ctl-row">
+          <span className="ctl-row__text">
+            <label
+              className="ctl-row__label"
+              htmlFor="sensory-overload-ceiling"
+            >
+              Grounding vs. stimulation
+            </label>
+            <span className="ctl-row__hint" id="sensory-overload-ceiling-hint">
+              Lowers the brightness ceiling, softens motion, and eases contrast
+              swings. Calms the stage without stopping the music.
+            </span>
+          </span>
+          <input
+            id="sensory-overload-ceiling"
+            type="range"
+            min={MIN_OVERLOAD_CEILING}
+            max={MAX_OVERLOAD_CEILING}
+            step={0.05}
+            value={sensory.overloadCeiling}
+            aria-describedby="sensory-overload-ceiling-hint"
+            aria-valuetext={`${Math.round(sensory.overloadCeiling * 100)} percent`}
+            onChange={(event) => {
+              const overloadCeiling = Number(event.target.value);
+              setSensoryMoodKnobs({ overloadCeiling });
+            }}
+          />
+        </div>
+        <div className="ctl-row">
+          <span className="ctl-row__text">
+            <label className="ctl-row__label" htmlFor="sensory-predictability">
+              Harmonic predictability
+            </label>
+            <span className="ctl-row__hint" id="sensory-predictability-hint">
+              Smooths sudden jumps in the visuals and favours steady, repeating
+              motion over random flicker.
+            </span>
+          </span>
+          <input
+            id="sensory-predictability"
+            type="range"
+            min={MIN_PREDICTABILITY}
+            max={MAX_PREDICTABILITY}
+            step={0.05}
+            value={sensory.predictability}
+            aria-describedby="sensory-predictability-hint"
+            aria-valuetext={`${Math.round(sensory.predictability * 100)} percent`}
+            onChange={(event) => {
+              const predictability = Number(event.target.value);
+              setSensoryMoodKnobs({ predictability });
+            }}
+          />
+        </div>
+        <div className="ctl-row">
+          <span className="ctl-row__text">
+            <label
+              className="ctl-row__label"
+              htmlFor="sensory-breathing-cadence"
+            >
+              Paced breathing guide
+            </label>
+            <span className="ctl-row__hint" id="sensory-breathing-cadence-hint">
+              Adds a slow expansion and contraction to the visuals at the chosen
+              breathing rhythm. Set to off for no pacing.
+            </span>
+          </span>
+          <select
+            id="sensory-breathing-cadence"
+            className="ctl-select ctl-select--auto"
+            value={sensory.breathingCadenceSeconds ?? ''}
+            onChange={(event) => {
+              const raw = event.target.value;
+              setSensoryMoodKnobs({
+                breathingCadenceSeconds: raw === '' ? null : Number(raw),
+              });
+            }}
+          >
+            <option value="">Off</option>
+            {Array.from(
+              {
+                length:
+                  (MAX_BREATHING_CADENCE_SECONDS -
+                    MIN_BREATHING_CADENCE_SECONDS) /
+                    0.5 +
+                  1,
+              },
+              (_, i) => MIN_BREATHING_CADENCE_SECONDS + i * 0.5,
+            ).map((v) => (
+              <option key={v} value={v}>
+                {v.toFixed(1)}s
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          className="ctl-btn"
+          onClick={() => {
+            setSensoryMoodKnobs({
+              overloadCeiling: DEFAULT_OVERLOAD_CEILING,
+              predictability: DEFAULT_PREDICTABILITY,
+              breathingCadenceSeconds: DEFAULT_BREATHING_CADENCE_SECONDS,
+            });
+          }}
+        >
+          Reset sensory mood
+        </button>
+      </section>
       <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
         Shortcuts and gestures
       </button>

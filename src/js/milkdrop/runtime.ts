@@ -46,6 +46,7 @@ import {
   noteSubstitution,
 } from '../core/services/preset-telemetry.ts';
 import { subscribeToRendererLifecycle } from '../core/services/render-service.ts';
+import { getSensoryMotionDampener } from '../core/services/sensory-translation.ts';
 import {
   type QualityPreset,
   setQualityPresetById,
@@ -1043,7 +1044,11 @@ export function createMilkdropExperience({
     },
     capturedVideoOverlay,
     getFreezeFrame: () => isFreezeFrameActive(),
-    getMotionScale,
+    getMotionScale: () => {
+      const base = getMotionScale();
+      const dampener = getSensoryMotionDampener();
+      return base * (Number.isFinite(dampener) ? dampener : 1);
+    },
     traceRecorder,
     liveBlend: {
       getOutgoingVm: () => (outgoingVm ? outgoingDeckVm : null),
