@@ -767,24 +767,6 @@ export function BrowseSheetPanel({
       // and was never part of this change.
       data-view={gridView ? 'grid' : 'list'}
     >
-      <div className="ctl-browse-compass">
-        <button
-          type="button"
-          className="ctl-btn ctl-btn--ghost"
-          aria-expanded={showCompass}
-          onClick={() => setShowCompass((open) => !open)}
-        >
-          {showCompass ? 'Hide aesthetic compass' : 'Aesthetic compass'}
-        </button>
-        {showCompass ? (
-          <AestheticCompassPad
-            onSelectPreset={(presetId) => {
-              void handlePresetSelection(presetId);
-              onPresetChosen?.(presetId);
-            }}
-          />
-        ) : null}
-      </div>
       <section className="ctl-browse-filters">
         <div className="ctl-browse-searchrow">
           <div className="ctl-browse-searchfield">
@@ -854,6 +836,20 @@ export function BrowseSheetPanel({
           >
             <UiIcon
               name="shuffle"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            type="button"
+            className="ctl-btn ctl-btn--icon"
+            aria-expanded={showCompass}
+            aria-label="Aesthetic compass"
+            title="Aesthetic compass: pick a look by dragging"
+            onClick={() => setShowCompass((open) => !open)}
+          >
+            <UiIcon
+              name="sparkles"
               className="stims-icon-slot stims-icon-slot--sm"
               aria-hidden="true"
             />
@@ -1148,6 +1144,17 @@ export function BrowseSheetPanel({
           </p>
         ) : null}
       </section>
+
+      {showCompass ? (
+        <section className="ctl-browse-compass" aria-label="Aesthetic compass">
+          <AestheticCompassPad
+            onSelectPreset={(presetId) => {
+              void handlePresetSelection(presetId);
+              onPresetChosen?.(presetId);
+            }}
+          />
+        </section>
+      ) : null}
 
       {/* Two, not one: the rail costs a labelled row plus thumbnails — 17%
           of the panel's height — and a single tile is not a history worth
