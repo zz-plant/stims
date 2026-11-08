@@ -92,6 +92,7 @@ import {
   useFileHandlerLaunch,
   useSharedLaunch,
 } from './hooks/use-shared-launch.ts';
+import { mapVoicePhrase, useVoiceVJ } from './hooks/use-voice-vj.ts';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
@@ -541,6 +542,7 @@ function StimsWorkspaceAppShell() {
   });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   useCommandPaletteHotkey(() => setPaletteOpen(true));
 
   // Stable panel surface for the shared action bodies: reads through the
@@ -596,6 +598,20 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     paletteActionsRef.current = paletteActions;
   }, [paletteActions]);
+
+  // Hands-free voice VJing: recognition runs on-device; a recognised phrase
+  // is mapped to a bounded palette action and run through the same path as
+  // the palette, so the action's own guards and telemetry still apply.
+  const voiceVJ = useVoiceVJ({
+    enabled: voiceEnabled,
+    onCommand: (phrase) => {
+      const command = mapVoicePhrase(phrase);
+      if (!command) return;
+      paletteActionsRef.current
+        .find((action) => action.id === command.id)
+        ?.run();
+    },
+  });
   const buildAgentCoreSnapshot = useAgentStateInstall({
     paletteActionsRef,
     engineSnapshotRef,
@@ -1507,6 +1523,10 @@ function StimsWorkspaceAppShell() {
               padActions={paletteActions}
               revealReduceFlashing={revealReduceFlashing}
               onReduceFlashingRevealed={clearRevealReduceFlashing}
+              voiceEnabled={voiceEnabled}
+              voiceSupported={voiceVJ.supported}
+              voiceListening={voiceVJ.listening}
+              onVoiceEnabledChange={setVoiceEnabled}
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}

@@ -174,9 +174,17 @@ function nearestStep(
 function AccessibilitySection({
   onOpenShortcuts,
   onOpenCredits,
+  voiceEnabled = false,
+  voiceSupported = false,
+  voiceListening = false,
+  onVoiceEnabledChange,
 }: {
   onOpenShortcuts: () => void;
   onOpenCredits: () => void;
+  voiceEnabled?: boolean;
+  voiceSupported?: boolean;
+  voiceListening?: boolean;
+  onVoiceEnabledChange?: (enabled: boolean) => void;
 }) {
   const [prefs, setPrefs] = useState(() => getActiveAccessibilityPreference());
   const [sensory, setSensory] = useState(() => getSensoryMoodKnobs());
@@ -307,6 +315,18 @@ function AccessibilitySection({
           setAccessibilityPreference({ reduceFlashing });
         }}
       />
+      {voiceSupported && onVoiceEnabledChange ? (
+        <SwitchRow
+          label="Hands-free voice commands"
+          hint={
+            voiceListening
+              ? 'Listening on this device. Say "next", "calm", "breathe", or "full screen". Audio never leaves the browser.'
+              : 'Listens on this device for short commands like "next" or "calm". Audio never leaves the browser.'
+          }
+          checked={voiceEnabled}
+          onChange={onVoiceEnabledChange}
+        />
+      ) : null}
       {/* Named for both halves of what it opens: on a touch device the
           gestures are the only useful half, and "Keyboard shortcuts" is
           exactly the label a phone user skips. */}
@@ -751,6 +771,10 @@ export function SettingsSheetPanel({
   padActions,
   revealReduceFlashing = false,
   onReduceFlashingRevealed,
+  voiceEnabled = false,
+  voiceSupported = false,
+  voiceListening = false,
+  onVoiceEnabledChange,
 }: {
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
@@ -768,6 +792,11 @@ export function SettingsSheetPanel({
   /** Opened from the stage's "Dimming flashes" notice: go to that switch. */
   revealReduceFlashing?: boolean;
   onReduceFlashingRevealed?: () => void;
+  /** On-device voice commands (Web Speech API). */
+  voiceEnabled?: boolean;
+  voiceSupported?: boolean;
+  voiceListening?: boolean;
+  onVoiceEnabledChange?: (enabled: boolean) => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -1202,6 +1231,10 @@ export function SettingsSheetPanel({
           <AccessibilitySection
             onOpenShortcuts={onOpenShortcuts}
             onOpenCredits={onOpenCredits}
+            voiceEnabled={voiceEnabled}
+            voiceSupported={voiceSupported}
+            voiceListening={voiceListening}
+            onVoiceEnabledChange={onVoiceEnabledChange}
           />
         </div>
       ) : null}
