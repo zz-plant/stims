@@ -27,6 +27,8 @@ interface ISpeechRecognition extends EventTarget {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  /** When supported, keeps recognition on-device instead of a remote service. */
+  processLocally?: boolean;
   start(): void;
   stop(): void;
   onresult: ((e: SpeechRecognitionEvent) => void) | null;
@@ -44,6 +46,20 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+/**
+ * Local processing is the whole privacy promise: the settings copy says audio
+ * never leaves the browser. Browsers that only offer remote recognition must
+ * not be presented as if they were on-device, so the feature stays hidden
+ * there.
+ */
+function supportsLocalProcessing(ctor: SpeechRecognitionCtor): boolean {
+  try {
+    return 'processLocally' in new ctor();
+  } catch {
+    return false;
+  }
+}
+
 export function useVoiceVJ(options: VoiceVJOptions): {
   supported: boolean;
   listening: boolean;
@@ -53,7 +69,10 @@ export function useVoiceVJ(options: VoiceVJOptions): {
   const { enabled, onCommand } = options;
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const [listening, setListening] = useState(false);
-  const supported = getSpeechRecognitionCtor() !== null;
+  const [supported] = useState(() => {
+    const ctor = getSpeechRecognitionCtor();
+    return ctor !== null && supportsLocalProcessing(ctor);
+  });
 
   const start = () => {
     const Ctor = getSpeechRecognitionCtor();
@@ -62,6 +81,9 @@ export function useVoiceVJ(options: VoiceVJOptions): {
     rec.lang = 'en-US';
     rec.continuous = true;
     rec.interimResults = false;
+    // Keep audio on-device. Only reachable when the browser exposes the flag
+    // (see `supported`), so this is never a silent no-op under a remote path.
+    rec.processLocally = true;
     rec.onresult = (e) => {
       const last = e.results[e.results.length - 1];
       if (!last?.isFinal) return;
@@ -103,10 +125,13 @@ export function useVoiceVJ(options: VoiceVJOptions): {
     setListening(false);
   };
 
+  const startRef = useRef(start);
+  startRef.current = start;
   const stopRef = useRef(stop);
   stopRef.current = stop;
   useEffect(() => {
-    if (!enabled) stopRef.current();
+    if (enabled) startRef.current();
+    else stopRef.current();
     return () => stopRef.current();
   }, [enabled]);
 
@@ -137,7 +162,7 @@ export function mapVoicePhrase(
   if (/\bnext\b/.test(p)) return { id: 'next-preset' };
   if (/\bprevious\b|\bback\b/.test(p)) return { id: 'previous-preset' };
   if (/\bbrowse\b/.test(p)) return { id: 'open-browse' };
-  if (/\bfullscreen\b/.test(p)) return { id: 'toggle-fullscreen' };
+  if (/\bfull\s*screen\b/.test(p)) return { id: 'toggle-fullscreen' };
   if (/\breset\b/.test(p)) return { id: 'sensory-reset' };
   return null;
 }
