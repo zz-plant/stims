@@ -100,26 +100,34 @@ instrument tables that also live in `docs/agents/tooling-and-quality.md`,
   non-blocking. A superseded run is already marked cancelled; re-failing the
   aggregate only produced a red check on a commit nobody was watching.
 
+## Round 2 (this PR)
+
+The second pass acted on the backlog:
+
+- **`ci:why`** — resolves a run (or `--pr <n>`), prints only the failing job,
+  test, error, expected/received values and first stack frames, and links the
+  job. It found the real `embed-snippet` failure in one call: the dock Share
+  button, not the menu click the first pass patched.
+- **`worktree:prune`** — dry run by default; `--apply` removes clean worktrees
+  whose branch is merged into `origin/main`; `--all` widens to unmerged and
+  `--force` to dirty. Bounds every git call so one stale path cannot hang the
+  run.
+- **`agent:start`** — branch, HEAD, dirty files, whether this is the shared
+  main checkout, merged-worktree count, and the next commands.
+- **`step-budget`** — the card position is read after the fold settles across
+  two animation frames, and the 76 s Browse comparison gets its own CI runner.
+- **`AGENTS.md`** — 29 KB → 12 KB; the full command and instrument tables moved
+  to `docs/agents/tooling-and-quality.md`, which already owned them.
+- **Install state** — `postinstall` records the fingerprint, so a fresh
+  worktree's own `bun install` no longer reports "uncached" and invites a
+  second install.
+
 ## Remaining backlog
 
-Ordered by payoff:
-
-1. **`worktree:prune`** — dry-run by default, `--force` to remove. Remove only
-   clean worktrees whose branch is merged into `origin/main`, refuse dirty
-   ones, and print reclaimable GB. Add a one-line hint to `agent:status`.
-2. **`agent:start`** — print cwd, branch, HEAD, dirty files, whether this is
-   the main checkout, and a warning when the main checkout is dirty.
-3. **Stabilise `step-budget`** — require the card position to be stable across
-   two samples, or compare against the panel's top rather than the viewport.
-4. **Trim `AGENTS.md`** — make it a router (hard rules, bootstrap, "read these
-   three docs", one command table) and leave the full tables in the docs that
-   own them.
-5. **Bound quiet-mode failure output** — keep the first ~60 lines per failing
+1. **Bound quiet-mode failure output** — keep the first ~60 lines per failing
    step, write the full log to `.cache/gate/<step>.log`, and print the path.
-6. **`test:changed` wording** — distinguish "no changes" from "changes have no
+2. **`test:changed` wording** — distinguish "no changes" from "changes have no
    dependent tests", and say how to run the affected file explicitly.
-7. **Setup fingerprint** — when `node_modules` exists and the lockfile hash
-   matches, skip the install even if only `package.json` scripts changed.
 
 ## What not to do
 
