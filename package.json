@@ -122,6 +122,8 @@
     "generate:reference-audio-header": "bun run scripts/generate-reference-audio-header.ts",
     "generate:search-index": "bun run scripts/generate-catalog-search-index.ts",
     "generate:learn": "bun run scripts/generate-learn-pages.ts",
+    "generate:whats-new": "bun run scripts/generate-whats-new.ts",
+    "capture:whats-new": "bun run scripts/capture-whats-new.ts",
     "generate:seo": "bun run scripts/generate-seo.ts",
     "generate:starter-catalog": "bun run scripts/generate-starter-catalog.ts",
     "help": "bun run scripts/scripts-list.ts",

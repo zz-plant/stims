@@ -689,6 +689,21 @@ export function getSitemapRouteSpecs(): SitemapRouteSpec[] {
       includeInSitemap: true,
     },
     {
+      path: '/whats-new/',
+      imagePath: '/og/milkdrop.png',
+      imageTitle: "What's new in Stims | Stims",
+      imageCaption:
+        'Recent changes to Stims, with screenshots, plus how actively the project is being improved.',
+      changefreq: 'weekly',
+      priority: '0.7',
+      sourcePaths: [
+        'CHANGELOG.md',
+        'scripts/generate-whats-new.ts',
+        'docs/updates',
+      ],
+      includeInSitemap: true,
+    },
+    {
       path: '/performance/',
       imagePath: '/og/performance.png',
       imageTitle: 'Compatibility and Performance | Stims',

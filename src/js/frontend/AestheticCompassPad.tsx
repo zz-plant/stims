@@ -15,7 +15,7 @@ import {
 
 const PAD_SIZE = 220;
 const DOT_RADIUS = 1.6;
-const PUCK_RADIUS = 7;
+const _PUCK_RADIUS = 7;
 
 export function AestheticCompassPad({
   onSelectPreset,
@@ -54,7 +54,9 @@ export function AestheticCompassPad({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, PAD_SIZE, PAD_SIZE);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    // The pad is deliberately dark in both themes so the dots read; a
+    // theme-coloured dot on a light panel would be invisible.
+    ctx.fillStyle = 'rgba(150, 205, 255, 0.55)';
     for (const point of compass.points) {
       const x = ((point.x + 1) / 2) * PAD_SIZE;
       const y = ((1 - point.y) / 2) * PAD_SIZE;
@@ -93,12 +95,25 @@ export function AestheticCompassPad({
 
   return (
     <div className="ctl-compass">
-      <div className="ctl-compass__pad">
+      <div
+        className="ctl-compass__pad"
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: PAD_SIZE,
+          aspectRatio: '1',
+          margin: '0 auto',
+          background: 'var(--stims-on-stage-panel)',
+          borderRadius: 8,
+          overflow: 'hidden',
+          touchAction: 'none',
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={PAD_SIZE}
           height={PAD_SIZE}
-          style={{ width: '100%', height: 'auto', display: 'block' }}
+          style={{ width: '100%', height: '100%', display: 'block' }}
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId);
             pick(event.clientX, event.clientY, false);

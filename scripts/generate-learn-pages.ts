@@ -267,6 +267,7 @@ summary{cursor:pointer;color:var(--muted)}
 
 const NAV_LINKS: Array<[string, string]> = [
   ['/learn/', 'Learn'],
+  ['/whats-new/', "What's new"],
   ['/presets/', 'Presets'],
   ['/learn/milkdrop-online/', 'MilkDrop online'],
   ['/learn/milkdrop-vs-butterchurn-projectm/', 'Compare'],

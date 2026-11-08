@@ -21,6 +21,7 @@ export const SITE_INDEX_SECTIONS: readonly SiteIndexSection[] = [
     links: [
       { href: '/', label: 'Visualizer' },
       { href: PRESET_INDEX_PATH, label: 'All presets, A–Z' },
+      { href: '/whats-new/', label: "What's new" },
       { href: '/learn/', label: 'Learn to write presets' },
       { href: '/learn/milkdrop-online/', label: 'MilkDrop online' },
       {
