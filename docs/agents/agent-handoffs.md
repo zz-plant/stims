@@ -60,7 +60,9 @@ as read-mostly:
   `bun run dev -- --port <yours> --strictPort`. Anything you intend to trust —
   screenshots, parity captures, frame diffs — comes from that server, not from
   `:5173`. Remove the worktree with `git worktree remove <path>` once the branch
-  is merged.
+  is merged, or let `bun run worktree:prune` find the clean, merged ones
+  (`--apply` removes them). `bun run agent:start` prints where you are and
+  whether the checkout is shared.
 - **Never `git stash` and never `git checkout` a file you did not write.** A
   `stash pop` in a shared tree can pop someone else's entry and conflict in a
   file you have never opened. Stage and commit by explicit path, never `-A`.
