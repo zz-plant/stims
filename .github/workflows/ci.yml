@@ -378,15 +378,18 @@ jobs:
     steps:
       - name: Verify all required jobs passed
         run: |
-          # Two jobs here legitimately report "skipped": commit-messages is
+          # Two outcomes are not failures here. Skipped: commit-messages is
           # pull_request-only, and the test jobs are gated on the `changes`
-          # filter, so a docs-only run skips all three. Skipped is a pass;
-          # only failure or cancellation should block. `check` is the one job
-          # that always runs, so it stays an exact success check — if the
-          # filter ever mis-fires and skips everything, that is still a real
-          # gate rather than a vacuous green.
+          # filter, so a docs-only run skips them. Cancelled: a new push
+          # cancels the previous run through concurrency, and re-failing the
+          # aggregate on a superseded commit produces a red check nobody is
+          # looking at — the run itself is already marked cancelled. Only
+          # `failure` blocks. `check` is the one job that always runs, so it
+          # stays an exact success check — if the filter ever mis-fires and
+          # skips everything, that is still a real gate rather than a vacuous
+          # green.
           passed() {
-            [ "$1" != "failure" ] && [ "$1" != "cancelled" ]
+            [ "$1" != "failure" ]
           }
 
           changes_outcome="${{ needs.changes.result }}"
@@ -412,6 +415,6 @@ jobs:
             echo "All CI jobs passed successfully."
             exit 0
           else
-            echo "One or more CI jobs failed or were cancelled."
+            echo "One or more CI jobs failed."
             exit 1
           fi

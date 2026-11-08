@@ -88,7 +88,7 @@ test('all gate plan runs the complete test suite after the concurrent lane', () 
   ]);
 });
 
-test('the Stims gate is quiet in a Claude Code session and STIMS_QUIET overrides it', () => {
+test('the Stims gate is quiet in an agent session and STIMS_QUIET overrides it', () => {
   // .claude/CLAUDE.md promises both: one line per passing step under
   // CLAUDECODE=1, and full output back with STIMS_QUIET=0 or --verbose.
   expect(parseOutputMode([], {})).toBe('text');
@@ -98,4 +98,11 @@ test('the Stims gate is quiet in a Claude Code session and STIMS_QUIET overrides
     'text',
   );
   expect(parseOutputMode(['--verbose'], { CLAUDECODE: '1' })).toBe('text');
+
+  // Claude Code is not the only harness. opencode, Cursor and Gemini CLI set
+  // their own marker; without these, every gate run in those sessions pays
+  // the full 17 KB of passing-step output.
+  for (const marker of ['OPENCODE', 'CURSOR_AGENT', 'GEMINI_CLI']) {
+    expect(parseOutputMode([], { [marker]: '1' })).toBe('quiet');
+  }
 });

@@ -156,12 +156,20 @@ type RuntimeDebugWindow = typeof window & {
   };
 };
 
-/** A single page call, bounded so a wedged page names the step. */
+/**
+ * A single page call, bounded so a wedged page names the step.
+ *
+ * The 15 s default is a page-call budget, not a startup budget. Anything that
+ * waits for the engine to select or compile a preset gets a caller-supplied
+ * deadline: a software-rendered CI runner can spend longer than 15 s there,
+ * and the failure reads as a wedged page rather than a slow one.
+ */
 function bounded<T>(
   work: Promise<T>,
   label = 'reading agent state',
+  timeoutMs = PAGE_CALL_TIMEOUT_MS,
 ): Promise<T> {
-  return withDeadline(work, PAGE_CALL_TIMEOUT_MS, label);
+  return withDeadline(work, timeoutMs, label);
 }
 
 async function frameCount(page: Page): Promise<number> {
@@ -445,6 +453,7 @@ requiredBrowserTest(
       await bounded(
         page.evaluate(() => window.stims?.agent?.ready()),
         'waiting for startup selection',
+        LIVE_TIMEOUT_MS,
       );
       await waitForFrames(page, 10);
       expect((await getAgentState(page)).presetId).toBe(presetId);
