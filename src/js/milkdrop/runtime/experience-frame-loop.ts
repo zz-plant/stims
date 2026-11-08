@@ -424,22 +424,22 @@ export function createMilkdropExperienceFrameLoop({
         }
         // After the interaction response, so a viewer's own drag or pinch
         // is dampened by the same amount as the preset's motion.
-        const currentFrameState = applyPredictabilitySmoothing(
+        const currentFrameState = applyMotionDampening(
           applyBreathingExpansion(
-            applyMotionDampening(
+            applyPredictabilitySmoothing(
               applyMilkdropInteractionResponse(
                 rawFrameState,
                 frame.input,
                 activeBackend,
               ),
-              getMotionScale(),
+              getSensoryTranslationService().getKnobs().predictability,
             ),
             calculateBreathingLFO(
               frame.time ?? 0,
               getSensoryTranslationService().getKnobs().breathingCadenceSeconds,
             ),
           ),
-          getSensoryTranslationService().getKnobs().predictability,
+          getMotionScale(),
         );
         setCurrentFrameState(currentFrameState);
         blendWorkloadFrameState = currentFrameState;
@@ -473,15 +473,15 @@ export function createMilkdropExperienceFrameLoop({
           } else if (activeBlendState?.mode === 'gpu') {
             const outgoingFrame = applyMilkdropEnhancedEffectsPolicy({
               frameState: buildRenderFrameState({
-                frameState: applyPredictabilitySmoothing(
+                frameState: applyMotionDampening(
                   applyBreathingExpansion(
-                    applyMotionDampening(
+                    applyPredictabilitySmoothing(
                       applyMilkdropInteractionResponse(
                         outgoingVm.step(signals),
                         frame.input,
                         activeBackend,
                       ),
-                      getMotionScale(),
+                      getSensoryTranslationService().getKnobs().predictability,
                     ),
                     calculateBreathingLFO(
                       frame.time ?? 0,
@@ -489,7 +489,7 @@ export function createMilkdropExperienceFrameLoop({
                         .breathingCadenceSeconds,
                     ),
                   ),
-                  getSensoryTranslationService().getKnobs().predictability,
+                  getMotionScale(),
                 ),
                 shaderQuality: frame.performance.shaderQuality,
                 lowQualityPostOverride,

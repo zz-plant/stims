@@ -128,18 +128,37 @@ export function applyBreathingExpansion(
     gpuGeometry.motionVectorField.zoom =
       (gpuGeometry.motionVectorField.zoom ?? 1) * factor;
   }
-  post.shaderControls.zoom = (post.shaderControls.zoom ?? 1) * factor;
-  if (post.warp !== undefined) {
-    // leave warp alone; breathing is a scale, not a warp
-  }
-  // variables proxy: overlay zoom if present
-  const variables = frameState.variables as Record<string, number> | undefined;
-  if (variables && typeof variables.zoom === 'number') {
-    // variables is a proxy in dampened case; write through is not safe, so
-    // skip variable overlay here — the controls.zoom path covers the common case.
+
+  // The feedback pass uses `shaderControls.zoom` when it is not the default 1,
+  // and the preset's variable `zoom` otherwise. Scale whichever one the
+  // renderer will actually read, so breathing composes with the preset's own
+  // zoom instead of masking it.
+  const controlsZoom = post.shaderControls.zoom;
+  if (controlsZoom === undefined || controlsZoom === 1) {
+    const variables = frameState.variables as Record<string, number> | null;
+    if (variables && typeof variables === 'object') {
+      frameState.variables = new Proxy(variables, {
+        get(target, prop, receiver) {
+          const value = Reflect.get(target, prop, receiver);
+          if (
+            prop === 'zoom' &&
+            typeof value === 'number' &&
+            Number.isFinite(value)
+          ) {
+            return value * factor;
+          }
+          return value;
+        },
+      }) as typeof frameState.variables;
+    }
+  } else {
+    post.shaderControls.zoom = controlsZoom * factor;
   }
   return frameState;
 }
+
+/** The preset's per-frame q variables, the range the smoothing filter owns. */
+const Q_VARIABLE_COUNT = 32;
 
 const predictabilityPrevious = new WeakMap<object, Record<string, number>>();
 
@@ -166,29 +185,35 @@ export function applyPredictabilitySmoothing(
     return frameState;
   }
 
+  // Key the history on the underlying variables object. This runs before
+  // motion dampening, so the key is the stable VM proxy, not the per-frame
+  // dampening proxy — otherwise the history would reset every frame.
   let previous = predictabilityPrevious.get(variables);
   if (!previous) {
     previous = {};
     predictabilityPrevious.set(variables, previous);
   }
-  const prev = previous;
+
+  // Snapshot once per frame: the feedback pass reads the same q variables for
+  // composite and warp uniforms, and advancing the filter per read would make
+  // those passes disagree.
+  const snapshot: Record<string, number> = {};
+  for (let index = 1; index <= Q_VARIABLE_COUNT; index += 1) {
+    const key = `q${index}`;
+    const value = (variables as Record<string, number>)[key];
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+    const prevValue = Number.isFinite(previous[key]) ? previous[key] : value;
+    const smoothed = prevValue + smoothingAlpha * (value - prevValue);
+    previous[key] = smoothed;
+    snapshot[key] = smoothed;
+  }
 
   frameState.variables = new Proxy(variables, {
     get(target, prop, receiver) {
-      const value = Reflect.get(target, prop, receiver);
-      if (
-        typeof prop === 'string' &&
-        /^q\d+$/.test(prop) &&
-        typeof value === 'number' &&
-        Number.isFinite(value)
-      ) {
-        const prevVal =
-          prop in prev && Number.isFinite(prev[prop]) ? prev[prop] : value;
-        const smoothed = prevVal + smoothingAlpha * (value - prevVal);
-        prev[prop] = smoothed;
-        return smoothed;
+      if (typeof prop === 'string' && prop in snapshot) {
+        return snapshot[prop];
       }
-      return value;
+      return Reflect.get(target, prop, receiver);
     },
   }) as typeof frameState.variables;
 
