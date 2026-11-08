@@ -12,6 +12,8 @@ bun run setup:codex
 
 `setup:codex` installs dependencies and runs `bun run check:quick`. Repeated runs skip `bun install` when `node_modules` and the manifest fingerprint already look current. `bun run agent:status` prints the setup state and any managed session in one shot, and `bun run doctor` diagnoses a machine that cannot build, test or deploy.
 
+`bun run agent:start` prints the branch, HEAD, dirty files, whether this is the shared main checkout, and how many merged worktrees are pruneable. Run it first when you are not sure where you are.
+
 ## Warm loop
 
 ```bash
@@ -77,9 +79,31 @@ bun run test:budget                        # gate tests leaning on bun's 5 s def
 bun run check:architecture                 # import cycles and the frontend → engine seam
 bun run check:readme-claims                # README figures against the shipped catalog
 bun run check:seo                          # SEO surface and generated learn pages
+bun run ci:why                             # failing job, test, error, first stack frames
+bun run worktree:prune                     # dry run; --apply removes merged worktrees
 ```
 
 `bun run test:integration` runs one file, `tests/e2e/agent-integration.test.ts` (the agent API and the `play:toy` smoke). For the e2e file that covers a given surface, see [`verify-visualizer-work`](../../.agent/skills/verify-visualizer-work/SKILL.md#pick-tests-by-what-changed).
+
+## Measurement instruments
+
+Reach for these before inventing a measurement; each one already exists.
+`bun run help --for "<symptom>"` routes a symptom to the right one.
+
+| Question | Instrument |
+| --- | --- |
+| Which signals can reach an output? | `lab:dataflow -- --preset <id>` |
+| Does numeric output react to audio? | `lab:reactivity -- --preset <id>` |
+| Does rendered output react? | `lab:visual -- --preset <id>` |
+| Did VM semantics change? | `lab:replay` |
+| Do rendered backends agree? | `lab:backend-diff` |
+| Do VM execution tiers agree? | `lab:gpu-differential` |
+| Does output match a reference capture? | `parity:diff`, `parity:suite` |
+| Which presets render blank or frozen? | `sweep:milkdrop-loops` |
+| What is the measured frame cost? | `perf:certification-corpus`, `profile:frame` |
+| What flashing is detected in sampled frames? | `lab:flash-audit` |
+| Screenshot-diff the workspace UI | `ui:diff` |
+| Give a GPU-less session a real live URL | `preview:deploy` |
 
 ## Docs-only updates
 

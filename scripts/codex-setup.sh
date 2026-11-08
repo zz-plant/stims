@@ -21,6 +21,9 @@ Options:
   --full-check        Run bun run check.
   --status            Print local setup status and exit.
   --print-plan        Print the selected install/check plan and exit.
+  --record-state      Write the install-state fingerprint and exit. Used by
+                      postinstall so a fresh worktree is not reported as
+                      uncached after its own `bun install`.
   -h, --help          Show this help message.
 USAGE
 }
@@ -280,6 +283,7 @@ CHECK_MODE="quick"
 FORCE_INSTALL=0
 PRINT_PLAN=0
 STATUS_ONLY=0
+RECORD_STATE=0
 INSTALL_RETRIES=3
 DO_BROWSERS=1
 
@@ -332,6 +336,10 @@ while [[ $# -gt 0 ]]; do
       PRINT_PLAN=1
       shift
       ;;
+    --record-state)
+      RECORD_STATE=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -358,6 +366,12 @@ validate_bun_version
 CURRENT_BUN_VERSION="$(bun --version)"
 CURRENT_MANIFEST_FINGERPRINT="$(manifest_fingerprint)"
 CURRENT_INSTALL_STATE="$(install_state_label)"
+
+if [[ "$RECORD_STATE" -eq 1 ]]; then
+  write_install_state
+  echo "Recorded install state: $(install_state_file)"
+  exit 0
+fi
 
 # --status and --print-plan are read by agents and by `bun run agent:status`;
 # keep their output to the report itself rather than a setup banner.

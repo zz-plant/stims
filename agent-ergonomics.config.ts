@@ -63,8 +63,8 @@ export default defineConfig({
           'separate checkout',
           'shared checkout',
         ],
-        run: ['worktree:new'],
-        note: "Several sessions share the main checkout's index and working tree, so one session's staged files or stash can take another's work. A worktree per change avoids that; this creates one off origin/main and installs it.",
+        run: ['worktree:new', 'worktree:prune'],
+        note: "Several sessions share the main checkout's index and working tree, so one session's staged files or stash can take another's work. A worktree per change avoids that; worktree:new creates one off origin/main and installs it, and worktree:prune reports (then removes with --apply) the clean worktrees whose branch is already merged.",
       },
       {
         when: [
@@ -179,8 +179,8 @@ export default defineConfig({
       },
       {
         when: ['where do i start', 'onboard', 'new', 'learn', 'confused'],
-        run: ['help'],
-        note: 'docs/ONBOARDING.md maps which parts of the codebase are hard, why, and what order to learn them in.',
+        run: ['agent:start', 'help'],
+        note: 'agent:start prints the branch, dirty files, whether this is the shared main checkout, and the next commands; docs/ONBOARDING.md maps which parts of the codebase are hard, why, and what order to learn them in.',
       },
       {
         when: [
@@ -306,6 +306,19 @@ export default defineConfig({
         ],
         run: ['test:changed', 'test:gate', 'test:budget'],
         note: 'Never assert on timing: wait on a condition (__stims_agent.waitFor) instead, and never skip a test to get green. Also check mock or global-state leaks by running the file alone and with its neighbours. A test that "timed out after 5000ms" only under load is usually CPU-bound on the default timeout: test:budget lists every test that relies on it and uses more than half.',
+      },
+      {
+        when: [
+          'ci failed',
+          'ci fail',
+          'why did ci fail',
+          'red check',
+          'failed check',
+          'github actions',
+          'ci log',
+        ],
+        run: ['ci:why'],
+        note: 'ci:why resolves the latest run for the branch (or --pr <n>), prints only the failing job, test name, error, expected/received values and first stack frames, and links the job. Reach for it instead of `gh run view --log-failed`, which returns runner setup noise and can miss the step output entirely.',
       },
     ],
     noMatchPointers: [

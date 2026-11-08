@@ -87,3 +87,17 @@ if (isCI || isCloudflarePages) {
     '[postinstall] lefthook install skipped (Bun not detected as installer).',
   );
 }
+
+// Record the install-state fingerprint here, where the install actually
+// happened. Only `setup:codex` used to write it, so every fresh worktree —
+// whose `bun install` runs this hook — reported "uncached" and invited a
+// second install the next time `agent:status` ran.
+if (!isCI && !isCloudflarePages && hasBun) {
+  try {
+    run('bash scripts/codex-setup.sh --record-state');
+  } catch {
+    console.log(
+      '[postinstall] could not record install state; run `bun run setup:codex --status` to check.',
+    );
+  }
+}
