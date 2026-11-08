@@ -19,8 +19,11 @@ const PUCK_RADIUS = 7;
 
 export function AestheticCompassPad({
   onSelectPreset,
+  isSelectable,
 }: {
   onSelectPreset: (presetId: string) => void;
+  /** Skip presets the catalog hides, e.g. flashing ones under Reduce flashing. */
+  isSelectable?: (presetId: string) => boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [compass, setCompass] = useState<AestheticCompass | null>(null);
@@ -83,7 +86,7 @@ export function AestheticCompassPad({
     const x = nx * 2 - 1;
     const y = (1 - ny) * 2 - 1;
     setPuck({ x, y });
-    const id = compass.nearestPreset(x, y);
+    const id = compass.nearestPreset(x, y, isSelectable);
     setHovered(id);
     if (commit && id) onSelectPreset(id);
   };

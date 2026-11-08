@@ -50,8 +50,16 @@ export interface AestheticCompass {
   points: CompassPoint[];
   xAxis: CompassAxis;
   yAxis: CompassAxis;
-  /** Nearest projected point to a normalized (x, y), or null if empty. */
-  nearestPreset(x: number, y: number): string | null;
+  /**
+   * Nearest projected point to a normalized (x, y), or null if empty.
+   * `isAllowed` lets a caller skip presets the catalog hides (e.g. flashing
+   * ones under Reduce flashing) without rebuilding the projection.
+   */
+  nearestPreset(
+    x: number,
+    y: number,
+    isAllowed?: (presetId: string) => boolean,
+  ): string | null;
 }
 
 const X_AXIS: CompassAxis = {
@@ -59,8 +67,8 @@ const X_AXIS: CompassAxis = {
   negative: 'Organic liquid',
 };
 const Y_AXIS: CompassAxis = {
-  positive: 'Reactive strobe',
-  negative: 'Hypnotic ambient',
+  positive: 'Reactive / chaotic',
+  negative: 'Hypnotic / minimal',
 };
 
 function dot(a: ArrayLike<number>, b: ArrayLike<number>, dims: number): number {
@@ -229,9 +237,11 @@ export function buildAestheticCompass(
   if (geometric && organic && geometric.x < organic.x) {
     for (let i = 0; i < dims; i += 1) pc1[i] = -pc1[i];
   }
-  const strobe = projectTerm('strobe');
-  const ambient = projectTerm('ambient');
-  if (strobe && ambient && strobe.y < ambient.y) {
+  // The shipped vocabulary has no "strobe"/"ambient"; chaotic and minimal are
+  // the nearest real anchors for the reactive-vs-hypnotic axis.
+  const chaotic = projectTerm('chaotic');
+  const minimal = projectTerm('minimal');
+  if (chaotic && minimal && chaotic.y < minimal.y) {
     for (let i = 0; i < dims; i += 1) pc2[i] = -pc2[i];
   }
 
@@ -257,10 +267,15 @@ export function buildAestheticCompass(
     points,
     xAxis: X_AXIS,
     yAxis: Y_AXIS,
-    nearestPreset(x: number, y: number): string | null {
+    nearestPreset(
+      x: number,
+      y: number,
+      isAllowed?: (presetId: string) => boolean,
+    ): string | null {
       let bestId: string | null = null;
       let bestDistance = Number.POSITIVE_INFINITY;
       for (const point of points) {
+        if (isAllowed && !isAllowed(point.presetId)) continue;
         const dx = point.x - x;
         const dy = point.y - y;
         const distance = dx * dx + dy * dy;

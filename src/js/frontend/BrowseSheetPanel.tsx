@@ -551,6 +551,17 @@ export function BrowseSheetPanel({
     reduceFlashing,
   ]);
 
+  // Presets the flash preference hides from the list. The compass must skip
+  // them too, or Reduce flashing would still route a visitor to a strobe.
+  const hiddenByFlash = useMemo(() => {
+    const hidden = new Set<string>();
+    if (!reduceFlashing) return hidden;
+    for (const entry of catalog) {
+      if (!passesFlashPreference(entry, true)) hidden.add(entry.id);
+    }
+    return hidden;
+  }, [catalog, reduceFlashing]);
+
   // Saved presets, most recently opened first: the anchors 'like-saved'
   // ranks against. Joined into a key so the affinity pass reruns only when
   // the saved set changes, not on every catalog activity update.
@@ -1148,10 +1159,8 @@ export function BrowseSheetPanel({
       {showCompass ? (
         <section className="ctl-browse-compass" aria-label="Aesthetic compass">
           <AestheticCompassPad
-            onSelectPreset={(presetId) => {
-              void handlePresetSelection(presetId);
-              onPresetChosen?.(presetId);
-            }}
+            onSelectPreset={selectPreset}
+            isSelectable={(id) => !hiddenByFlash.has(id)}
           />
         </section>
       ) : null}
