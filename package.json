@@ -29,6 +29,7 @@
   ],
   "packageManager": "bun@1.4.4",
   "scripts": {
+    "agent:start": "bun run scripts/agent-start.ts",
     "agent:status": "bash scripts/codex-setup.sh --status && echo && bash scripts/codex-session.sh --status",
     "agent:verify": "bun run scripts/agent-verify.ts",
     "assets:check": "bun run scripts/check-assets.ts",
@@ -48,6 +49,7 @@
     "catalog:techniques": "bun run scripts/report-technique-glossary.ts",
     "catalog:visual-embeddings": "bun run scripts/build-visual-embeddings.ts",
     "cf:whoami": "bunx wrangler whoami",
+    "ci:why": "bun run scripts/ci-why.ts",
     "check": "bun run scripts/run-quality-gate.ts",
     "check:accessibility": "bun run scripts/accessibility-audit.ts",
     "check:agent-action-ids": "bun run scripts/check-agent-action-ids.ts",
@@ -225,6 +227,7 @@
     "ui:diff": "bun run scripts/ui-diff.ts",
     "verify": "bun run scripts/agent-verify.ts",
     "worktree:new": "bun run scripts/worktree-new.ts",
+    "worktree:prune": "bun run scripts/worktree-prune.ts",
     "packages:split": "bun run scripts/split-package.ts"
   },
   "devDependencies": {
