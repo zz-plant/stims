@@ -73,9 +73,11 @@ requiredBrowserTest(
       );
 
       await openDockShare(app);
+      // The share sheet is a lazy panel that animates in; the default 15 s
+      // Playwright timeout is the failure this file hit on CI runners.
       await app
         .getByRole('menuitem', { name: 'Copy embed code', exact: true })
-        .click();
+        .click({ timeout: 30_000 });
       await app
         .getByText('Embed code for “Curlique” copied', { exact: false })
         .waitFor({ timeout: 10_000 });
