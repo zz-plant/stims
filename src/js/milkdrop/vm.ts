@@ -716,6 +716,19 @@ class MilkdropPresetVM implements MilkdropVM {
     this.frameVariablesSnapshot = null;
   }
 
+  /**
+   * Read a live field's current value. Mirrors `setField`'s normalisation so
+   * a caller that writes with one name can read it back with the same name.
+   * Returns undefined for a name the preset does not currently hold.
+   */
+  getField(key: string): number | undefined {
+    const normalized = normalizeProgramAssignmentTarget(key);
+    const value = this.state[normalized];
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : undefined;
+  }
+
   getStateSnapshot() {
     const snapshot: MutableState = {
       ...this.state,

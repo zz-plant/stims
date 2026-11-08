@@ -42,6 +42,7 @@ import {
 } from './engine-audio-energy-store.ts';
 import { setActiveFileAudioPaused } from './file-audio.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
+import { useCanvasGestures } from './hooks/use-canvas-gestures.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
 import {
@@ -386,6 +387,20 @@ export function useWorkspaceSessionState({
   );
   useFlashSafety(stageRef, activeSensoryProfile);
   useStageBrightness(stageRef);
+
+  const setGestureField = useCallback((key: string, value: number) => {
+    engineRef.current?.updateFieldLive(key, value);
+  }, []);
+  const getGestureField = useCallback(
+    (key: string) => engineRef.current?.getFieldLive(key),
+    [],
+  );
+  useCanvasGestures({
+    enabled: true,
+    stageRef,
+    setField: setGestureField,
+    getField: getGestureField,
+  });
 
   useEffect(() => {
     if (routeState.panel === 'browse') {

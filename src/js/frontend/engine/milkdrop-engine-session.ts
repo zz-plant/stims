@@ -559,6 +559,12 @@ export function createMilkdropEngineAdapter() {
       experience?.setLiveField?.(key, value);
     },
 
+    /** Read a live field's current value, for gestures that need a starting
+     * point (e.g. the zoom a pinch began from). */
+    getFieldLive(key: string): number | undefined {
+      return experience?.getLiveField?.(key);
+    },
+
     /** Read-only debug accessor for the active preset's compiled IR. */
     getActiveCompiledPreset() {
       return experience?.getActiveCompiledPreset() ?? null;

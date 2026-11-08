@@ -1488,6 +1488,12 @@ function buildExperienceController(
       deps.vm.setField(key, value);
     },
 
+    /** Read a live field's current value (e.g. the zoom a gesture starts
+     * from). Returns undefined when the preset does not hold the name. */
+    getLiveField(key: string): number | undefined {
+      return deps.vm.getField(key);
+    },
+
     setQualityPreset(presetId: string) {
       const preset = deps.setQualityPresetById(presetId, {
         presets: deps.qualityControl.presets,

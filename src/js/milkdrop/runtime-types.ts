@@ -205,6 +205,7 @@ export interface MilkdropExperienceController {
   getOriginalPresetSource(): Promise<string | null>;
   updateInspectorField(key: string, value: string | number): void;
   setLiveField(key: string, value: number): void;
+  getLiveField(key: string): number | undefined;
   setQualityPreset(presetId: string): unknown;
   setStatus(message: string): void;
   attachRuntime(nextRuntime: unknown): unknown;
