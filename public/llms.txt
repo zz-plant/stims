@@ -21,7 +21,7 @@ The numeric coverage and model-training results above are dated measurements; se
 - **Source code**: https://github.com/zz-plant/stims
 
 ## Machine-readable discovery
-- **Markdown source endpoints**: each guide under /learn/ is also at its URL with a `.md` suffix (for example https://toil.fyi/learn/reference.md), and the same URL answers an `Accept: text/markdown` request with that markdown.
+- **Markdown source endpoints**: each guide under /learn/ is also at its URL with a `.md` suffix (for example https://toil.fyi/learn/reference.md), and the same URL answers an `Accept: text/markdown` request with that markdown. /whats-new/ has the same pair at https://toil.fyi/whats-new.md.
 - **API catalog (RFC 9727)**: https://toil.fyi/.well-known/api-catalog — a linkset naming the machine-readable resources on this host.
 - **Agent authentication**: https://toil.fyi/auth.md — there is none; every surface is public.
 - **MCP server card**: https://toil.fyi/.well-known/mcp/server-card.json — the MCP server itself is not hosted here; it runs over stdio from a repository clone (see MCP server above).
@@ -34,6 +34,7 @@ The numeric coverage and model-training results above are dated measurements; se
 - **Stims vs Butterchurn vs projectM**: https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/
 - **MilkDrop language reference**: https://toil.fyi/learn/reference/
 - **Compatibility and performance**: https://toil.fyi/performance/
+- **What's new** (dated changelog with screenshots and activity): https://toil.fyi/whats-new/
 
 ## Key URL parameters for AI agents
 - `?agent=true`: Keeps rendering while the tab reports itself hidden, as headless and embedded browsers often do. `window.__stims_agent` (`getState`, `waitFor`, `run`) is available in every mode.

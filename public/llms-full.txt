@@ -5,7 +5,7 @@ Stims plays and live-edits the original MilkDrop `.milk` presets in a browser, o
 
 ## Guides
 
-Static, crawlable guides live under https://toil.fyi/learn/: the ten-track authoring course (start at /learn/), /learn/milkdrop-online/, /learn/milkdrop-vs-butterchurn-projectm/, and /learn/reference/ (the language reference).
+Static, crawlable guides live under https://toil.fyi/learn/: the ten-track authoring course (start at /learn/), /learn/milkdrop-online/, /learn/milkdrop-vs-butterchurn-projectm/, and /learn/reference/ (the language reference). https://toil.fyi/whats-new/ is a dated changelog with screenshots and a releases-per-quarter activity view, also available as https://toil.fyi/whats-new.md.
 
 https://toil.fyi/presets/ links every indexable preset page, A–Z, and every `/discover/<slug>` and `/author/<slug>` page. Each hub page lists every preset in its collection, and each preset page links its `.milk` file.
 

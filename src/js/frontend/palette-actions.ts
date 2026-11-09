@@ -352,6 +352,17 @@ export function buildPaletteActions(
       run: () => setShowShortcuts(true),
     },
     {
+      // A new tab, not a route: /whats-new/ is a static page outside the
+      // workspace, and leaving the stage would drop the visitor's session.
+      id: 'open-whats-new',
+      group: 'View',
+      label: "What's new",
+      keywords: ['changelog', 'updates', 'releases', 'features', 'news'],
+      run: () => {
+        window.open('/whats-new/', '_blank', 'noopener,noreferrer');
+      },
+    },
+    {
       // Cycles rather than offering three entries: the palette is a list you
       // scan, and three near-identical theme rows cost more attention than
       // the one extra press cycling costs.

@@ -1774,6 +1774,10 @@ body[data-page="workspace"] {
     transition: color var(--transition-base);
   }
 
+  .stims-shell__launch-meta-link + .stims-shell__launch-meta-link {
+    margin-left: 16px;
+  }
+
   .stims-shell__launch-meta-link:hover {
     color: var(--stims-ink-strong);
   }
