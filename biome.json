@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
   "files": {
     "maxSize": 2097152
   },
@@ -60,7 +60,8 @@
         "public/vendor/**",
         "public/learn/**",
         "screenshots/parity/**",
-        "tests/accessibility/**"
+        "tests/accessibility/**",
+        "tests/fixtures/**"
       ],
       "formatter": {
         "enabled": false

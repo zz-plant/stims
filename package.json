@@ -234,7 +234,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@biomejs/biome": "^2.6.4",
+    "@biomejs/biome": "^2.6.6",
     "@cfworker/json-schema": "^4.1.6",
     "@modelcontextprotocol/server": "2.4.0",
     "@playwright/test": "1.65.0",
