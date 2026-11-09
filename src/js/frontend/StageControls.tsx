@@ -914,6 +914,14 @@ export function StageControls({
     // The swipe-up, hold-to-save and Shift+scroll gestures are listed only
     // in this dialog. On a phone, with no ? key, it sat three levels down
     // (Settings, its fourth tab, a button).
+    {
+      icon: 'sparkles' as const,
+      label: "What's new",
+      actionId: 'open-whats-new',
+      action: () => {
+        window.open('/whats-new/', '_blank', 'noopener,noreferrer');
+      },
+    },
     ...(onOpenShortcuts
       ? [
           {

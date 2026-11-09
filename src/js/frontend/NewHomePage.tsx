@@ -1005,6 +1005,15 @@ function ProjectMeta() {
       <p className="stims-shell__launch-meta">
         <a
           className="stims-shell__launch-meta-link"
+          href="/whats-new/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <UiIcon name="sparkles" className="stims-shell__launch-meta-icon" />
+          What's new
+        </a>
+        <a
+          className="stims-shell__launch-meta-link"
           href={STIMS_REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
