@@ -390,7 +390,9 @@ chromeTest(
         expect(hero?.scrollable).toBe(true);
 
         if (input === 'keyboard') {
-          const lowerAction = page.locator('.stims-shell__launch-meta-link');
+          const lowerAction = page
+            .locator('.stims-shell__launch-meta-link')
+            .first();
           for (let press = 0; press < 20; press += 1) {
             await page.keyboard.press('Tab');
             if (
