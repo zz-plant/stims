@@ -192,7 +192,6 @@ export class SyncRoom {
 
 interface SyncRoomStub {
   fetch(request: Request): Promise<Response>;
-  initRoom(hostKey: string): Promise<void>;
 }
 
 interface Env {
@@ -214,7 +213,18 @@ export default {
       const room = randomCode(ROOM_CODE_LENGTH);
       const hostKey = randomCode(24);
       const stub = env.SYNC_ROOM.get(env.SYNC_ROOM.idFromName(room));
-      await stub.initRoom(hostKey);
+      // SyncRoom is a plain class, not a `DurableObject` subclass, so its
+      // methods cannot be called on the stub: the runtime rejects the call
+      // and room creation answers 500. The room is set up through its fetch
+      // handler.
+      const init = await stub.fetch(
+        new Request('https://sync/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hostKey }),
+        }),
+      );
+      if (!init.ok) return json({ error: 'Could not create the room' }, 502);
       return json({ room, hostKey });
     }
 
