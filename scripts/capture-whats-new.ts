@@ -79,14 +79,28 @@ async function main() {
   });
   const browser = await chromium.launch({ args: resolveAgentChromiumArgs() });
   try {
+    // Dark, as the stage is: a light-scheme capture showed the chrome's white
+    // pages around a dark stage, which is not what most visits look like.
     const context = await browser.newContext({
       viewport: VIEWPORT,
       deviceScaleFactor: 2,
+      colorScheme: 'dark',
     });
     const page = await context.newPage();
     // Generous: a busy machine stretches every action, and a capture that
     // dies half-way leaves the page showing a mix of old and new shots.
     page.setDefaultTimeout(120_000);
+
+    // The landing, as a first visit sees it: the cover sheet over the
+    // preset running behind the page.
+    await page.goto(`${BASE}/?agent=true`, { waitUntil: 'domcontentloaded' });
+    await waitForAgent(page);
+    await page
+      .getByRole('button', { name: 'Start visualizer' })
+      .waitFor({ state: 'visible' });
+    await page.waitForTimeout(5000);
+    await shoot(page, 'swatchbook-landing.png');
+
     await page.goto(`${BASE}/?preset=shifter-curlique&agent=true`, {
       waitUntil: 'domcontentloaded',
     });

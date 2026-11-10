@@ -220,11 +220,11 @@ img{max-width:100%;height:auto}
 .brand{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-weight:820;font-stretch:75%;font-size:1.3rem;letter-spacing:.01em;text-decoration:none;color:var(--fg)}
 .brand:before{content:"";width:9px;height:9px;border-radius:50%;border:1px solid var(--muted)}
 .links{display:flex;flex-wrap:wrap;gap:2px 16px;order:3;flex-basis:100%}
-.links a{color:var(--muted);text-decoration:none;font-size:.95rem;padding:4px 0}
+.links a{color:var(--muted);text-decoration:none;font-size:.95rem;font-stretch:88%;padding:4px 0}
 .links a:hover{color:var(--fg);text-decoration:underline}
 .nav-cta{order:2;background:var(--fg);color:var(--bg);text-decoration:none;font-weight:700;font-stretch:88%;font-size:.95rem;padding:8px 16px;border-radius:4px}
 .nav-cta:hover{color:var(--bg);background:var(--accent)}
-@media(min-width:640px){.links{order:1;flex-basis:auto;gap:2px 20px}.brand{order:0}}
+@media(min-width:640px){.links{order:1;flex-basis:auto;gap:2px 16px}.brand{order:0}}
 main{padding-top:28px;padding-bottom:32px}
 h1{font-size:clamp(2.1rem,6vw,3rem);font-weight:760;font-stretch:78%;line-height:1;letter-spacing:-.01em;margin:.3em 0 .5em;text-wrap:balance}
 h2{font-size:1.6rem;font-weight:760;font-stretch:82%;line-height:1.15;margin:2em 0 .5em;padding-top:.6em;border-top:1px solid var(--line);scroll-margin-top:16px}
