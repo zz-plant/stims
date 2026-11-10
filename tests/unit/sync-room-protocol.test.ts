@@ -1,6 +1,52 @@
 import { describe, expect, test } from 'bun:test';
-import { parseHostMessage } from '../../scripts/sync-room-worker.ts';
+import syncWorker, {
+  parseHostMessage,
+} from '../../scripts/sync-room-worker.ts';
 import { toVectorizeId } from '../../src/js/milkdrop/vectorize-id.ts';
+
+describe('sync room creation', () => {
+  // A Durable Object stub for a class that does not extend `DurableObject`
+  // exposes `fetch` and nothing else. Calling any other method on it throws
+  // in the runtime, which is how room creation came to answer 500.
+  function envWithStub(respond: (request: Request) => Response) {
+    const requests: Request[] = [];
+    const stub = {
+      fetch: async (request: Request) => {
+        requests.push(request);
+        return respond(request);
+      },
+    };
+    const env = {
+      SYNC_ROOM: { idFromName: (name: string) => name, get: () => stub },
+    };
+    return { env, requests };
+  }
+
+  const createRoom = () =>
+    new Request('https://stims-sync.example/api/rooms', { method: 'POST' });
+
+  test('sets the room up through the object’s fetch handler', async () => {
+    const { env, requests } = envWithStub(() => Response.json({ ok: true }));
+
+    const response = await syncWorker.fetch(createRoom(), env);
+    const body = (await response.json()) as { room: string; hostKey: string };
+
+    expect(response.status).toBe(200);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].method).toBe('POST');
+    expect(new URL(requests[0].url).pathname).toBe('/init');
+    expect(await requests[0].json()).toEqual({ hostKey: body.hostKey });
+    expect(body.room).toMatch(/^[a-z2-9]+$/);
+  });
+
+  test('answers 502 when the object refuses the setup', async () => {
+    const { env } = envWithStub(() => new Response('no', { status: 500 }));
+
+    const response = await syncWorker.fetch(createRoom(), env);
+
+    expect(response.status).toBe(502);
+  });
+});
 
 describe('sync room host message parsing', () => {
   test('accepts a preset message and clamps field lengths', () => {
