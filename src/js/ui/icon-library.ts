@@ -76,6 +76,10 @@ const ICON_NODES = {
       },
     },
   ],
+  megaphone: [
+    { tag: 'path', attrs: { d: 'm3 11 18-5v12L3 14v-3Z' } },
+    { tag: 'path', attrs: { d: 'M11.6 16.8a3 3 0 1 1-5.8-1.6' } },
+  ],
   menu: [
     { tag: 'path', attrs: { d: 'M4 7h16' } },
     { tag: 'path', attrs: { d: 'M4 12h16' } },

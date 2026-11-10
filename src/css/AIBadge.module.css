@@ -4,8 +4,14 @@
   padding: 1px 6px;
   margin-left: 6px;
   border-radius: var(--radius-xs);
-  background: color-mix(in srgb, var(--stims-cool, #77c9ff) 16%, transparent);
-  color: var(--stims-cool, #77c9ff);
+  /* A host whose fill would clash with the cool accent (a selected chip) sets
+     --ai-badge-ink to currentColor so the badge takes the host's own ink. */
+  background: color-mix(
+    in srgb,
+    var(--ai-badge-ink, var(--stims-cool, #77c9ff)) 16%,
+    transparent
+  );
+  color: var(--ai-badge-ink, var(--stims-cool, #77c9ff));
   font-size: 0.7em;
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.04em;

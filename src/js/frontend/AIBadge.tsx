@@ -1,16 +1,18 @@
 import styles from '../../css/AIBadge.module.css';
 
 /**
- * Small "AI" marker for discovery tools powered by a model or learned
- * embedding. The point is honest labelling: "By sound" / "By look" matching,
- * prompt-to-preset generation and tournament salvage are the only surfaces
- * that depend on a model at all, and a user deciding whether a feature will
- * work offline deserves to know which those are before they try.
+ * Small "AI" marker for a control that sends something to a model when its
+ * own label cannot say so. A label that already says "AI" ("Refine with AI",
+ * "Let AI pick one") is the marker and takes no badge. Neither does anything
+ * answered on this device from shipped data (By look, the compass).
+ *
+ * `title` names what is sent and that it needs a connection: a visitor
+ * deciding whether a feature works offline should know before trying it.
  */
-export function AIBadge({ label = 'AI' }: { label?: string }) {
+export function AIBadge({ title }: { title: string }) {
   return (
-    <span className={styles.badge} title="Powered by a model">
-      {label}
+    <span className={styles.badge} title={title}>
+      AI
     </span>
   );
 }

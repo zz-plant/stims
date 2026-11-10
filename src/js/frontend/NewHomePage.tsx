@@ -1001,7 +1001,7 @@ function ProjectMeta() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <UiIcon name="sparkles" className="stims-shell__launch-meta-icon" />
+          <UiIcon name="megaphone" className="stims-shell__launch-meta-icon" />
           What's new
         </a>
         <a

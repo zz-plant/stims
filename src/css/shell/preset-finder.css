@@ -71,6 +71,7 @@
   border-color: var(--stims-accent);
   background: var(--stims-accent);
   color: var(--stims-on-accent);
+  --ai-badge-ink: currentColor;
 }
 
 .stims-finder__hint {

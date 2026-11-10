@@ -176,12 +176,19 @@ const MODES: Array<{
   label: string;
   hint: string;
   icon: UiIconName;
+  /**
+   * Set on a mode that always asks the hosted search model: what it sends.
+   * By look and By reference rank on this device from shipped vectors.
+   */
+  sendsToModel?: string;
 }> = [
   {
     id: 'sound',
     label: 'By sound',
     hint: 'Ranks the catalog against the audio playing right now.',
     icon: 'music',
+    sendsToModel:
+      'Sends a short description of the sound, not the audio, to a search model. Needs a connection.',
   },
   {
     id: 'look',
@@ -446,10 +453,7 @@ export function PresetFinderPanel({
           className="stims-finder__icon"
           aria-hidden="true"
         />
-        <h3 className="stims-finder__title">
-          Find a preset
-          <AIBadge />
-        </h3>
+        <h3 className="stims-finder__title">Find a preset</h3>
       </div>
 
       <div
@@ -480,6 +484,9 @@ export function PresetFinderPanel({
               }}
             />
             {candidate.label}
+            {candidate.sendsToModel ? (
+              <AIBadge title={candidate.sendsToModel} />
+            ) : null}
           </label>
         ))}
       </div>
@@ -549,7 +556,6 @@ export function PresetFinderPanel({
               // tone, not your audio) to that model, which reorders them.
               title="Sends the top results' titles and tags to Clef Omni, an AI model, which moves its pick to the top. Your audio is not sent."
             >
-              <AIBadge />
               {matchingOmni
                 ? 'Asking the AI model…'
                 : omniMatchId
