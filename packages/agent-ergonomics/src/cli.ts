@@ -3,19 +3,23 @@
 import { resolve } from 'node:path';
 import { runBranchRestart } from './branch-restart.ts';
 import { runCommitMsg } from './commit-msg.ts';
-import { loadConfig } from './config.ts';
+import { loadConfig, resolveConfig } from './config.ts';
 import { type Command, consoleIo, type Io } from './context.ts';
 import { runDocReferences } from './doc-references.ts';
 import { runGateCommand } from './gate.ts';
 import { runGuardrails } from './guardrails.ts';
 import { runModuleDocs } from './module-docs.ts';
+import { runOutline } from './outline.ts';
 import { runPrBody } from './pr-body.ts';
 import { runHelp } from './scripts-index.ts';
 import { runTestSourceGreps } from './test-source-greps.ts';
+import { runWhere } from './where.ts';
 import { runWorktreeNew } from './worktree-new.ts';
 
 const commands: Record<string, Command> = {
   help: runHelp,
+  outline: runOutline,
+  where: runWhere,
   gate: runGateCommand,
   guardrails: runGuardrails,
   'doc-refs': runDocReferences,
@@ -26,6 +30,8 @@ const commands: Record<string, Command> = {
   'pr-body': runPrBody,
   'commit-msg': runCommitMsg,
 };
+
+const CONFIG_FREE: readonly string[] = ['outline', 'where'];
 
 export type CliOptions = {
   cwd?: string;
@@ -73,7 +79,11 @@ export async function runCli(
     return 2;
   }
   try {
-    const loaded = await loadConfig(configPath, cwd);
+    // Reading code needs no repository policy, so these two run in a checkout
+    // that has no config file, or a broken one.
+    const loaded = CONFIG_FREE.includes(name)
+      ? { config: resolveConfig({}), path: undefined }
+      : await loadConfig(configPath, cwd);
     return await command(
       args.filter((arg) => arg !== '--'),
       {

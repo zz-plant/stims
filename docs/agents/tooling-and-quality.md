@@ -113,11 +113,22 @@ Run `bun run check:doc-references` and `bun run check:readme-claims`. Typecheck 
 
 ```bash
 bun run help          # every script, grouped by namespace, with a one-line purpose
-bun run help --json   # the same index as {name, command, purpose} records
+bun run help lab: parity   # only the scripts whose name contains a term
+bun run help --json   # { bare: [record], groups: { <prefix>: { note, scripts: [record] } } }, record = {name, command, purpose}
 bun run help --for "<symptom>"   # symptom → the script that measures it
 ```
 
 Purpose lines come from the docblock atop each script, so the index cannot drift from the code (`bun run check:script-docs` enforces it). Namespaces this page does not cover: `parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`, `previews:`, `lab:`.
+
+## Finding code
+
+```bash
+bun run outline <file>…                # each declaration with its line range
+bun run outline <file> --match <name>  # one declaration and what it contains, however deeply nested
+bun run where <symbol>                 # where it is declared, which functions use it, which tests touch it
+```
+
+`outline` leaves out nested declarations shorter than six lines or more than two levels down and says how many; `--min-lines` and `--depth` move those limits. `where` matches the whole word across tracked and untracked TypeScript and JavaScript. It is textual, so two unrelated things that share a name are reported together; `--path <prefix>` narrows it. Both take `--json`.
 
 To drive a running visualizer, use the agent API rather than DOM scraping — see [`browser-automation.md`](./browser-automation.md), plus `bun run ctl` (one-shot CLI) and `bun run mcp` (MCP server).
 

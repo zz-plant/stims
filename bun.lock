@@ -29,7 +29,7 @@
       },
       "devDependencies": {
         "@axe-core/playwright": "^4.14.0",
-        "@biomejs/biome": "2.6.6",
+        "@biomejs/biome": "^2.6.6",
         "@cfworker/json-schema": "^4.1.6",
         "@modelcontextprotocol/server": "2.4.0",
         "@playwright/test": "1.65.0",
@@ -72,6 +72,12 @@
         "@types/bun": "^1.4.4",
         "typescript": "^7.0.2",
       },
+      "peerDependencies": {
+        "@swc/core": "^1.16.20",
+      },
+      "optionalPeers": [
+        "@swc/core",
+      ],
     },
     "packages/audio-reactive": {
       "name": "audio-reactive",
