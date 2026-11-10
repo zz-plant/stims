@@ -6,10 +6,9 @@ updates:
   - package-ecosystem: "bun"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
     labels:
       - "github"
     # Playwright's packages share one browser build and one set of types, so
@@ -36,13 +35,19 @@ updates:
       codemirror:
         patterns:
           - "@codemirror/*"
+      # Everything else's minor and patch updates in one pull request a
+      # month: Stims is a hobby project since 2026-11-10 (AGENTS.md).
+      minor-and-patch:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:30"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ["*"]
     labels:
       - "github"
