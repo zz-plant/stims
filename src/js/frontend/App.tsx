@@ -611,6 +611,16 @@ function StimsWorkspaceAppShell() {
         .find((action) => action.id === command.id)
         ?.run();
     },
+    // A switch left on while nothing listens would promise commands that
+    // never arrive: turn it back off and say why.
+    onFailure: (reason) => {
+      setVoiceEnabled(false);
+      ui.setStatusMessage(
+        reason === 'blocked'
+          ? 'Voice commands are off: the browser blocked the microphone.'
+          : 'Voice commands are off: this browser cannot recognise speech on the device.',
+      );
+    },
   });
   const buildAgentCoreSnapshot = useAgentStateInstall({
     paletteActionsRef,

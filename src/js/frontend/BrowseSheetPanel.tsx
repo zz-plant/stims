@@ -562,6 +562,12 @@ export function BrowseSheetPanel({
     return hidden;
   }, [catalog, reduceFlashing]);
 
+  // The compass names the preset under the puck; ids are not for reading.
+  const titleById = useMemo(
+    () => new Map(catalog.map((entry) => [entry.id, entry.title])),
+    [catalog],
+  );
+
   // Saved presets, most recently opened first: the anchors 'like-saved'
   // ranks against. Joined into a key so the affinity pass reruns only when
   // the saved set changes, not on every catalog activity update.
@@ -853,14 +859,14 @@ export function BrowseSheetPanel({
           </button>
           <button
             type="button"
-            className="ctl-btn ctl-btn--icon"
+            className="ctl-btn ctl-btn--icon ctl-compass-toggle"
             aria-expanded={showCompass}
             aria-label="Aesthetic compass"
-            title="Aesthetic compass: pick a look by dragging"
+            title="Aesthetic compass: pick a preset by how it looks"
             onClick={() => setShowCompass((open) => !open)}
           >
             <UiIcon
-              name="sparkles"
+              name="compass"
               className="stims-icon-slot stims-icon-slot--sm"
               aria-hidden="true"
             />
@@ -1161,6 +1167,8 @@ export function BrowseSheetPanel({
           <AestheticCompassPad
             onSelectPreset={selectPreset}
             isSelectable={(id) => !hiddenByFlash.has(id)}
+            describePreset={(id) => titleById.get(id) ?? null}
+            currentPresetId={currentPresetId}
           />
         </section>
       ) : null}

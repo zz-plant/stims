@@ -230,7 +230,7 @@ function renderActivity(activity: Activity): string {
       (quarter) =>
         `<li class="wn-bar" title="${escapeHtml(quarter.label)}: ${quarter.count}">
 <span class="wn-bar__fill" style="height:${Math.round((quarter.count / maxCount) * 100)}%"></span>
-<span class="wn-bar__label">${escapeHtml(quarter.label.replace(/^\d{4}\s/u, ''))}</span>
+<span class="wn-bar__label">${escapeHtml(quarter.label.replace(/^\d{2}(\d{2})\s(Q\d)$/u, '$2 ’$1'))}</span>
 </li>`,
     )
     .join('');

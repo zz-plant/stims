@@ -172,30 +172,21 @@ function nearestStep(
 }
 
 function AccessibilitySection({
-  onOpenShortcuts,
-  onOpenCredits,
   voiceEnabled = false,
   voiceSupported = false,
   voiceListening = false,
   onVoiceEnabledChange,
 }: {
-  onOpenShortcuts: () => void;
-  onOpenCredits: () => void;
   voiceEnabled?: boolean;
   voiceSupported?: boolean;
   voiceListening?: boolean;
   onVoiceEnabledChange?: (enabled: boolean) => void;
 }) {
   const [prefs, setPrefs] = useState(() => getActiveAccessibilityPreference());
-  const [sensory, setSensory] = useState(() => getSensoryMoodKnobs());
 
   useEffect(() => {
     applyAccessibility(prefs);
   }, [prefs]);
-
-  useEffect(() => {
-    return subscribeToSensoryMoodKnobs((next) => setSensory(next));
-  }, []);
 
   return (
     <section className="ctl-section">
@@ -320,117 +311,53 @@ function AccessibilitySection({
           label="Hands-free voice commands"
           hint={
             voiceListening
-              ? 'Listening on this device. Say "next", "calm", "breathe", or "full screen". Audio never leaves the browser.'
+              ? 'Listening. Say "next", "back", "calm", "breathe", "full screen" or "reset". Audio never leaves the browser.'
               : 'Listens on this device for short commands like "next" or "calm". Audio never leaves the browser.'
           }
           checked={voiceEnabled}
           onChange={onVoiceEnabledChange}
         />
       ) : null}
-      {/* Named for both halves of what it opens: on a touch device the
-          gestures are the only useful half, and "Keyboard shortcuts" is
-          exactly the label a phone user skips. */}
-      <section className="ctl-section">
-        <div className="ctl-section__head">
-          <h3 className="ctl-section__title">Sensory mood</h3>
-        </div>
-        <div className="ctl-row">
-          <span className="ctl-row__text">
-            <label
-              className="ctl-row__label"
-              htmlFor="sensory-overload-ceiling"
-            >
-              Grounding vs. stimulation
-            </label>
-            <span className="ctl-row__hint" id="sensory-overload-ceiling-hint">
-              Lowers the brightness ceiling, softens motion, and eases contrast
-              swings. Calms the stage without stopping the music.
-            </span>
-          </span>
-          <input
-            id="sensory-overload-ceiling"
-            type="range"
-            min={MIN_OVERLOAD_CEILING}
-            max={MAX_OVERLOAD_CEILING}
-            step={0.05}
-            value={sensory.overloadCeiling}
-            aria-describedby="sensory-overload-ceiling-hint"
-            aria-valuetext={`${Math.round(sensory.overloadCeiling * 100)} percent`}
-            onChange={(event) => {
-              const overloadCeiling = Number(event.target.value);
-              setSensoryMoodKnobs({ overloadCeiling });
-            }}
-          />
-        </div>
-        <div className="ctl-row">
-          <span className="ctl-row__text">
-            <label className="ctl-row__label" htmlFor="sensory-predictability">
-              Harmonic predictability
-            </label>
-            <span className="ctl-row__hint" id="sensory-predictability-hint">
-              Smooths sudden jumps in the visuals and favours steady, repeating
-              motion over random flicker.
-            </span>
-          </span>
-          <input
-            id="sensory-predictability"
-            type="range"
-            min={MIN_PREDICTABILITY}
-            max={MAX_PREDICTABILITY}
-            step={0.05}
-            value={sensory.predictability}
-            aria-describedby="sensory-predictability-hint"
-            aria-valuetext={`${Math.round(sensory.predictability * 100)} percent`}
-            onChange={(event) => {
-              const predictability = Number(event.target.value);
-              setSensoryMoodKnobs({ predictability });
-            }}
-          />
-        </div>
-        <div className="ctl-row">
-          <span className="ctl-row__text">
-            <label
-              className="ctl-row__label"
-              htmlFor="sensory-breathing-cadence"
-            >
-              Paced breathing guide
-            </label>
-            <span className="ctl-row__hint" id="sensory-breathing-cadence-hint">
-              Adds a slow expansion and contraction to the visuals at the chosen
-              breathing rhythm. Set to off for no pacing.
-            </span>
-          </span>
-          <select
-            id="sensory-breathing-cadence"
-            className="ctl-select ctl-select--auto"
-            value={sensory.breathingCadenceSeconds ?? ''}
-            onChange={(event) => {
-              const raw = event.target.value;
-              setSensoryMoodKnobs({
-                breathingCadenceSeconds: raw === '' ? null : Number(raw),
-              });
-            }}
-          >
-            <option value="">Off</option>
-            {Array.from(
-              {
-                length:
-                  (MAX_BREATHING_CADENCE_SECONDS -
-                    MIN_BREATHING_CADENCE_SECONDS) /
-                    0.5 +
-                  1,
-              },
-              (_, i) => MIN_BREATHING_CADENCE_SECONDS + i * 0.5,
-            ).map((v) => (
-              <option key={v} value={v}>
-                {v.toFixed(1)}s
-              </option>
-            ))}
-          </select>
-        </div>
+    </section>
+  );
+}
+
+/** Whole seconds read "6 s"; the half steps keep their decimal. */
+const BREATHING_CADENCE_OPTIONS = Array.from(
+  {
+    length:
+      (MAX_BREATHING_CADENCE_SECONDS - MIN_BREATHING_CADENCE_SECONDS) / 0.5 + 1,
+  },
+  (_, i) => MIN_BREATHING_CADENCE_SECONDS + i * 0.5,
+);
+
+/**
+ * Three dials that shape the whole stage at once, after the single-purpose
+ * comfort controls above them. Its own section so the reset in the head has
+ * an obvious scope.
+ */
+function SensoryMoodSection() {
+  const [sensory, setSensory] = useState(() => getSensoryMoodKnobs());
+
+  useEffect(() => {
+    return subscribeToSensoryMoodKnobs((next) => setSensory(next));
+  }, []);
+
+  const atDefaults =
+    sensory.overloadCeiling === DEFAULT_OVERLOAD_CEILING &&
+    sensory.predictability === DEFAULT_PREDICTABILITY &&
+    sensory.breathingCadenceSeconds === DEFAULT_BREATHING_CADENCE_SECONDS;
+
+  return (
+    <section className="ctl-section">
+      <div className="ctl-section__head">
+        <h3 className="ctl-section__title">Sensory mood</h3>
+        {/* Always rendered so the head does not change height when a dial
+            moves; disabled says there is nothing to undo. */}
         <button
           type="button"
-          className="ctl-btn"
+          className="ctl-btn ctl-btn--quiet"
+          disabled={atDefaults}
           onClick={() => {
             setSensoryMoodKnobs({
               overloadCeiling: DEFAULT_OVERLOAD_CEILING,
@@ -439,9 +366,112 @@ function AccessibilitySection({
             });
           }}
         >
-          Reset sensory mood
+          Reset intensity, predictability and breathing
         </button>
-      </section>
+      </div>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="sensory-overload-ceiling">
+            Overall intensity
+          </label>
+          <span className="ctl-row__hint" id="sensory-overload-ceiling-hint">
+            One dial for brightness, motion and contrast swings together. Turn
+            it down to calm the stage while the music plays on.
+          </span>
+        </span>
+        <input
+          id="sensory-overload-ceiling"
+          type="range"
+          min={MIN_OVERLOAD_CEILING}
+          max={MAX_OVERLOAD_CEILING}
+          step={0.05}
+          value={sensory.overloadCeiling}
+          aria-describedby="sensory-overload-ceiling-hint"
+          aria-valuetext={`${Math.round(sensory.overloadCeiling * 100)} percent`}
+          onChange={(event) => {
+            setSensoryMoodKnobs({
+              overloadCeiling: Number(event.target.value),
+            });
+          }}
+        />
+      </div>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="sensory-predictability">
+            Predictability
+          </label>
+          <span className="ctl-row__hint" id="sensory-predictability-hint">
+            Turn it up to smooth sudden jumps and favour steady, repeating
+            motion over flicker.
+          </span>
+        </span>
+        <input
+          id="sensory-predictability"
+          type="range"
+          min={MIN_PREDICTABILITY}
+          max={MAX_PREDICTABILITY}
+          step={0.05}
+          value={sensory.predictability}
+          aria-describedby="sensory-predictability-hint"
+          aria-valuetext={`${Math.round(sensory.predictability * 100)} percent`}
+          onChange={(event) => {
+            setSensoryMoodKnobs({
+              predictability: Number(event.target.value),
+            });
+          }}
+        />
+      </div>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="sensory-breathing-cadence">
+            Breathing pace
+          </label>
+          <span className="ctl-row__hint" id="sensory-breathing-cadence-hint">
+            A slow swell and release in the picture to breathe along with. The
+            time is one full breath, in and out.
+          </span>
+        </span>
+        <select
+          id="sensory-breathing-cadence"
+          className="ctl-select ctl-select--auto"
+          value={sensory.breathingCadenceSeconds ?? ''}
+          aria-describedby="sensory-breathing-cadence-hint"
+          onChange={(event) => {
+            const raw = event.target.value;
+            setSensoryMoodKnobs({
+              breathingCadenceSeconds: raw === '' ? null : Number(raw),
+            });
+          }}
+        >
+          <option value="">Off</option>
+          {BREATHING_CADENCE_OPTIONS.map((seconds) => (
+            <option key={seconds} value={seconds}>
+              {seconds} s
+            </option>
+          ))}
+        </select>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The panel's last section. "Shortcuts and gestures" is named for both halves
+ * of what it opens: on a touch device the gestures are the only useful half,
+ * and "Keyboard shortcuts" is exactly the label a phone user skips.
+ */
+function HelpSection({
+  onOpenShortcuts,
+  onOpenCredits,
+}: {
+  onOpenShortcuts: () => void;
+  onOpenCredits: () => void;
+}) {
+  return (
+    <section className="ctl-section">
+      <div className="ctl-section__head">
+        <h3 className="ctl-section__title">Help</h3>
+      </div>
       <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
         Shortcuts and gestures
       </button>
@@ -1229,12 +1259,15 @@ export function SettingsSheetPanel({
             ) : null}
           </section>
           <AccessibilitySection
-            onOpenShortcuts={onOpenShortcuts}
-            onOpenCredits={onOpenCredits}
             voiceEnabled={voiceEnabled}
             voiceSupported={voiceSupported}
             voiceListening={voiceListening}
             onVoiceEnabledChange={onVoiceEnabledChange}
+          />
+          <SensoryMoodSection />
+          <HelpSection
+            onOpenShortcuts={onOpenShortcuts}
+            onOpenCredits={onOpenCredits}
           />
         </div>
       ) : null}

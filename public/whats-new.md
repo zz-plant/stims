@@ -31,7 +31,7 @@ On a touchscreen, two fingers now steer the picture: pinch to zoom and twirl to 
 
 ![Sensory mood dials](https://toil.fyi/screenshots/whats-new/sensory-dials.webp)
 
-Grounding vs stimulation, harmonic predictability, and a paced breathing guide. The dials lower the brightness ceiling, soften motion and contrast, smooth sudden jumps, and can breathe with you — and they can never raise the stage above the flash governor's limit.
+Overall intensity, predictability, and a breathing pace. The dials lower the brightness ceiling, soften motion and contrast, smooth sudden jumps, and can breathe with you — and they can never raise the stage above the flash governor's limit.
 
 [Try it](/?preset=shifter-curlique)
 
