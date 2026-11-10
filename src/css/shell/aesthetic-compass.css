@@ -1,57 +1,138 @@
 .ctl-browse-compass {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 0;
+  padding: 8px 0 4px;
 }
 
+/* The toggle keeps the compass open, so it reads as held down while it is. */
+.ctl-compass-toggle[aria-expanded="true"] {
+  border-color: var(--ctl-accent);
+  background: var(--ctl-accent-dim);
+  color: var(--ctl-accent);
+}
+
+/* Each axis label sits on the edge it names, so "up" and "right" need no
+   legend: the pad is the middle cell of a 3x3 grid. The side columns have a
+   floor wide enough for the longest word, and the pad gives way first. */
 .ctl-compass {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ctl-compass__pad {
-  position: relative;
-  width: 100%;
-  max-width: 260px;
-  aspect-ratio: 1;
-  margin: 0 auto;
-  border: 1px solid var(--ctl-border, rgba(255, 255, 255, 0.18));
-  border-radius: 6px;
-  overflow: hidden;
-  touch-action: none;
-}
-
-.ctl-compass__puck {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--ctl-accent, #7cc4ff);
-  box-shadow: 0 0 0 3px rgba(124, 196, 255, 0.25);
-  pointer-events: none;
-}
-
-.ctl-compass__axes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 8px;
+  grid-template-columns: minmax(4.5rem, 1fr) minmax(0, 220px) minmax(
+      4.5rem,
+      1fr
+    );
+  grid-template-areas:
+    ". top ."
+    "left pad right"
+    ". bottom ."
+    "readout readout readout";
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.ctl-compass__axis {
+  color: var(--ctl-ink-2);
   font-size: 0.75rem;
-  color: var(--ctl-muted, rgba(255, 255, 255, 0.55));
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
-.ctl-compass__axes span:nth-child(1),
-.ctl-compass__axes span:nth-child(2) {
+.ctl-compass__axis--top {
+  grid-area: top;
   text-align: center;
-  grid-column: span 1;
 }
 
-.ctl-compass__axes span:nth-child(3) {
+.ctl-compass__axis--bottom {
+  grid-area: bottom;
+  text-align: center;
+}
+
+.ctl-compass__axis--left {
+  grid-area: left;
+  text-align: right;
+}
+
+.ctl-compass__axis--right {
+  grid-area: right;
   text-align: left;
 }
 
-.ctl-compass__axes span:nth-child(4) {
-  text-align: right;
+/* Dark in both themes so the dots read; everything drawn on it therefore
+   uses the on-stage tokens, not the panel's theme-dependent ones. */
+.ctl-compass__pad {
+  grid-area: pad;
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--ctl-line-strong);
+  border-radius: var(--ctl-radius);
+  background: var(--stims-on-stage-panel-strong);
+  color: var(--stims-on-stage-cool);
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.ctl-compass__pad:focus-visible {
+  outline: 2px solid var(--ctl-accent);
+  outline-offset: 2px;
+}
+
+/* Crosshair through the centre: the point where neither axis leans. */
+.ctl-compass__pad::before,
+.ctl-compass__pad::after {
+  content: "";
+  position: absolute;
+  background: var(--stims-on-stage-line-soft);
+  pointer-events: none;
+}
+
+.ctl-compass__pad::before {
+  inset: 0 auto 0 50%;
+  width: 1px;
+}
+
+.ctl-compass__pad::after {
+  inset: 50% 0 auto 0;
+  height: 1px;
+}
+
+.ctl-compass__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ctl-compass__puck,
+.ctl-compass__playing {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Where the pointer is: solid. */
+.ctl-compass__puck {
+  width: 14px;
+  height: 14px;
+  background: var(--stims-on-stage-ink-strong);
+  border: 2px solid var(--stims-on-stage-cool);
+}
+
+/* What is playing now: a hollow ring, so it never hides the dot under it. */
+.ctl-compass__playing {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--stims-on-stage-ink-strong);
+}
+
+.ctl-compass__readout {
+  grid-area: readout;
+  margin: 2px 0 0;
+  min-height: 2.25rem;
+  color: var(--ctl-ink-2);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.ctl-compass__readout strong {
+  color: var(--ctl-ink);
+  font-weight: var(--font-weight-medium);
 }

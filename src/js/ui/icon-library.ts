@@ -92,6 +92,10 @@ const ICON_NODES = {
     { tag: 'rect', attrs: { x: 13, y: 13, width: 5, height: 4, rx: 0.8 } },
   ],
   pulse: [{ tag: 'path', attrs: { d: 'M3 12h4l2-5 4 10 2-5h6' } }],
+  compass: [
+    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 9 } },
+    { tag: 'path', attrs: { d: 'm15.5 8.5-2 5-5 2 2-5 5-2Z' } },
+  ],
   sparkles: [
     {
       tag: 'path',

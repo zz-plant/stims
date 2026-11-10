@@ -11,9 +11,18 @@
  */
 import { useEffect, useRef, useState } from 'react';
 
+/**
+ * Why listening stopped for good. `blocked`: the visitor or the browser
+ * refused the microphone. `unavailable`: this browser cannot recognise speech
+ * on the device, and a remote service is not an acceptable fallback.
+ */
+export type VoiceVJFailure = 'blocked' | 'unavailable';
+
 export interface VoiceVJOptions {
   enabled: boolean;
   onCommand: (phrase: string) => void;
+  /** Recognition cannot run; the caller should turn the feature back off. */
+  onFailure?: (reason: VoiceVJFailure) => void;
 }
 
 // Minimal type shims for the Web Speech API (not in all TS lib targets).
@@ -66,7 +75,7 @@ export function useVoiceVJ(options: VoiceVJOptions): {
   start: () => void;
   stop: () => void;
 } {
-  const { enabled, onCommand } = options;
+  const { enabled, onCommand, onFailure } = options;
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const [listening, setListening] = useState(false);
   const [supported] = useState(() => {
@@ -89,6 +98,7 @@ export function useVoiceVJ(options: VoiceVJOptions): {
       // risk microphone audio reaching a remote service under a local-only
       // promise.
       setListening(false);
+      onFailure?.('unavailable');
       return;
     }
     rec.onresult = (e) => {
@@ -99,19 +109,26 @@ export function useVoiceVJ(options: VoiceVJOptions): {
     };
     rec.onerror = (e) => {
       // A missing local language pack must not silently fall back to remote
-      // recognition. Stop and stay stopped until the visitor re-enables.
-      if (
-        e.error === 'language-not-supported' ||
-        e.error === 'service-not-allowed'
-      ) {
-        recognitionRef.current = null;
-        try {
-          rec.stop();
-        } catch {
-          // ignore
-        }
+      // recognition, and a refused microphone will not recover on its own.
+      // Stop and stay stopped until the visitor re-enables. Everything else
+      // (silence, an aborted session) is routine: `onend` restarts it, and
+      // the switch must not read "not listening" in between.
+      const failure: VoiceVJFailure | null =
+        e.error === 'not-allowed'
+          ? 'blocked'
+          : e.error === 'language-not-supported' ||
+              e.error === 'service-not-allowed'
+            ? 'unavailable'
+            : null;
+      if (!failure) return;
+      recognitionRef.current = null;
+      try {
+        rec.stop();
+      } catch {
+        // ignore
       }
       setListening(false);
+      onFailure?.(failure);
     };
     rec.onend = () => {
       // Auto-restart while enabled to keep listening.
@@ -128,7 +145,9 @@ export function useVoiceVJ(options: VoiceVJOptions): {
       rec.start();
       setListening(true);
     } catch {
+      recognitionRef.current = null;
       setListening(false);
+      onFailure?.('unavailable');
     }
   };
 
