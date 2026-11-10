@@ -28,7 +28,7 @@ jobs:
         # setting is enabled; the step below keeps the gap visible instead of
         # reporting a green check that reviewed nothing.
         continue-on-error: true
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
 
       - name: Report an unavailable review
         if: steps.review.outcome == 'failure'
