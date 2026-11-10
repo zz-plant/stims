@@ -203,7 +203,7 @@ export function extractDefinedTerms(
 }
 
 const STYLE = `
-@font-face{font-family:"Pathway Extreme";font-style:normal;font-weight:100 900;font-stretch:75% 100%;font-display:swap;src:url(/fonts/pathway-extreme-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Pathway Extreme";font-style:normal;font-weight:100 900;font-stretch:75% 100%;font-display:swap;ascent-override:90%;descent-override:22%;line-gap-override:0%;src:url(/fonts/pathway-extreme-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Atkinson Hyperlegible Mono";font-style:normal;font-weight:200 800;font-display:swap;src:url(/fonts/atkinson-hyperlegible-mono-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{color-scheme:dark light;--bg:#0f0f0e;--fg:#ecece7;--muted:#a3a29c;--line:rgba(236,236,231,.14);--code:#171716;--accent:#ffb21a;--accent-fg:#141210;--zebra:rgba(236,236,231,.035);--shadow:rgba(0,0,0,.6)}
 @media(prefers-color-scheme:light){:root{--bg:#f2f2ee;--fg:#161615;--muted:#55544f;--line:rgba(22,22,21,.16);--code:#e7e7e2;--accent:#8a4e00;--accent-fg:#fbfbf8;--zebra:rgba(22,22,21,.035);--shadow:rgba(22,22,21,.22)}}

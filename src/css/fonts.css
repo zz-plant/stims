@@ -15,6 +15,8 @@
  * in an equation, and its 200-800 weights cover the editor's bold tokens
  * without synthesis.
  *
+ * Pathway Extreme's line metrics are overridden below (see the face).
+ *
  * Both files are same-origin; only Pathway Extreme is preloaded, because the
  * mono is not on the first screen. font-display: swap is kept deliberately:
  * with the preload the swap window is short, and swapping beats invisible
@@ -30,6 +32,13 @@
   font-weight: 100 900;
   font-stretch: 75% 100%;
   font-display: swap;
+  /* The face's own metrics (ascent 1.07em, descent 0.286em) make a
+     line-height: normal box 1.36em tall, a quarter taller than the layout
+     was built on, so every label, chip and button without an explicit line
+     height grew. These keep the cap height centred in a 1.12em line. */
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
   src: url("/fonts/pathway-extreme-latin-var.woff2") format("woff2");
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,

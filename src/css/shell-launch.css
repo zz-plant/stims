@@ -36,12 +36,35 @@
     }
   }
 
-  /* A short window drops the decorative trace, which is what kept Start
-     visualizer off the first screen at 594x368 (iPhone Duo's outer display
-     held sideways with Safari's bar showing). */
+  /* A short sideways window (594x368: iPhone Duo's outer display held
+     sideways with Safari's bar showing) keeps Start visualizer on the first
+     screen by dropping the cover's band graph and tightening the sheet. The
+     rivet moves to the top-right corner, where the nameplate leaves room. */
   @media (orientation: landscape) and (max-height: 420px) {
-    .stims-shell__launch-trace {
+    .stims-shell__launch-graph {
       display: none;
+    }
+
+    .stims-shell__launch-cover {
+      --rivet-x: calc(100% - 18px);
+      gap: 6px;
+      padding: 16px 20px 14px;
+    }
+
+    .stims-shell__launch-nameplate {
+      margin-bottom: 0;
+    }
+
+    .stims-shell__launch-title {
+      font-size: var(--text-3xl);
+    }
+
+    .stims-shell__launch-tagline {
+      font-size: var(--text-base);
+    }
+
+    .stims-shell__launch-actions-minimal {
+      margin-top: 6px;
     }
   }
 }

@@ -322,6 +322,9 @@ html.light .stims-editor {
   font: inherit;
   font-size: 0.75rem;
   font-weight: var(--font-weight-semibold);
+  /* Labels, set at the face's compact width: at full width the row ran
+     past a 1366px laptop's panel and wrapped, pushing Tune off screen. */
+  font-stretch: var(--font-stretch-compact);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -1134,10 +1137,19 @@ html.light .stims-editor {
 /* The first heading in the pane. The margin is gone: it existed to clear
    the hint paragraph that used to sit above it, and with the controls
    leading now it only pushed the first chip lower into the fold. */
-.stims-editor__section:first-of-type .stims-editor__subhead {
+.stims-editor__section:first-of-type .stims-editor__subhead,
+.stims-editor__section[hidden] + .stims-editor__section .stims-editor__subhead {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
+}
+
+/* The preset-parameters section leads the pane and is hidden when a preset
+   has none, which is most of them. The first section a visitor sees then
+   missed :first-of-type and kept a later section's 34px of spacing, all of
+   it between the tab and the first driven chip. */
+.stims-editor__section[hidden] + .stims-editor__section {
+  margin-top: 0;
 }
 
 /* ── Switches ─────────────────────────────────────────────────────────
