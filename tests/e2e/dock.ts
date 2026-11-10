@@ -21,6 +21,11 @@
  * with the menu already on screen (embed-snippet on CI, 2026-11-08 to 11-10).
  * Both buttons say when their menu is open (`aria-expanded`), and that is
  * what the caller wants, so it ends the wait.
+ *
+ * It still failed on CI after that, on a runner too slow to reproduce here
+ * (CPU throttling to 20x, with four times the pixels, passed). A failure now
+ * lists each attempt's last Playwright step and what sat on top of the
+ * button, so the next one says which way the click was refused.
  */
 import type { Page } from 'playwright';
 
@@ -38,6 +43,7 @@ async function clickDockButton(page: Page, label: string) {
       .locator(`button[aria-label="${label}"][aria-expanded="true"]:visible`)
       .count()) > 0;
   const deadline = Date.now() + CLICK_DEADLINE_MS;
+  const attempts: string[] = [];
 
   while (Date.now() < deadline) {
     if (await menuOpen()) return;
@@ -48,13 +54,61 @@ async function clickDockButton(page: Page, label: string) {
     try {
       await button.click({ timeout: ATTEMPT_MS });
       return;
-    } catch {
+    } catch (error) {
       // The bar was still folded, or folded again, or the click landed and
       // the attempt ran out after it; the next pass tells which.
+      attempts.push(
+        `${lastPlaywrightStep(error)} | ${await whatCoversButton(page, label)}`,
+      );
     }
   }
   if (await menuOpen()) return;
-  throw new Error(`the ${label} button never became clickable within 30s`);
+  throw new Error(
+    `the ${label} button never became clickable within 30s:\n` +
+      attempts.map((line, index) => `  ${index + 1}. ${line}`).join('\n'),
+  );
+}
+
+/**
+ * Why Playwright held the click: the last reason in its call log (something
+ * intercepting it, the button hidden or moving), else the last step reached.
+ */
+function lastPlaywrightStep(error: unknown): string {
+  const lines = String(error instanceof Error ? error.message : error)
+    .split('\n')
+    .map((line) => line.trim().replace(/^-\s*/, ''))
+    .filter((line) => line && !line.startsWith('Call log'));
+  const reason = lines.findLast((line) =>
+    /intercepts|not visible|not stable|not enabled|outside of the viewport|detached/.test(
+      line,
+    ),
+  );
+  return reason ?? lines.at(-1) ?? 'no call log';
+}
+
+/** Each copy of the button: its visibility, and the element at its centre. */
+function whatCoversButton(page: Page, label: string): Promise<string> {
+  return page
+    .evaluate((name) => {
+      const nameOf = (node: Element | null) =>
+        node
+          ? `${node.tagName.toLowerCase()}.${String(node.className).split(' ')[0]}`
+          : 'nothing';
+      return [...document.querySelectorAll(`button[aria-label="${name}"]`)]
+        .map((button) => {
+          const box = button.getBoundingClientRect();
+          const top = document.elementFromPoint(
+            box.x + box.width / 2,
+            box.y + box.height / 2,
+          );
+          const onTop = top === button || button.contains(top);
+          return `${getComputedStyle(button).visibility}${
+            button.closest('[inert]') ? ' inert' : ''
+          }, ${onTop ? 'on top' : `under ${nameOf(top)}`}`;
+        })
+        .join('; ');
+    }, label)
+    .catch(() => 'page unreadable');
 }
 
 export async function openDockMenu(page: Page) {
