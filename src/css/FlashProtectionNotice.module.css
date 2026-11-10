@@ -1,7 +1,10 @@
 .notice {
   position: absolute;
   top: calc(var(--stims-chrome-top, 16px) + env(safe-area-inset-top, 0px));
-  right: 16px;
+  /* Clear of a stage-anchored side panel (the editor, Settings), as the dock
+     is: pinned to the window's edge, the notice sat under the panel's header
+     and its Settings link could not be reached. */
+  right: calc(var(--stage-tool-inset, 0px) + 16px);
   z-index: var(--z-frame-chrome);
 }
 
@@ -21,7 +24,7 @@
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--stims-on-stage-ink-strong);
+  outline: 2px solid var(--stims-on-stage-accent);
   outline-offset: 2px;
 }
 
