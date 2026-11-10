@@ -1281,14 +1281,7 @@ body[data-page="workspace"] {
     gap: 10px;
   }
 
-  .stims-shell__launch-showcase-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .stims-shell__launch-showcase-header .stims-shell__section-label {
+  .stims-shell__launch-showcase .stims-shell__section-label {
     color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
     font-size: var(--text-xs-plus);
     font-weight: var(--font-weight-bold);
@@ -1296,14 +1289,6 @@ body[data-page="workspace"] {
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
     margin: 0;
-  }
-
-  .stims-shell__launch-showcase-hint {
-    font-size: var(--text-2xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--stims-muted);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .stims-shell__launch-showcase-grid {
@@ -2074,6 +2059,13 @@ body[data-page="workspace"] {
     font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--stims-muted);
+  }
+
+  /* Silent while the field is empty. The live region stays mounted (the
+     input's aria-describedby points at it) but leaves the flex column, so
+     it adds no gap under the row. */
+  .stims-shell__youtube-feedback:empty {
+    position: absolute;
   }
 
   /* State is double-encoded (glyph + hue) so invalid vs ready does not

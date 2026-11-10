@@ -221,9 +221,6 @@ export function PerformanceHardwareSection({
       </p>
 
       <div className="ctl-row ctl-row--stack">
-        <span className="ctl-row__text">
-          <span className="ctl-row__label">MIDI controller</span>
-        </span>
         <button
           type="button"
           className="ctl-btn"

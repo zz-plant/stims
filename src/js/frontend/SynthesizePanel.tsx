@@ -13,7 +13,6 @@ import {
   generatePresetTournament,
 } from '../milkdrop/preset-generator.ts';
 import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
-import { AIBadge } from './AIBadge.tsx';
 import { checkStageForNearBlack } from './generated-preset-visual-check.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -492,7 +491,8 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   }, [prompt, offline, reviewing, reviewingVideo, ui.stageRef]);
 
   return (
-    <section className={styles.panel} aria-labelledby="synth-heading">
+    <section className={styles.panel}>
+      {/* No heading of its own: the side panel is titled "Generate with AI". */}
       <div className={styles.header}>
         <ParametricIdenticon
           seed={prompt.trim() || 'model-generator'}
@@ -501,16 +501,10 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           audioPeak={isGenerating ? 0.8 : 0.2}
           mood={palette === 'auto' ? 'psychedelic' : palette}
         />
-        <div>
-          <h3 id="synth-heading" className={styles.heading}>
-            Generate a preset
-            <AIBadge />
-          </h3>
-          <p className={styles.intro}>
-            Describe what you want to see. AI writes a new preset for you, and
-            Stims checks that it works before it plays.
-          </p>
-        </div>
+        <p className={styles.intro}>
+          Describe what you want to see. AI writes a new preset for you, and
+          Stims checks that it works before it plays.
+        </p>
       </div>
 
       <label className={styles.field}>

@@ -59,7 +59,7 @@ const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
  * starts the permission prompt or the share picker again.
  */
 const RESUME_SOURCE_NOTE: Record<ResumableAudioSource, string> = {
-  demo: 'A built-in synth loop, no permissions needed — or connect your audio below.',
+  demo: 'A built-in synth loop, no permissions needed.',
   microphone: 'Your browser asks for the microphone again.',
   tab: 'Your browser opens its screen-share picker again; tick Share audio.',
   youtube:
@@ -845,17 +845,9 @@ function LaunchStarterShowcase({
       className="stims-shell__launch-showcase"
       aria-labelledby="starter-showcase-heading"
     >
-      <div className="stims-shell__launch-showcase-header">
-        <h2
-          id="starter-showcase-heading"
-          className="stims-shell__section-label"
-        >
-          Jump into an iconic look
-        </h2>
-        <span className="stims-shell__launch-showcase-hint">
-          Instant visualizer preview
-        </span>
-      </div>
+      <h2 id="starter-showcase-heading" className="stims-shell__section-label">
+        Jump into an iconic look
+      </h2>
       <div className="stims-shell__launch-showcase-grid">
         {STARTER_SHOWCASE_PRESETS.map((item) => {
           const entry = resolvePresetCatalogEntry(catalog, item.id);
