@@ -2,7 +2,8 @@
 
 Repository tools for coding agents: a script index generated from docblocks, symptom-to-tool
 routing, a quiet quality gate, documentation guards and Git workflow helpers. One Bun CLI reads
-one configuration file. The library has no runtime dependencies and does not depend on Stims.
+one configuration file. The library has no required runtime dependencies and does not depend on Stims;
+`outline` and `where` load the optional peer `@swc/core` on first use.
 
 This package is prepared for publication at version 0.1.0. It has not been published to npm or
 mirrored to a separate repository. The Stims scripts already use its workspace source.
@@ -71,7 +72,9 @@ The package's exported configuration types document every field and default.
 
 | Command             | Behavior and options                                                                                                                                                                               |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`              | Group scripts by namespace. `--json` emits the same index, `--for "symptom"` ranks configured routes then keyword matches, and `--check` rejects missing script summaries.                         |
+| `help`              | Group scripts by namespace. Bare words keep only the scripts whose name contains one. `--json` emits the same index, `--for "symptom"` ranks configured routes then keyword matches, and `--check` rejects missing script summaries.|
+| `outline`           | List every declaration in TypeScript or JavaScript files with its line range. Short or deeply nested ones are counted, not listed: `--match <name>` finds one anywhere, `--min-lines` and `--depth` move the limits, `--json` emits the tree.|
+| `where`             | Report where one identifier is declared, which declarations use it and which test files touch it. Whole-word and textual, over tracked and untracked files. `--path <prefix>` narrows, `--all` lifts the limits, `--json` emits the report.|
 | `gate`              | Run preflight serially, independent checks concurrently, then postflight. Full mode is default; `--quick`, `--all`, `--serial`, `--no-tests`, `--quiet`, `--verbose` and `--json` select behavior. |
 | `guardrails`        | Generate the configured Markdown page from `check:*` docblocks and gate membership; `--check` compares it without writing.                                                                         |
 | `doc-refs`          | Check live Markdown references to configured path prefixes and package scripts, honoring explicit historical/generated exemptions.                                                                 |
@@ -82,7 +85,7 @@ The package's exported configuration types document every field and default.
 | `pr-body`           | Scaffold a description from commits and changed files; `--base` and `--footer` customize it. `--check <file\|->` validates a finished body. Never assert checks were run.                          |
 | `commit-msg`        | Check a message file or stdin (`-`), or `--range <base>..<head>`. Long subjects warn in hook mode; `--allow-long-subjects` waives the range ceiling. `--pr-title <title>` checks a title as its squash subject. |
 
-`--help` lists the commands without loading a config. Read-only checks return zero on success and
+`--help` lists the commands without loading a config, and `outline` and `where` run without one. Read-only checks return zero on success and
 nonzero on failure; the CLI returns 2 for configuration or invocation errors. `guardrails` writes
 only when `--check` is absent. Git helpers change only the checkout they are asked to operate on;
 the caller remains responsible for authorizing a restart or worktree creation.
@@ -119,6 +122,9 @@ appear later, so a long explanation remains documented.
   An allowlist is a record of a deliberate exception, not a way to hide a red check.
 - **Quiet output for agents.** Passing checks need one line. Failures need their complete evidence.
   Keep verbose output available for humans and CI, and JSON available for tooling.
+- **A map before a read.** Most of an agent's calls read or search code. Declarations with line
+  ranges, and one answer to where a name is declared, used and tested, replace several windows
+  into a large file.
 - **Symptoms routed to instruments.** Someone can know every script and still choose the wrong
   measurement. Curated routes carry the judgment a generated list cannot supply.
 

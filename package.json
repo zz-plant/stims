@@ -167,6 +167,7 @@
     "mcp:deploy": "bunx wrangler deploy --config wrangler.mcp.jsonc",
     "mcp:dev": "bunx wrangler dev --config wrangler.mcp.jsonc",
     "model:codex": "bash scripts/codex-model-route.sh",
+    "outline": "bun run scripts/outline.ts",
     "parity:capture": "bun run scripts/capture-visual-reference-suite.ts",
     "parity:capture:bundled": "bun run scripts/capture-certification-corpus.ts --group bundled-shipped",
     "parity:capture:corpus": "bun run scripts/capture-certification-corpus.ts",
@@ -228,6 +229,7 @@
     "typecheck:watch": "bunx --bun --package typescript@7.0.2 tsc --noEmit --watch",
     "ui:diff": "bun run scripts/ui-diff.ts",
     "verify": "bun run scripts/agent-verify.ts",
+    "where": "bun run scripts/where.ts",
     "worktree:new": "bun run scripts/worktree-new.ts",
     "worktree:prune": "bun run scripts/worktree-prune.ts",
     "packages:split": "bun run scripts/split-package.ts"

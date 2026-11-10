@@ -30,7 +30,7 @@ truth). Reach for the symptom index before hand-rolling a measurement:
 
 ```bash
 bun run help                 # every script, grouped by namespace
-bun run help --json          # {name, command, purpose} records
+bun run help parity lab:     # only the scripts whose name contains a term
 bun run help --for "<symptom>"   # "my preset looks wrong" → parity:capture
 ```
 
@@ -42,6 +42,17 @@ reference capture → diff → promote), `sweep:` (batch corpus runs), `perf:` /
 
 Purpose lines come from the docblock atop each script, so the index cannot
 drift (`check:script-docs` enforces it).
+
+## Finding code
+
+Source files here run to 4,800 lines. Ask for the map, then read the line
+range it names:
+
+```bash
+bun run outline <file>                 # each declaration with its line range
+bun run outline <file> --match <name>  # one declaration, however deeply nested
+bun run where <symbol>                 # where it is declared, what uses it, which tests touch it
+```
 
 ## What costs time if you learn it the hard way
 
