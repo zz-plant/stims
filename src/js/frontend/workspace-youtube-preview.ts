@@ -10,7 +10,9 @@ import {
 } from '../ui/youtube-controller.ts';
 
 const YOUTUBE_URL_STORAGE_KEY = 'stims-youtube-url';
-const DEFAULT_YOUTUBE_FEEDBACK = 'Paste a YouTube link or video ID to load it.';
+// Nothing to say about an empty field: its label, its placeholder and the
+// Load button beside it already ask for a link.
+const DEFAULT_YOUTUBE_FEEDBACK = '';
 const INVALID_YOUTUBE_FEEDBACK =
   'That link or ID was not recognized. Try a YouTube watch/share link or an 11-character video ID.';
 const VALID_YOUTUBE_FEEDBACK = 'Press Load to continue.';

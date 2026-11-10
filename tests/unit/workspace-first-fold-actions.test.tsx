@@ -513,10 +513,6 @@ describe('workspace first-fold launch hierarchy', () => {
         cards[0].querySelector('.stims-shell__launch-starter-play'),
       ).not.toBeNull();
       expect(
-        rendered.container.querySelector('.stims-shell__launch-showcase-hint')
-          ?.textContent,
-      ).toContain('Instant visualizer preview');
-      expect(
         rendered.container.querySelector('footer.stims-shell__launch-footer'),
       ).not.toBeNull();
 

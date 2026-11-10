@@ -59,9 +59,9 @@ export function CapturePanel() {
   const [recording, setRecording] = useState(false);
   const [saved, setSaved] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [status, setStatus] = useState(
-    'Choose a format, then start recording.',
-  );
+  // Empty until something happens: the format list and the Start button
+  // under it already say what to do first.
+  const [status, setStatus] = useState('');
   const reduceFlashing = useSyncExternalStore(
     subscribeToAccessibilityPreference,
     () => getActiveAccessibilityPreference().reduceFlashing,
@@ -215,16 +215,12 @@ export function CapturePanel() {
   }, [preset]);
 
   return (
-    <section className={styles.panel} aria-labelledby="capture-heading">
-      <div>
-        <h3 id="capture-heading" className={styles.heading}>
-          Record this visualizer
-        </h3>
-        <p className={styles.intro}>
-          Capture the live canvas and active audio without pausing playback. 4K,
-          9:16 vertical, and 1:1 square render natively.
-        </p>
-      </div>
+    <section className={styles.panel}>
+      {/* The side panel's own title names this ("Record video") and the
+          format list below shows the sizes on offer. */}
+      <p className={styles.intro}>
+        Capture the live canvas and active audio without pausing playback.
+      </p>
 
       <fieldset className={styles.formats} disabled={recording}>
         <legend>Video format</legend>
@@ -248,9 +244,10 @@ export function CapturePanel() {
                 }}
               />
               <span>
+                {/* Every label carries its aspect ratio already. */}
                 <strong>{details.label}</strong>
                 <small>
-                  {details.width} × {details.height} · {details.aspectRatio}
+                  {details.width} × {details.height}
                 </small>
               </span>
             </label>

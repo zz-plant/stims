@@ -4,11 +4,6 @@
   color: var(--ctl-ink, var(--stims-ink-strong));
 }
 
-.heading {
-  margin: 0 0 6px;
-  font-size: 1rem;
-}
-
 .intro {
   margin: 0;
   color: var(--ctl-ink-2, var(--stims-ink));
@@ -80,6 +75,14 @@
   margin: 0;
   min-height: 1.5em;
   line-height: 1.5;
+}
+
+/* The live region stays mounted so its first message is announced, but while
+   it has nothing to say it leaves the grid: an empty row would double the gap
+   between the formats and the notes. */
+.status:empty {
+  position: absolute;
+  min-height: 0;
 }
 
 .unsupported {

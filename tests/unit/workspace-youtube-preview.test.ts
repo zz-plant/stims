@@ -39,7 +39,7 @@ describe('workspace YouTube preview helpers', () => {
       }),
     ).toMatchObject({
       canLoad: false,
-      feedback: 'Paste a YouTube link or video ID to load it.',
+      feedback: '',
       invalid: false,
       reference: null,
     });

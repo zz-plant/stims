@@ -353,10 +353,13 @@ function SensoryMoodSection() {
       <div className="ctl-section__head">
         <h3 className="ctl-section__title">Sensory mood</h3>
         {/* Always rendered so the head does not change height when a dial
-            moves; disabled says there is nothing to undo. */}
+            moves; disabled says there is nothing to undo. Sitting in this
+            section's head scopes it to the three dials below, which are the
+            whole section; a screen reader gets the scope in the name. */}
         <button
           type="button"
           className="ctl-btn ctl-btn--quiet"
+          aria-label="Reset sensory mood"
           disabled={atDefaults}
           onClick={() => {
             setSensoryMoodKnobs({
@@ -366,7 +369,7 @@ function SensoryMoodSection() {
             });
           }}
         >
-          Reset intensity, predictability and breathing
+          Reset
         </button>
       </div>
       <div className="ctl-row">
@@ -1014,9 +1017,6 @@ export function SettingsSheetPanel({
                   <label className="ctl-row__label" htmlFor="blend-duration">
                     Blend duration
                   </label>
-                  <span className="ctl-row__hint">
-                    How long the crossfade between presets takes.
-                  </span>
                 </span>
                 <select
                   id="blend-duration"

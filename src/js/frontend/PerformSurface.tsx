@@ -161,7 +161,7 @@ export function PerformSurface() {
         </div>
         <p className={styles.empty}>
           Put the settings you change most here as sliders you can move while
-          the preset plays. None added yet.
+          the preset plays.
           {/* Hides the card for good; "Dismiss" read as closing it for now. */}
           <button
             type="button"
