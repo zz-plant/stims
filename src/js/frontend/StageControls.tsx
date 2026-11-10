@@ -915,7 +915,8 @@ export function StageControls({
     // in this dialog. On a phone, with no ? key, it sat three levels down
     // (Settings, its fourth tab, a button).
     {
-      icon: 'sparkles' as const,
+      // Not sparkles: in this menu that icon marks Generate with AI.
+      icon: 'megaphone' as const,
       label: "What's new",
       actionId: 'open-whats-new',
       action: () => {
