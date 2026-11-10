@@ -137,6 +137,40 @@ async function startDemo(page: Page) {
 const browseDialog = (page: Page) =>
   page.getByRole('dialog', { name: /browse/i });
 
+/**
+ * A Browse card's top once the sheet has finished opening. On a phone the
+ * sheet slides up from below the screen, and its cards count as visible to
+ * Playwright from its first frame, a whole sheet-height low: read there, a
+ * card sits at 1290 where it comes to rest at 514, the 776px this test failed
+ * with on CI. Waits out the running animations on the sheet and inside it.
+ */
+async function restingCardTop(page: Page, cardId: string | null) {
+  return page.evaluate(async (id) => {
+    const frame = () => new Promise(requestAnimationFrame);
+    const card = () =>
+      document.querySelector(`[role="dialog"] a[data-preset-id="${id}"]`);
+    for (let pass = 0; pass < 20; pass++) {
+      const dialog = card()?.closest('[role="dialog"]');
+      if (!dialog) return null;
+      const moving = document.getAnimations().filter((animation) => {
+        const target = (animation.effect as KeyframeEffect | null)?.target;
+        const end = animation.effect?.getComputedTiming().endTime;
+        return (
+          animation.playState === 'running' &&
+          target instanceof Element &&
+          (dialog.contains(target) || target.contains(dialog)) &&
+          Number.isFinite(Number(end))
+        );
+      });
+      if (moving.length === 0) break;
+      await Promise.allSettled(moving.map((animation) => animation.finished));
+      await frame();
+    }
+    await frame();
+    return card()?.getBoundingClientRect().y ?? null;
+  }, cardId);
+}
+
 /** Cards other than the one playing, since picking that one closes Browse. */
 const otherTiles = (page: Page) =>
   browseDialog(page).locator('a[data-preset-id][data-active="false"]');
@@ -250,15 +284,14 @@ requiredBrowserTest(
       });
 
       const before = (await agentState(page)).presetId;
-      const tile = otherTiles(page).first();
-      const id = await tile.getAttribute('data-preset-id');
-      const top = (await tile.boundingBox())?.y;
+      const id = await otherTiles(page).first().getAttribute('data-preset-id');
+      const tile = browseDialog(page).locator(`a[data-preset-id="${id}"]`);
+      const top = await restingCardTop(page, id);
+      if (top === null) throw new Error('the picked card has no position');
       await step(() => tile.tap());
 
       // The sheet has shrunk to show the stage, with the card left in place.
-      // Wait for the fold to settle, not just for the panel to cross 150px:
-      // sampling on that edge caught the card mid-animation on a busy runner
-      // and read a 776px move that was not there a frame later.
+      // Wait for the fold to settle, not just for the panel to cross 150px.
       const shrunk = await page.evaluate(async (cardId) => {
         const frame = () => new Promise(requestAnimationFrame);
         const read = () => {
@@ -289,7 +322,7 @@ requiredBrowserTest(
         throw new Error('the Browse sheet never settled after the pick');
       }
       // A few pixels are a card's own hover and press styling.
-      expect(Math.abs(shrunk.cardTop - (top ?? 0))).toBeLessThan(6);
+      expect(Math.abs(shrunk.cardTop - top)).toBeLessThan(6);
 
       await waitForPresetOtherThan(page, before);
       await browseDialog(page).waitFor({ state: 'detached', timeout: 15000 });
