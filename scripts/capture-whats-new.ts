@@ -6,17 +6,22 @@
  * rather than scraping the DOM, so a screenshot shows the real surface a
  * visitor reaches. Output goes to public/screenshots/whats-new/.
  *
+ * The Browse shot needs the preset thumbnails in
+ * public/milkdrop-presets/previews/, which are gitignored: a fresh worktree
+ * has none, and its tiles would read "No preview".
+ *
  *   bun run capture:whats-new
+ *   WHATS_NEW_CAPTURE_PORT=5198 bun run capture:whats-new   # port 5199 taken
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { chromium, type Page } from 'playwright';
+import { chromium, type Locator, type Page } from 'playwright';
 import sharp from 'sharp';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { spawnDevServer } from './dev-server.ts';
 
-const PORT = 5199;
+const PORT = Number(process.env.WHATS_NEW_CAPTURE_PORT ?? 5199);
 const OUT_DIR = 'public/screenshots/whats-new';
 const BASE = `http://127.0.0.1:${PORT}`;
 const VIEWPORT = { width: 1440, height: 900 };
@@ -33,6 +38,14 @@ async function run(page: Page, action: string) {
   await page.evaluate(async (id) => {
     await (window as any).__stims_agent.run(id);
   }, action);
+}
+
+/**
+ * Scrolls without Playwright's "element is stable" wait: that wait counts
+ * animation frames, and the visualizer can starve them on a busy machine.
+ */
+async function scrollTo(target: Locator) {
+  await target.evaluate((el) => el.scrollIntoView({ block: 'center' }));
 }
 
 async function shoot(page: Page, name: string, opts?: { fullPage?: boolean }) {
@@ -71,6 +84,9 @@ async function main() {
       deviceScaleFactor: 2,
     });
     const page = await context.newPage();
+    // Generous: a busy machine stretches every action, and a capture that
+    // dies half-way leaves the page showing a mix of old and new shots.
+    page.setDefaultTimeout(120_000);
     await page.goto(`${BASE}/?preset=shifter-curlique&agent=true`, {
       waitUntil: 'domcontentloaded',
     });
@@ -104,7 +120,7 @@ async function main() {
     await page.waitForTimeout(600);
     const sensory = page.locator('#sensory-overload-ceiling');
     if (await sensory.count()) {
-      await sensory.scrollIntoViewIfNeeded();
+      await scrollTo(sensory);
       await page.waitForTimeout(400);
       await shoot(page, 'sensory-dials.png');
     }
@@ -112,7 +128,7 @@ async function main() {
       exact: false,
     });
     if (await voice.count()) {
-      await voice.first().scrollIntoViewIfNeeded();
+      await scrollTo(voice.first());
       await page.waitForTimeout(400);
       await shoot(page, 'voice-commands.png');
     }
@@ -133,7 +149,7 @@ async function main() {
       await (window as any).__stims_agent.waitFor(
         (s: { presetId: string | null }) =>
           s.presetId === 'geiss-flower-blossom',
-        20_000,
+        120_000,
       );
     });
     await page.waitForTimeout(3500);
@@ -147,9 +163,7 @@ async function main() {
       'button[aria-label="Aesthetic compass"]',
     );
     try {
-      await compassButton
-        .first()
-        .waitFor({ state: 'visible', timeout: 20_000 });
+      await compassButton.first().waitFor({ state: 'visible' });
       await compassButton.first().click();
       await page.waitForTimeout(3500);
       await shoot(page, 'aesthetic-compass.png');
