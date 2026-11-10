@@ -6,6 +6,7 @@ import type {
   MilkdropPostVisual,
   MilkdropRenderPayload,
 } from '../types';
+import { milkdropTranslationToSampleOffset } from '../warp-sample-transform.ts';
 
 // Mirrors the WebGL manager's blurEnabled gate: the warp/comp feedback loop
 // only reads blur1Tex/blur2Tex/blur3Tex when a preset's shader bodies sample
@@ -134,11 +135,20 @@ export function buildFeedbackCompositeState({
   // Shader-derived controls still win — a preset that writes its transform in
   // a warp shader is described by that shader, and on WebGPU a lowered
   // per-pixel program overrides these uniforms per fragment anyway.
+  //
+  // The offset uniforms are a sampling offset in screen uv, which is what the
+  // shader-derived controls already are. A preset's dx/dy are MilkDrop's
+  // image translation instead, so they are converted here: a positive dx
+  // moves the picture right, which samples to the LEFT (zz-plant/stims#1695).
+  const presetOffset = milkdropTranslationToSampleOffset(
+    readWarpVariable(frameState.variables, 'dx', 0),
+    readWarpVariable(frameState.variables, 'dy', 0),
+  );
   const presetWarp = {
     zoom: readWarpVariable(frameState.variables, 'zoom', 1),
     rot: readWarpVariable(frameState.variables, 'rot', 0),
-    dx: readWarpVariable(frameState.variables, 'dx', 0),
-    dy: readWarpVariable(frameState.variables, 'dy', 0),
+    offsetX: presetOffset.x,
+    offsetY: presetOffset.y,
   };
   const shaderPlan = resolveFeedbackShaderPlan({
     shaderPrograms: frameState.post.shaderPrograms,
@@ -192,8 +202,8 @@ export function buildFeedbackCompositeState({
     textureWrap: frameState.post.textureWrap ? 1 : 0,
     feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
     warpScale: controls.warpScale,
-    offsetX: controls.offsetX || presetWarp.dx,
-    offsetY: controls.offsetY || presetWarp.dy,
+    offsetX: controls.offsetX || presetWarp.offsetX,
+    offsetY: controls.offsetY || presetWarp.offsetY,
     rotation: controls.rotation || presetWarp.rot,
     zoomMul: controls.zoom !== 1 ? controls.zoom : presetWarp.zoom,
     saturation: controls.saturation,

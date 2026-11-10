@@ -1,4 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
+import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 import {
   computeLegacyWarpSampleUv,
   computeWarpSampleRad,
@@ -290,11 +294,12 @@ describe('300-beatdetect-bassmidtreb stays bit-for-bit identical', () => {
 describe('agreement with the butterchurn oracle', () => {
   /**
    * Compares the parts of the chain the WebGPU node graph is faithful to:
-   * the zoom exponent, the screen-centred zoom, the sx/sy scale about cx/cy
-   * and the rotation about cx/cy. dx/dy are excluded because the node graph
-   * deliberately keeps its own (measured, and known-divergent) sign and space
-   * for them, and the rotation is compared at square aspect because the node
-   * graph rotates in screen space where butterchurn rotates in aspect space.
+   * the zoom exponent, the screen-centred zoom, the sx/sy scale about cx/cy,
+   * the rotation about cx/cy and the direction of dx/dy. It runs at square
+   * aspect because the node graph rotates in screen space where butterchurn
+   * rotates in aspect space, and keeps dx/dy in screen fractions where
+   * butterchurn divides them by the aspect (projectM does not; see
+   * warp-sample-transform.ts).
    */
   const cases = [
     { cx: 0.5, cy: 0.5, sx: 1.4, sy: 1, zoom: 1.02, zoomExp: 1, rot: 0 },
@@ -302,44 +307,89 @@ describe('agreement with the butterchurn oracle', () => {
     { cx: 0.5, cy: 0.5, sx: 1, sy: 1, zoom: 1.05, zoomExp: 1.7, rot: 0 },
     { cx: 0.42, cy: 0.61, sx: 1.1, sy: 0.9, zoom: 0.97, zoomExp: 1, rot: 0.35 },
   ];
+  const translations = [
+    { dx: 0, dy: 0 },
+    { dx: 0.013, dy: -0.02 },
+    { dx: -0.04, dy: 0.031 },
+  ];
 
   test('matches butterchurn at square aspect', () => {
     for (const params of cases) {
-      for (const ndcX of [-0.8, -0.2, 0.3, 0.9]) {
-        for (const ndcY of [-0.7, 0.1, 0.6]) {
-          const oracle = butterchurnSampleUv({
-            ndcX,
-            ndcY,
-            aspectx: 1,
-            aspecty: 1,
-            dx: 0,
-            dy: 0,
-            ...params,
-          });
-          // Screen uv: x right, y UP; butterchurn's v is measured downward.
-          const centeredX = ndcX * 0.5;
-          const centeredY = ndcY * 0.5;
-          const next = computeWarpSampleUv({
-            centeredX,
-            centeredY,
-            aspectX: 1,
-            aspectY: 1,
-            cx: params.cx,
-            cy: params.cy,
-            sx: params.sx,
-            sy: params.sy,
-            zoom: params.zoom,
-            zoomexp: params.zoomExp,
-            rot: params.rot,
-            dx: 0,
-            dy: 0,
-            rad: computeWarpSampleRad(centeredX, centeredY, 1, 1),
-          });
-          expect(next.x).toBeCloseTo(oracle.u, 9);
-          // v is y-down; the node graph's uv is y-up.
-          expect(next.y).toBeCloseTo(1 - oracle.v, 9);
+      for (const { dx, dy } of translations) {
+        for (const ndcX of [-0.8, -0.2, 0.3, 0.9]) {
+          for (const ndcY of [-0.7, 0.1, 0.6]) {
+            const oracle = butterchurnSampleUv({
+              ndcX,
+              ndcY,
+              aspectx: 1,
+              aspecty: 1,
+              dx,
+              dy,
+              ...params,
+            });
+            // Screen uv: x right, y UP; butterchurn's v is measured downward.
+            const centeredX = ndcX * 0.5;
+            const centeredY = ndcY * 0.5;
+            const next = computeWarpSampleUv({
+              centeredX,
+              centeredY,
+              aspectX: 1,
+              aspectY: 1,
+              cx: params.cx,
+              cy: params.cy,
+              sx: params.sx,
+              sy: params.sy,
+              zoom: params.zoom,
+              zoomexp: params.zoomExp,
+              rot: params.rot,
+              dx,
+              dy,
+              rad: computeWarpSampleRad(centeredX, centeredY, 1, 1),
+            });
+            expect(next.x).toBeCloseTo(oracle.u, 9);
+            // v is y-down; the node graph's uv is y-up.
+            expect(next.y).toBeCloseTo(1 - oracle.v, 9);
+          }
         }
       }
+    }
+  });
+
+  test('dx moves the picture right and dy moves it down, in screen fractions', () => {
+    // zz-plant/stims#1695: dx was added to the sampling coordinate, so
+    // Geiss - Cruzin's streaks fanned inward. Sampling to the left is what
+    // moves the picture right; MilkDrop's y runs down, so +dy samples up.
+    const at = (dx: number, dy: number) => ({
+      next: computeWarpSampleUv({
+        centeredX: 0.2,
+        centeredY: -0.1,
+        aspectX: ASPECT_X,
+        aspectY: ASPECT_Y,
+        cx: 0.5,
+        cy: 0.5,
+        sx: 1,
+        sy: 1,
+        zoom: 1.02,
+        zoomexp: 1,
+        rot: 0,
+        dx,
+        dy,
+        rad: computeWarpSampleRad(0.2, -0.1, ASPECT_X, ASPECT_Y),
+      }),
+      legacy: computeLegacyWarpSampleUv({
+        centeredX: 0.2,
+        centeredY: -0.1,
+        zoom: 1.02,
+        rot: 0,
+        dx,
+        dy,
+      }),
+    });
+    const still = at(0, 0);
+    const moved = at(0.01, 0.02);
+    for (const key of ['next', 'legacy'] as const) {
+      expect(moved[key].x - still[key].x).toBeCloseTo(-0.01, 12);
+      expect(moved[key].y - still[key].y).toBeCloseTo(0.02, 12);
     }
   });
 
@@ -356,6 +406,43 @@ describe('agreement with the butterchurn oracle', () => {
     expect(
       computeWarpSampleRad(centeredX, centeredY, ASPECT_X, ASPECT_Y),
     ).toBeCloseTo(oracleRad, 12);
+  });
+});
+
+describe("a preset's per-frame dx/dy reach the feedback pass", () => {
+  test('as the sampling offset both backends add', () => {
+    // zz-plant/stims#1695: a positive dx moves the picture right, so the
+    // previous frame is sampled to the left. MilkDrop's y runs down, so dy
+    // already is the y-up sampling offset. Both stay screen fractions at 16:9.
+    const vm = createMilkdropVM(
+      compileMilkdropPresetSource(
+        'title=Per Frame Translation\nper_frame_1=dx=0.01; dy=0.02;',
+        { id: 'per-frame-translation' },
+      ),
+    );
+    const frameState = vm.step({
+      ...createMilkdropSignalTracker().update({
+        time: 0,
+        deltaMs: 1000 / 60,
+        analyser: null,
+        frequencyData: new Uint8Array(64),
+        waveformData: new Uint8Array(64).fill(128),
+      }),
+      aspect: 16 / 9,
+    });
+    for (const backend of ['webgl', 'webgpu'] as const) {
+      const state = buildFeedbackCompositeState({
+        frameState,
+        backend,
+        directFeedbackShaders: true,
+        webgpuFeedbackPlanShaderExecution: 'controls',
+        getShaderTextureSourceId: () => 0,
+        getShaderTextureBlendModeId: () => 0,
+        getShaderSampleDimensionId: () => 0,
+      });
+      expect(state.offsetX).toBeCloseTo(-0.01, 9);
+      expect(state.offsetY).toBeCloseTo(0.02, 9);
+    }
   });
 });
 

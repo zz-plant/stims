@@ -109,7 +109,10 @@ import type {
   MilkdropShaderProgramPayload,
   MilkdropShaderStatement,
 } from './types';
-import { perPixelWritesWarpTransform } from './warp-sample-transform.ts';
+import {
+  perPixelWritesTarget,
+  perPixelWritesWarpTransform,
+} from './warp-sample-transform.ts';
 
 const tslLog = createLogger('MilkdropTSL');
 
@@ -3252,7 +3255,19 @@ function createFeedbackBlendOutputNode(
       baseUv,
       usesWarpTransformVariables,
     );
+    // offsetX is the frame's SAMPLING offset, which for a preset's own dx is
+    // -dx (feedback-composite.ts; milkdropTranslationToSampleOffset is the
+    // scalar twin). Per-pixel code reads and writes dx in MilkDrop's terms,
+    // so it is handed dx back and what it writes is negated the same way. A
+    // block that never writes dx keeps the uniform exactly. dy needs neither:
+    // MilkDrop's v runs down, so its dy already is the y-up sampling offset.
+    const writesDx = perPixelWritesTarget(perPixelPrograms?.statements, 'dx');
     if (perPixelPrograms) {
+      setShaderEnvValue(
+        perPixelEnv,
+        'dx',
+        shaderFloat(uniforms.offsetX.mul(-1)),
+      );
       runPerPixelProgram(perPixelPrograms.statements, perPixelEnv);
     }
     const activeWarp =
@@ -3261,8 +3276,10 @@ function createFeedbackBlendOutputNode(
       getShaderEnvValue(perPixelEnv, 'zoom')?.node ?? uniforms.zoomMul;
     const activeRot =
       getShaderEnvValue(perPixelEnv, 'rot')?.node ?? uniforms.rotation;
-    const activeOffsetX =
-      getShaderEnvValue(perPixelEnv, 'dx')?.node ?? uniforms.offsetX;
+    const perPixelDx = writesDx
+      ? getShaderEnvValue(perPixelEnv, 'dx')?.node
+      : null;
+    const activeOffsetX = perPixelDx ? perPixelDx.mul(-1) : uniforms.offsetX;
     const activeOffsetY =
       getShaderEnvValue(perPixelEnv, 'dy')?.node ?? uniforms.offsetY;
 

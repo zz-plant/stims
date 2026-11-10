@@ -69,21 +69,57 @@
  *      using the untouched lattice `x`/`y` and only feeds the rewritten values
  *      to nothing at all. Taken: butterchurn (writes to x/y are inert).
  *
+ * dx AND dy
+ * ---------
+ * MilkDrop samples the previous frame at `u - dx`, `v - dy`, with v running
+ * down the screen: a positive dx moves the picture right and a positive dy
+ * moves it down. In screen uv (x right, y up) the sampling offset is therefore
+ * `-dx` across and `+dy` up; milkdropTranslationToSampleOffset is that
+ * conversion. Until 2026-11-10 the node graph added dx as it came, so every
+ * preset's horizontal motion ran backwards on WebGPU (zz-plant/stims#1695:
+ * Geiss - Cruzin's streaks fanned inward where MilkDrop fans them out).
+ *
+ * The magnitude stays in screen fractions. butterchurn and MilkDrop 2 also
+ * divide by aspectx/aspecty, but projectM 3.1.12, which the parity references
+ * come from, does not: in 300-beatdetect-bassmidtreb's 1280x720 reference,
+ * `dy = 0.02` spaces the wave's copies 2% of the height apart, not 3.6%.
+ * Dividing by aspecty took that preset from 28% to 39% mismatch (noise 6%).
+ * The WebGL per-pixel gather in geometry-builder.ts follows butterchurn,
+ * aspect included; its scatter fallback carries its own measured dx/dy note.
+ *
  * DELIBERATELY NOT CHANGED HERE
  * -----------------------------
- * This function reproduces the WebGPU blend node's EXISTING handling of warp,
- * rot, dx and dy, which is not butterchurn's:
+ * This function reproduces the WebGPU blend node's EXISTING handling of warp
+ * and rot, which is not butterchurn's:
  *   - the ripple is the node graph's own applyFeedbackWarp, applied after the
  *     translate rather than between sx/sy and rot, and is therefore outside
  *     this function entirely;
- *   - dx/dy are ADDED in screen space, where butterchurn subtracts them in
- *     aspect space (so dx wants /aspectx and a sign flip). geometry-builder.ts
- *     carries a measured note that flipping the sign in isolation helps one
- *     preset and badly hurts another; that knot is not untied here;
  *   - the rotation runs in screen space, where butterchurn rotates in
  *     aspect-scaled space (an aspect shear apart at non-square aspect).
  * Fixing those is a separate, larger change with a much wider blast radius.
  */
+
+/**
+ * A preset's dx/dy as the offset the feedback pass adds to its screen-uv
+ * sampling coordinate (x right, y up). See "dx AND dy" above.
+ */
+export function milkdropTranslationToSampleOffset(
+  dx: number,
+  dy: number,
+): { x: number; y: number } {
+  return { x: -dx, y: dy };
+}
+
+/** True when a compiled per-pixel program assigns to `target` (lower-case). */
+export function perPixelWritesTarget(
+  statements: ReadonlyArray<{ target: string }> | null | undefined,
+  target: string,
+): boolean {
+  return (statements ?? []).some(
+    (statement) =>
+      (statement.target.toLowerCase().split('.')[0] ?? '') === target,
+  );
+}
 
 /**
  * Per-pixel variables that, when written, mean the fragment program needs the
@@ -131,6 +167,7 @@ export type WarpSampleTransformInput = {
   zoom: number;
   zoomexp: number;
   rot: number;
+  /** MilkDrop's own dx/dy: fractions of the frame, dy measured downward. */
   dx: number;
   dy: number;
   /** Geometric rad for this fragment; see computeWarpSampleRad. */
@@ -282,16 +319,17 @@ export function computeWarpSampleUv(input: WarpSampleTransformInput): {
   const rotatedX = rotatedScaledX + (centreX - rotatedCentreX);
   const rotatedY = rotatedScaledY + (centreY - rotatedCentreY);
 
+  const offset = milkdropTranslationToSampleOffset(dx, dy);
   return {
-    x: rotatedX + dx + 0.5,
-    y: rotatedY + dy + 0.5,
+    x: rotatedX + offset.x + 0.5,
+    y: rotatedY + offset.y + 0.5,
   };
 }
 
 /**
  * The transform the node graph emitted before cx/cy/sx/sy/zoomexp existed:
- * rotate about the screen centre, divide by zoom, add dx/dy. Presets outside
- * the gate must keep matching this exactly.
+ * rotate about the screen centre, divide by zoom, translate by dx/dy. Presets
+ * outside the gate must keep matching this exactly.
  */
 export function computeLegacyWarpSampleUv(
   input: Omit<
@@ -305,8 +343,9 @@ export function computeLegacyWarpSampleUv(
   const rotatedX = centeredX * rotationCos - centeredY * rotationSin;
   const rotatedY = centeredX * rotationSin + centeredY * rotationCos;
   const divisor = floorWarpZoomDivisor(zoom);
+  const offset = milkdropTranslationToSampleOffset(dx, dy);
   return {
-    x: rotatedX / divisor + dx + 0.5,
-    y: rotatedY / divisor + dy + 0.5,
+    x: rotatedX / divisor + offset.x + 0.5,
+    y: rotatedY / divisor + offset.y + 0.5,
   };
 }
