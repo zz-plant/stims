@@ -195,10 +195,9 @@ export function renderListing(
     });
   };
   const lines = [
-    `${title} (${index.count}) — run any with \`${runner} <name>\`.\n`,
-    'Top-level:',
-    ...pad(index.bare),
+    `${title} (${index.count}) — run any with \`${runner} <name>\`.`,
   ];
+  if (index.bare.length > 0) lines.push('\nTop-level:', ...pad(index.bare));
   for (const [prefix, entries] of [...index.groups].sort(([a], [b]) =>
     a.localeCompare(b),
   )) {
@@ -208,6 +207,27 @@ export function renderListing(
     );
   }
   return lines;
+}
+
+/**
+ * The index narrowed to scripts whose name contains any of the terms, so
+ * `help parity lab:` lists two namespaces instead of every script. Matching is
+ * on the name only; `--for` is the search over what a script does.
+ */
+export function filterIndex(index: ScriptIndex, terms: string[]): ScriptIndex {
+  const wanted = terms.map((term) => term.toLowerCase());
+  const keep = ({ name }: ScriptEntry) => {
+    const lowered = name.toLowerCase();
+    return wanted.some((term) => lowered.includes(term));
+  };
+  const bare = index.bare.filter(keep);
+  const groups = new Map<string, ScriptEntry[]>();
+  for (const [prefix, entries] of index.groups) {
+    const kept = entries.filter(keep);
+    if (kept.length > 0) groups.set(prefix, kept);
+  }
+  const all = [...bare, ...[...groups.values()].flat()];
+  return { ...index, bare, groups, all, count: all.length };
 }
 
 /** Script names whose target file has no docblock summary. */
@@ -321,7 +341,7 @@ export function readPackageScripts(root: string): Record<string, string> {
   return pkg.scripts ?? {};
 }
 
-/** `help [--json | --check | --for <symptom…>]` */
+/** `help [<name-part>…] [--json] | --check | --for <symptom…>` */
 export const runHelp: Command = (args, { config, cwd, io }) => {
   const scripts = readPackageScripts(cwd);
   const index = buildScriptIndex({
@@ -373,15 +393,30 @@ export const runHelp: Command = (args, { config, cwd, io }) => {
     return 0;
   }
 
+  // Bare words narrow the listing by name. Without this the only way to see
+  // one namespace was to pipe `--json` into a one-off script, and guessing
+  // that payload's shape wrong was the most common way `help` failed.
+  const terms = args.filter((arg) => !arg.startsWith('-'));
+  const shown = terms.length > 0 ? filterIndex(index, terms) : index;
+  if (shown.count === 0) {
+    io.error(
+      `No script name contains ${terms.map((term) => JSON.stringify(term)).join(' or ')}. Search by what a script does with \`${config.commands.help} --for "<symptom>"\`.`,
+    );
+    return 1;
+  }
+
   if (args.includes('--json')) {
     io.log(
-      JSON.stringify(indexToJson(index, config.help.prefixNotes), null, 2),
+      JSON.stringify(indexToJson(shown, config.help.prefixNotes), null, 2),
     );
     return 0;
   }
 
-  for (const line of renderListing(index, {
-    title: config.help.title,
+  for (const line of renderListing(shown, {
+    title:
+      terms.length > 0
+        ? `${config.help.title} matching ${terms.map((term) => JSON.stringify(term)).join(' or ')}`
+        : config.help.title,
     prefixNotes: config.help.prefixNotes,
     runner: config.runner,
   })) {

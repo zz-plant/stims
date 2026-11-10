@@ -55,6 +55,20 @@ export default defineConfig({
     routes: [
       {
         when: [
+          'outline',
+          'defined',
+          'definition',
+          'declared',
+          'callers',
+          'caller',
+          'usages',
+          'symbol',
+        ],
+        run: ['where', 'outline'],
+        note: 'Source files here run to 4,800 lines. where reports the declaration, the functions that use the name and the tests that touch it; outline lists every declaration in a file with its line range. Read the range they give rather than the file. Both read syntax only: neither resolves types or scope.',
+      },
+      {
+        when: [
           'worktree',
           'another session',
           'other session',

@@ -56,6 +56,14 @@
     "test": "bun test",
     "prepublishOnly": "bun run typecheck && bun test && bun run build"
   },
+  "peerDependencies": {
+    "@swc/core": "^1.16.20"
+  },
+  "peerDependenciesMeta": {
+    "@swc/core": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/bun": "^1.4.4",
     "typescript": "^7.0.2"

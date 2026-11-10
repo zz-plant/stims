@@ -15,7 +15,7 @@ hundred scripts, and the table below is not an inventory of them.
 
 ```bash
 bun run help          # every script, grouped by namespace, with a one-line purpose
-bun run help --json   # {name, command, purpose} records
+bun run help lab:     # only the scripts whose name contains a term
 ```
 
 Purpose lines are generated from the docblock atop each script, and
