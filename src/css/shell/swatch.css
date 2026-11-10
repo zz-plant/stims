@@ -7,9 +7,9 @@
  *
  * - `.stims-stock`: the card itself. Its fill sits on a ::before layer so the
  *   rivet hole can be punched out of it with a mask and show whatever is
- *   behind, usually the stage. A mask clips box-shadow, so a strip that sits
- *   on the stage takes its shadow from `filter: drop-shadow` on the element,
- *   which is drawn after the hole is punched.
+ *   behind, usually the stage. The mask is on that layer, not the element,
+ *   so the element keeps an ordinary box-shadow, drawn only outside its
+ *   border box and never inside the hole.
  * - `.stims-swatch-graph`: three live columns, bass, mid, treble. Lit columns
  *   are the bands the preset reads (Swatch.tsx).
  * - `.stims-swatch-number`: the catalog number, narrow and heavy.
@@ -63,10 +63,15 @@
   pointer-events: none;
 }
 
-/* On the stage: the card throws a real shadow onto the light behind it. */
+/* On the stage: the card throws a real shadow onto the light behind it.
+   A box-shadow, not filter: drop-shadow: the dock's edge graph repaints on
+   every audio frame, and a filter over it was recomputed every frame. On a
+   GPU-less CI runner that starved the frames Playwright waits on to call
+   the dock's buttons stable, and the embed test could not click Share. */
 .stims-stock[data-on-stage="true"] {
-  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.5))
-    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 /* ── Transmission graph ──────────────────────────────────────────── */

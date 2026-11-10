@@ -261,13 +261,13 @@ Breakpoints: 480px (action tabs stack full width), 640px (title card spans the v
 Depth is physical: opaque black card throwing a real, neutral shadow onto the light behind it. No coloured halos, no tonal glow; the stage is the only thing in the room that emits light. Off the stage, panels use the softer shadow set and the light theme swaps in low-alpha ink shadows.
 
 ### Shadow Vocabulary
-- **On-stage strip** (`filter: drop-shadow(0 12px 28px rgba(0,0,0,0.5)) drop-shadow(0 1px 2px rgba(0,0,0,0.45))`): every `.stims-stock` card placed on the stage.
+- **On-stage strip** (`box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.45)`): every `.stims-stock` card placed on the stage.
 - **Strong** (`0 18px 44px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4)`): sheets and dialogs over the stage.
 - **Panel** (`0 14px 34px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3)`): side panels.
 - **Soft** (`0 8px 22px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.35)`): popovers and small floating controls.
 
 ### Named Rules
-**The Shadow Through the Hole Rule.** A mask clips `box-shadow`, and the rivet hole is a mask. A punched strip takes its shadow from `filter: drop-shadow` on the element, which is drawn after the hole is cut.
+**The Shadow Through the Hole Rule.** The rivet hole is a mask on the strip's `::before` fill, never on the element, so the element keeps an ordinary `box-shadow`, drawn outside its border box and never inside the hole. Do not shadow a strip with `filter: drop-shadow`: the dock's edge graph repaints every audio frame, and a filter over it is recomputed every frame, which starved a GPU-less browser's frames.
 
 **The Opaque Card Rule.** Chrome is opaque card. Glass (`backdrop-filter`) is allowed only on a small control floating directly on the stage, and low and mid device tiers strip it.
 
@@ -326,7 +326,7 @@ The editor's well is stage floor in both themes, with a low-saturation token pal
 - **Do** spend amber only on lit state: read bands, on/selected controls, focus, live dots.
 - **Do** give each view exactly one white page tab (black in the light theme) for its primary action; everything else is an outline or ghost tab.
 - **Do** pin on-stage fill, ink, accent and line tokens on anything that sits on the stage and uses `.stims-stock`.
-- **Do** shadow punched strips with `filter: drop-shadow`, not `box-shadow`.
+- **Do** shadow punched strips with `box-shadow` on the element and keep the mask on its `::before`; never `filter: drop-shadow`.
 - **Do** draw every rule, outline and eyelet at 1px.
 - **Do** take radii from the ladder (6px strips, 4px controls, 2px windows); `bun run check:css-scale` enforces it.
 - **Do** set every number in tabular figures and condense a long name with the width axis before wrapping it.
