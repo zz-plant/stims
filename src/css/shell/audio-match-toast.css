@@ -23,16 +23,6 @@
   animation: fade-in 0.3s ease;
 }
 
-.stims-shell__audio-match .stims-shell__eyebrow {
-  margin: 0;
-  color: var(--stims-muted);
-  font-size: 0.6875rem;
-  font-weight: var(--font-weight-bold);
-  font-stretch: var(--font-stretch-legend);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 /* The whole title block is the button: one target, not a link-styled word. */
 .stims-shell__audio-match-action {
   display: grid;

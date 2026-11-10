@@ -16,26 +16,21 @@
 :root {
   /* ── Opacity Primitives ──────────────────────────────────────── */
   --stims-white-02: rgba(255, 255, 255, 0.02);
-  --stims-white-03: rgba(255, 255, 255, 0.03);
   --stims-white-04: rgba(255, 255, 255, 0.04);
   --stims-white-05: rgba(255, 255, 255, 0.05);
   --stims-white-06: rgba(255, 255, 255, 0.06);
   --stims-white-08: rgba(255, 255, 255, 0.08);
   --stims-white-12: rgba(255, 255, 255, 0.12);
-  --stims-white-64: rgba(255, 255, 255, 0.64);
   --stims-border-08: rgba(255, 255, 255, 0.08);
   --stims-shadow-22: rgba(0, 0, 0, 0.22);
   --stims-shadow-34: rgba(0, 0, 0, 0.34);
   --stims-muted-35: color-mix(in srgb, var(--stims-muted) 35%, transparent);
   --stims-focus-95: rgba(255, 178, 26, 0.95);
-  --stims-focus-ring-35: rgba(255, 178, 26, 0.35);
-  --stims-accent-blue: rgba(236, 236, 231, 0.8);
   --stims-audio-glow: rgba(255, 178, 26, 0.14);
   --stims-border: rgba(236, 236, 231, 0.16);
   /* 0.55 alpha keeps ~5.9:1 on --bg-color so dim labels stay WCAG AA. */
   --stims-ink-dim: #8f8e88;
   --stims-ink-muted: #a3a29c;
-  --stims-energy: 0;
 
   /* ── App-shell Chrome Layout ────────────────────────────────── */
   --stims-chrome-top: 22px;
@@ -57,16 +52,7 @@
   --card-bg: #171716;
   --text-color: #ecece7;
   --text-muted: #a3a29c;
-  --accent-contrast: #141210;
-  --link-color: #ecece7;
-  --link-hover: #ffb21a;
   --accent-color: #ecece7;
-  --accent-purple: #ecece7;
-  --accent-magenta: #ffb21a;
-  --glow-color: rgba(255, 178, 26, 0.18);
-  --accent-soft: rgba(236, 236, 231, 0.08);
-  --hover-bg: rgba(236, 236, 231, 0.08);
-  --highlight-glow: rgba(255, 178, 26, 0.2);
 
   /* Ink for copy that sits ON the stage canvas rather than on the page.
      The stage is a dark surface in every theme, so these never flip with
@@ -109,7 +95,6 @@
   --stims-cool: #ecece7;
   --stims-accent: #ffb21a;
   --stims-accent-soft: rgba(255, 178, 26, 0.16);
-  --stims-accent-glow: rgba(255, 178, 26, 0.14);
   --stims-good: #8fd694;
   /* Warnings are not amber (the Safelight rule in DESIGN.md): they read in
      the strongest ink and carry their meaning in words. */
@@ -120,35 +105,13 @@
      dark in light mode — flipped in the light block below). */
   --stims-on-accent: #141210;
 
-  /* ── Surface Gradients & Effects ──────────────────────────────── */
-  --surface-gradient: none;
+  /* ── Surface edges ─────────────────────────────────────────────── */
   --surface-border: rgba(236, 236, 231, 0.16);
-  --surface-sheen: none;
-  --surface-texture: none;
-  --surface-highlight: none;
-  --surface-emboss: none;
-  --panel-gradient: var(--card-bg);
-  --panel-glass: var(--card-bg);
-  --panel-highlight: rgba(236, 236, 231, 0.06);
-  --aurora-soft: none;
-  --interactive-border: color-mix(
-    in srgb,
-    var(--accent-color) 45%,
-    var(--surface-border)
-  );
-  --interactive-bg: color-mix(in srgb, var(--card-bg) 96%, transparent);
-  --interactive-bg-hover: color-mix(
-    in srgb,
-    var(--accent-color) 18%,
-    var(--card-bg)
-  );
-  --interactive-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 
   /* ── App-shell panel fills ────────────────────────────────── */
   --stims-surface: #0f0f0e;
   --stims-panel: #151514;
   --stims-panel-strong: #0f0f0e;
-  --stims-panel-fill-strong: #0f0f0e;
   --stims-control-fill: #1b1b19;
   --stims-control-fill-hover: #252522;
   /* Skeleton placeholder fill and its shimmer. Tokens rather than the raw
@@ -172,15 +135,12 @@
 
   /* ── Page-Level Panel Tokens ───────────────────────────────── */
   --panel-solid: var(--card-bg);
-  --panel-subtle: var(--bg-color-secondary);
   --surface-border-strong: color-mix(
     in srgb,
     var(--accent-color) 35%,
     var(--surface-border)
   );
   --shadow-panel: 0 14px 34px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
-  --shadow-panel-hover:
-    0 20px 42px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.32);
 
   /* ── Radii ──────────────────────────────────────────────────
      The header here used to read "Kiki: Sharp & Angular Geometry" and the
@@ -288,12 +248,8 @@
   --motion-exit: 0.15s cubic-bezier(0.25, 1, 0.5, 1);
 
   /* ── Layout ────────────────────────────────────────────────── */
-  --content-width: 1220px;
   --section-gap: clamp(1.9rem, 2.8vw, 3rem);
   --touch-target-min: 44px;
-  /* Focus = warm accent, everywhere. Selection stays cool. */
-  --focus-ring: 0 0 0 4px #ffb21a;
-  --focus-ring-offset: 0 0 0 2px #0f0f0e;
 
   /* ── Z-Index Scale ─────────────────────────────────────────-- */
   --z-ambient: 0;
@@ -353,13 +309,7 @@
   --ui-scale: 1;
   --tv-focus-outline-width: 2px;
   --tv-focus-outline-offset: 3px;
-  --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
   --tv-safe-padding: 0px;
-
-  /* ── Toy shell ──────────────────────────────────────────────── */
-  --toy-shell-metal: var(--bg-color-secondary);
-  --toy-shell-highlight: rgba(255, 255, 255, 0.16);
-  --toy-shell-shadow: rgba(2, 5, 12, 0.48);
 
   /* ── Scrollbar (dark default) ───────────────────────────────── */
   scrollbar-color: #4a4a46 transparent;
@@ -368,11 +318,8 @@
 /* ── Page-Level Panel Light Overrides ─────────────────────────────── */
 html.light {
   --panel-solid: var(--card-bg);
-  --panel-subtle: var(--bg-color-secondary);
   --shadow-panel:
     0 10px 24px rgba(22, 22, 21, 0.12), 0 2px 6px rgba(22, 22, 21, 0.08);
-  --shadow-panel-hover:
-    0 16px 32px rgba(22, 22, 21, 0.16), 0 4px 10px rgba(22, 22, 21, 0.1);
 }
 
 /* ── TV Mode Scaling Override ─────────────────────────────────────── */
@@ -380,7 +327,6 @@ body.tv-mode {
   --tv-scale-multiplier: 1.16;
   --tv-focus-outline-width: 4px;
   --tv-focus-outline-offset: 5px;
-  --tv-content-padding: clamp(2.2rem, 2.4vw + 1.6rem, 4.4rem);
   --tv-safe-padding: 28px;
 }
 
@@ -393,23 +339,9 @@ html.light {
   --bg-color-secondary: #e7e7e2;
   --text-color: #161615;
   --text-muted: #55544f;
-  --accent-contrast: #f6f6f2;
-  --link-color: #161615;
-  --link-hover: #8a4e00;
   --accent-color: #161615;
-  --accent-purple: #161615;
-  --accent-magenta: #8a4e00;
-  --glow-color: rgba(138, 78, 0, 0.12);
-  --accent-soft: rgba(22, 22, 21, 0.06);
   --card-bg: #fbfbf8;
-  --hover-bg: rgba(22, 22, 21, 0.06);
-  --highlight-glow: rgba(138, 78, 0, 0.12);
-  --surface-gradient: none;
   --surface-border: rgba(22, 22, 21, 0.16);
-  --panel-glass: var(--card-bg);
-  --panel-highlight: rgba(22, 22, 21, 0.04);
-  --aurora-soft: none;
-  --interactive-shadow: 0 2px 5px rgba(22, 22, 21, 0.12);
   --shadow-strong:
     0 12px 28px rgba(22, 22, 21, 0.16), 0 2px 5px rgba(22, 22, 21, 0.1);
   --shadow-soft:
@@ -427,7 +359,6 @@ html.light {
   --stims-cool: #161615;
   --stims-accent: #8a4e00;
   --stims-accent-soft: rgba(138, 78, 0, 0.12);
-  --stims-accent-glow: rgba(138, 78, 0, 0.12);
   --stims-good: #176b37;
   --stims-warn: #0b0b0a;
   --stims-bad: #b42318;
@@ -435,15 +366,12 @@ html.light {
   --stims-panel: #fbfbf8;
   --stims-panel-strong: #fbfbf8;
   --stims-surface: #f2f2ee;
-  --stims-panel-fill-strong: #fbfbf8;
   --stims-control-fill: #ecece7;
   --stims-control-fill-hover: #e2e2dc;
   --stims-skeleton-fill: rgba(22, 22, 21, 0.08);
   --stims-skeleton-sheen: rgba(22, 22, 21, 0.04);
   color-scheme: light;
   scrollbar-color: #b9b8b1 transparent;
-  --focus-ring: 0 0 0 4px #8a4e00;
-  --focus-ring-offset: 0 0 0 2px #fbfbf8;
 }
 
 /* ── Performance Tier: Low-End Devices ────────────────────────────── */

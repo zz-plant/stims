@@ -178,12 +178,6 @@ html.light .stims-shell__toast[data-tone="error"] {
   color: #8d1b14;
 }
 
-html.light
-  .stims-shell__stage-frame[data-mode="live"]
-  .stims-shell__frame-header {
-  color: #ecece7;
-}
-
 @media (prefers-contrast: more) {
   .stims-shell {
     --stims-muted: #e4e4df;

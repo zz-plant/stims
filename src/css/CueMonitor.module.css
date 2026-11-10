@@ -145,10 +145,10 @@
   cursor: pointer;
 }
 
-/* Warm accent marks the one control that changes what the audience sees.
+/* Amber marks the one control that changes what the audience sees.
    --stims-focus-95 is defined once and does not vary by theme, so the ink on
-   it cannot either: --bg-color would land cream-on-coral in light theme
-   (~2.4:1). This literal is ~6:1 on the accent in both themes.
+   it cannot either: --bg-color would land pale-on-amber in the light theme.
+   This literal reads on the amber in both themes.
    guard-allow-hex: theme-independent accent surface, so the ink is too. */
 .take {
   border-color: var(--stims-focus-95, #ffb21a);

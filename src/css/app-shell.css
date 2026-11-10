@@ -109,8 +109,6 @@ body[data-page="workspace"] {
     border-radius: 0;
   }
 
-  :scope[data-preview="true"] .stims-shell__frame-chrome,
-  :scope[data-preview="true"] .stims-shell__frame-header,
   :scope[data-preview="true"] .stims-shell__stage-hero,
   :scope[data-preview="true"] .stims-shell__toast {
     display: none;
@@ -132,11 +130,6 @@ body[data-page="workspace"] {
      which is what lets the browser start the audio. */
   :scope[data-room="true"] canvas {
     pointer-events: none;
-  }
-
-  :scope[data-room="true"] .stims-shell__frame-chrome,
-  :scope[data-room="true"] .stims-shell__frame-header {
-    display: none;
   }
 
   .stims-shell__embed-brand {
@@ -438,12 +431,8 @@ body[data-page="workspace"] {
     --card-bg: var(--stims-on-stage-card);
     --bg-color-secondary: var(--stims-on-stage-panel);
     --panel-solid: var(--stims-on-stage-panel-strong);
-    --panel-subtle: var(--stims-on-stage-panel);
-    --panel-glass: var(--stims-on-stage-panel);
     --stims-panel: var(--stims-on-stage-panel);
     --stims-panel-strong: var(--stims-on-stage-panel-strong);
-    --interactive-bg: var(--stims-on-stage-panel);
-    --interactive-bg-hover: var(--stims-on-stage-control-fill-hover);
     /* The swatchbook's parts read these too: the card stock behind the cover
        and the starter strips, and the spec grey. Dark-theme values, whatever
        the visitor's theme. */
@@ -815,25 +804,6 @@ body[data-page="workspace"] {
       inset: 64px 44px 40px;
     }
   }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__rail-actions {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-    top: auto;
-    right: auto;
-    bottom: 24px;
-    left: 24px;
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__frame-header {
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
   .stims-shell__stage-root > canvas {
     display: block;
     width: 100%;
@@ -1170,9 +1140,9 @@ body[data-page="workspace"] {
 
   /* The sources legend sits on the stage like everything else here, so it
      takes the dark theme's legend colour in both themes. Without this the
-     light theme's cool-legend rule (shell-theme.css) won, and the same
-     landing page labelled its sources coral or blue depending on the OS
-     setting. Three classes deep to outrank that html.light rule. */
+     light theme's legend rule (shell-theme.css) won, and the same landing
+     page printed its source labels in two different inks depending on the
+     OS setting. Three classes deep to outrank that html.light rule. */
   .stims-shell__launch .stims-shell__source-heading .stims-shell__section-label,
   .stims-shell__launch-showcase > .stims-shell__section-label {
     justify-self: start;
@@ -1573,12 +1543,9 @@ body[data-page="workspace"] {
   }
 
   /* The launch CTA takes focus on its own once the engine is ready (see
-     Actions in NewHomePage.tsx), so the global cool-accent ring lands on the
-     one warm-filled control in the app and is in every screenshot of the
-     landing page. Left touching the coral it read as a stray focus state
-     rather than an indicator; a dark separating ring gives it its own edge and
-     raises the indicator's contrast against the fill. The outline itself, and
-     the app-wide convention that focus is cool, are untouched. */
+     Actions in NewHomePage.tsx), so its ring is in every screenshot of the
+     landing page. It is the app's amber focus outline, set 3px off the white
+     tab so it reads as an indicator, not as part of the button. */
   .stims-shell__launch-cta:focus-visible {
     outline: 2px solid var(--stims-accent);
     outline-offset: 3px;
@@ -2711,12 +2678,6 @@ body[data-page="workspace"] {
       min-height: calc(100dvh - 40px);
     }
 
-    .stims-shell__frame-header {
-      flex-direction: column;
-      justify-content: flex-start;
-      top: var(--stims-header-top);
-    }
-
     .stims-shell__stage-hero {
       width: min(46rem, calc(100% - 64px));
     }
@@ -2730,10 +2691,6 @@ body[data-page="workspace"] {
     .stims-shell__stage-frame[data-mode="home"] {
       min-height: calc(100vh - 28px);
       min-height: calc(100dvh - 28px);
-    }
-
-    .stims-shell__frame-chrome {
-      top: 14px;
     }
 
     .stims-shell__stage-hero {
@@ -2751,15 +2708,6 @@ body[data-page="workspace"] {
     .stims-shell__stage-frame[data-mode="home"] {
       min-height: calc(100vh - 20px);
       min-height: calc(100dvh - 20px);
-    }
-
-    .stims-shell__frame-chrome {
-      top: 10px;
-    }
-
-    .stims-shell__corner-brand {
-      grid-template-columns: auto 1fr;
-      align-items: center;
     }
 
     .stims-shell__stage-hero {
@@ -2796,7 +2744,6 @@ body[data-page="workspace"] {
       border-radius: 0;
     }
 
-    .stims-shell__eyebrow,
     .stims-shell__meta-copy,
     .stims-shell__field-label {
       font-size: 0.8125rem;
@@ -2851,43 +2798,6 @@ body[data-page="workspace"] {
       .stims-shell__stage-frame[data-mode="home"] {
         min-height: auto;
       }
-    }
-
-    .stims-shell__frame-chrome,
-    .stims-shell__frame-header {
-      left: 10px;
-      right: 10px;
-      gap: 10px;
-    }
-
-    .stims-shell__frame-chrome {
-      top: var(--stims-chrome-top);
-      align-items: flex-start;
-    }
-
-    .stims-shell__frame-header {
-      top: var(--stims-header-top);
-      flex-direction: column;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      bottom: 64px;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      align-content: start;
-      padding-bottom: 8px;
-      scrollbar-width: thin;
-    }
-
-    .stims-shell__rail-actions {
-      justify-items: start;
-    }
-
-    .stims-shell__rail-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      width: auto;
     }
 
     .stims-shell__stage-hero {
@@ -2973,11 +2883,6 @@ body[data-page="workspace"] {
       --mobile-bar-height: calc(64px + env(safe-area-inset-bottom, 0px));
     }
   }
-  @media (width < 768px) {
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      display: none;
-    }
-  }
   /* High contrast mode support — applies at every viewport width, not
      just mobile: the outline is the only non-color cue selected chips,
      preset rows, and radio options get in this mode. */
@@ -3012,12 +2917,6 @@ body[data-page="workspace"] {
     }
   }
   @media (max-width: 480px) {
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      bottom: 56px;
-      top: 344px;
-      gap: 6px;
-    }
-
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
       padding-bottom: 92px;
     }
@@ -3764,8 +3663,6 @@ body[data-page="workspace"] {
       color: black;
     }
 
-    .stims-shell__frame-chrome,
-    .stims-shell__frame-header,
     .stims-shell__toast {
       display: none;
     }
