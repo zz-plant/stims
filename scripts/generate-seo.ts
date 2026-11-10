@@ -179,9 +179,9 @@ const FRAME = {
 } as const;
 export const OG_FRAMES: readonly string[] = Object.values(FRAME);
 
-const OG_GROUND = '#070a0e';
-const OG_INK = '#f7f4eb';
-const OG_CORAL = '#f47a54';
+const OG_GROUND = '#0f0f0e';
+const OG_INK = '#ecece7';
+const OG_AMBER = '#ffb21a';
 const OG_MARGIN = 64;
 
 // Tiles are 16:9 like the previews. Three columns from x=560, the last one
@@ -383,36 +383,32 @@ export const buildOgSvg = ({
       <stop offset="0.8" stop-color="${OG_GROUND}" stop-opacity="0.22" />
       <stop offset="1" stop-color="${OG_GROUND}" stop-opacity="0" />
     </linearGradient>
-    <radialGradient id="warm" cx="0.1" cy="1" r="0.7">
-      <stop offset="0" stop-color="${OG_CORAL}" stop-opacity="0.18" />
-      <stop offset="1" stop-color="${OG_CORAL}" stop-opacity="0" />
-    </radialGradient>
   </defs>
   <rect width="${width}" height="${height}" fill="${OG_GROUND}" />
   <g>
     ${buildOgTileWall(canvas.tiles, frameHref)}
   </g>
-  ${canvas.fadeTiles ? `<rect width="1000" height="${height}" fill="url(#ground-fade)" />\n  ` : ''}<rect width="${width}" height="${height}" fill="url(#warm)" />
+  ${canvas.fadeTiles ? `<rect width="1000" height="${height}" fill="url(#ground-fade)" />\n  ` : ''}
 
-  <text x="${OG_MARGIN}" y="${eyebrowY}" font-size="20" font-weight="700" font-family="Space Mono, monospace" letter-spacing="3">${
+  <text x="${OG_MARGIN}" y="${eyebrowY}" font-size="20" font-weight="700" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="3">${
     eyebrowLead
-      ? `<tspan fill="${OG_CORAL}">${escapeHtml(eyebrowLead.toUpperCase())}</tspan><tspan fill="rgba(247,244,235,0.62)"> · </tspan>`
+      ? `<tspan fill="${OG_AMBER}">${escapeHtml(eyebrowLead.toUpperCase())}</tspan><tspan fill="rgba(236,236,231,0.62)"> · </tspan>`
       : ''
-  }<tspan fill="rgba(247,244,235,0.72)">${escapeHtml(eyebrow.toUpperCase())}</tspan></text>
+  }<tspan fill="rgba(236,236,231,0.72)">${escapeHtml(eyebrow.toUpperCase())}</tspan></text>
   ${headline
     .map(
       (line, index) =>
-        `<text x="${OG_MARGIN - 4}" y="${Math.round(firstHeadlineY + index * headlineLeading)}" font-size="${headlineSize}" font-weight="700" fill="${OG_INK}" font-family="Space Grotesk, sans-serif" letter-spacing="-2">${escapeHtml(line)}</text>`,
+        `<text x="${OG_MARGIN - 4}" y="${Math.round(firstHeadlineY + index * headlineLeading)}" font-size="${headlineSize}" font-weight="700" fill="${OG_INK}" font-family="Pathway Extreme Condensed, sans-serif" letter-spacing="-1">${escapeHtml(line)}</text>`,
     )
     .join('\n  ')}
   ${subline
     .map(
       (line, index) =>
-        `<text x="${OG_MARGIN}" y="${Math.round(firstSublineY + index * 40)}" font-size="30" font-weight="500" fill="rgba(247,244,235,0.82)" font-family="Space Grotesk, sans-serif">${escapeHtml(line)}</text>`,
+        `<text x="${OG_MARGIN}" y="${Math.round(firstSublineY + index * 40)}" font-size="30" font-weight="500" fill="rgba(236,236,231,0.82)" font-family="Pathway Extreme, sans-serif">${escapeHtml(line)}</text>`,
     )
     .join('\n  ')}
 
-  <text x="${OG_MARGIN}" y="${566 + dy}" font-size="24" font-weight="700" fill="${OG_CORAL}" font-family="Space Mono, monospace" letter-spacing="1">toil.fyi</text>
+  <text x="${OG_MARGIN}" y="${566 + dy}" font-size="24" font-weight="700" fill="${OG_AMBER}" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="1">toil.fyi</text>
 </svg>`;
 };
 
@@ -455,11 +451,10 @@ let ogFonts: Promise<Uint8Array[]> | null = null;
 async function loadOgFonts(rootDir: string) {
   ogFonts ??= Promise.all(
     [
-      'SpaceGrotesk-Regular.ttf',
-      'SpaceGrotesk-Medium.ttf',
-      'SpaceGrotesk-Bold.ttf',
-      'SpaceMono-Regular.ttf',
-      'SpaceMono-Bold.ttf',
+      'PathwayExtreme-Regular.ttf',
+      'PathwayExtreme-Medium.ttf',
+      'PathwayExtremeCondensed-Bold.ttf',
+      'AtkinsonHyperlegibleMono-Bold.ttf',
     ].map(
       async (name) =>
         new Uint8Array(
@@ -485,9 +480,11 @@ async function loadInlineFrameHref(rootDir: string): Promise<OgFrameHref> {
 }
 
 /**
- * Rasterizes a social card with resvg and the bundled Space Grotesk / Space
- * Mono — the renderer and fonts the dynamic preset card uses at the edge, so
- * the static and dynamic cards set type identically.
+ * Rasterizes a social card with resvg and the bundled static instances of
+ * Pathway Extreme and Atkinson Hyperlegible Mono (public/og/fonts, cut from
+ * the variable faces the app serves) — the renderer and fonts the dynamic
+ * preset card uses at the edge, so the static and dynamic cards set type
+ * identically.
  */
 export async function renderOgPng(
   svg: string,
@@ -510,9 +507,9 @@ export async function renderOgPng(
     font: {
       fontBuffers: await loadOgFonts(rootDir),
       loadSystemFonts: false,
-      defaultFontFamily: 'Space Grotesk',
-      sansSerifFamily: 'Space Grotesk',
-      monospaceFamily: 'Space Mono',
+      defaultFontFamily: 'Pathway Extreme',
+      sansSerifFamily: 'Pathway Extreme',
+      monospaceFamily: 'Atkinson Hyperlegible Mono',
     },
   });
   let png: Buffer;
@@ -533,43 +530,29 @@ export async function renderOgPng(
 export const formatPresetCountClaim = (count: number) =>
   `${(Math.floor(count / 100) * 100).toLocaleString('en-US')}+`;
 
-// The app mark: a square tunnel receding to a hot core — MilkDrop's warp/zoom
-// feedback, which is what the product actually does. Drawn on the Signal Panel
-// two-accent palette (cool #77c9ff structure, warm #f47a54 core) on the app's
-// own --bg-color tile, so it never reintroduces the multi-hue gradient the
-// chrome dropped. Every stroke is >=36/512 so the thinnest feature is still
-// ~1.1px at a 16px browser tab, where the old ring mark dissolved into mush.
-const ICON_TILE = '#0b1014';
-const ICON_COOL = '#77c9ff';
-const ICON_COOL_DIM = '#2f5f88';
-const ICON_WARM = '#f47a54';
-
-const iconTunnelGeometry = ({
-  cool,
-  coolDim,
-  warm,
-}: {
-  cool: string;
-  coolDim: string;
-  warm: string;
-}) => `<g transform="translate(256 256)">
-    <path d="M-152 -152 L-56 -56 M152 -152 L56 -56 M152 152 L56 56 M-152 152 L-56 56" stroke="${coolDim}" stroke-width="36" />
-    <rect x="-170" y="-170" width="340" height="340" fill="none" stroke="${cool}" stroke-width="46" />
-    <rect x="-62" y="-62" width="124" height="124" fill="${warm}" />
-  </g>`;
+// The app mark: one page of the swatchbook the chrome is built as. A strip of
+// card on the app's own --bg-color tile, punched with its rivet hole, with
+// the gel window lit in the safelight amber, which is the one colour the
+// chrome emits. Every feature is >=36/512 so the thinnest one is still
+// ~1.1px at a 16px browser tab.
+const ICON_TILE = '#0f0f0e';
+const ICON_CARD = '#ecece7';
+const ICON_GEL = '#ffb21a';
 
 export const buildAppIconSvg =
   () => `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Stims app icon">
   <rect width="512" height="512" rx="112" fill="${ICON_TILE}" />
-  ${iconTunnelGeometry({ cool: ICON_COOL, coolDim: ICON_COOL_DIM, warm: ICON_WARM })}
+  <rect x="164" y="64" width="184" height="384" rx="28" fill="${ICON_CARD}" />
+  <circle cx="256" cy="122" r="28" fill="${ICON_TILE}" />
+  <rect x="200" y="196" width="112" height="208" rx="8" fill="${ICON_GEL}" />
 </svg>`;
 
 // Safari's pinned-tab mask flattens everything to one tint, so the silhouette
-// has to survive without colour: no tile, and the corner rays are merged into
-// the same solid black as the frame and core.
+// has to survive without colour: the strip is solid, and the rivet hole and
+// the gel window are cut out of it.
 export const buildMaskIconSvg =
   () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
-  ${iconTunnelGeometry({ cool: '#000000', coolDim: '#000000', warm: '#000000' })}
+  <path fill="#000000" fill-rule="evenodd" d="M192 64h128a28 28 0 0 1 28 28v328a28 28 0 0 1-28 28H192a28 28 0 0 1-28-28V92a28 28 0 0 1 28-28ZM256 94a28 28 0 1 0 0 56a28 28 0 1 0 0-56ZM208 196a8 8 0 0 0-8 8v192a8 8 0 0 0 8 8h96a8 8 0 0 0 8-8V204a8 8 0 0 0-8-8Z" />
 </svg>`;
 
 export const buildManifestScreenshotSvg = ({
@@ -595,41 +578,36 @@ export const buildManifestScreenshotSvg = ({
   const copySubtitleY = isWide ? 336 : 326;
   const copyBodyY = isWide ? 408 : 404;
 
+  // The swatchbook (DESIGN.md): the landing's black cover sheet on the left,
+  // the stage beside it with the dock strip and its band graph, in the
+  // print inks and one safelight amber.
+  const coverW = isWide ? 604 : width - 112;
+  const coverH = isWide ? height - 112 : 420;
+  const stripY = screenY + screenHeight - 96;
+  const graphX = screenX + 40;
+  const graphY = stripY - 92;
+  const bandW = Math.round((screenWidth - 80 - 12) / 3);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)}">
-  <defs>
-    <linearGradient id="hero-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#07111d" />
-      <stop offset="52%" stop-color="#102143" />
-      <stop offset="100%" stop-color="#0d7f84" />
-    </linearGradient>
-    <radialGradient id="hero-glow" cx="22%" cy="18%" r="58%">
-      <stop offset="0%" stop-color="rgba(129, 249, 255, 0.42)" />
-      <stop offset="100%" stop-color="rgba(129, 249, 255, 0)" />
-    </radialGradient>
-    <linearGradient id="panel-shine" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.22)" />
-      <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-    </linearGradient>
-  </defs>
-  <rect width="${width}" height="${height}" rx="36" fill="url(#hero-bg)" />
-  <rect width="${width}" height="${height}" rx="36" fill="url(#hero-glow)" />
-  <circle cx="${isWide ? 1080 : 520}" cy="${isWide ? 140 : 180}" r="${isWide ? 120 : 100}" fill="rgba(255,255,255,0.08)" />
-  <rect x="88" y="88" width="${isWide ? 220 : 204}" height="52" rx="26" fill="rgba(255,255,255,0.12)" />
-  <text x="116" y="122" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">Instant visuals</text>
-  <text x="${copyX}" y="${copyTitleY}" font-size="${isWide ? 68 : 60}" font-weight="700" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(title)}</text>
-  <text x="${copyX}" y="${copySubtitleY}" font-size="${isWide ? 34 : 32}" fill="#d7e6ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(subtitle)}</text>
-  <text x="${copyX}" y="${copyBodyY}" font-size="${isWide ? 24 : 22}" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">Demo audio first, presets ready, and your own music when you want it.</text>
-  <rect x="${screenX}" y="${screenY}" width="${screenWidth}" height="${screenHeight}" rx="32" fill="rgba(7,17,29,0.68)" stroke="rgba(255,255,255,0.18)" />
-  <rect x="${screenX}" y="${screenY}" width="${screenWidth}" height="${screenHeight}" rx="32" fill="url(#panel-shine)" opacity="0.48" />
-  <rect x="${screenX + 28}" y="${screenY + 28}" width="${screenWidth - 56}" height="44" rx="22" fill="rgba(255,255,255,0.08)" />
-  <circle cx="${screenX + 54}" cy="${screenY + 50}" r="8" fill="#7be7ff" />
-  <text x="${screenX + 78}" y="${screenY + 57}" font-size="22" fill="#f5fbff" font-family="Space Mono, monospace">Live stage</text>
-  <circle cx="${screenX + screenWidth / 2}" cy="${screenY + 250}" r="${isWide ? 118 : 124}" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="18" />
-  <circle cx="${screenX + screenWidth / 2}" cy="${screenY + 250}" r="${isWide ? 78 : 84}" fill="none" stroke="#f5fbff" stroke-width="16" stroke-dasharray="164 58" stroke-linecap="round" />
-  <circle cx="${screenX + screenWidth / 2}" cy="${screenY + 250}" r="32" fill="#f5fbff" />
-  <path d="M${screenX + 44} ${screenY + screenHeight - 118} C ${screenX + 112} ${screenY + screenHeight - 186}, ${screenX + 186} ${screenY + screenHeight - 72}, ${screenX + 256} ${screenY + screenHeight - 136} S ${screenX + 382} ${screenY + screenHeight - 118}, ${screenX + screenWidth - 44} ${screenY + screenHeight - 172}" fill="none" stroke="#7be7ff" stroke-width="16" stroke-linecap="round" />
-  <rect x="${screenX + 44}" y="${screenY + screenHeight - 86}" width="${screenWidth - 88}" height="22" rx="11" fill="rgba(255,255,255,0.1)" />
-  <rect x="${screenX + 44}" y="${screenY + screenHeight - 86}" width="${isWide ? 272 : 296}" height="22" rx="11" fill="#7be7ff" />
+  <rect width="${width}" height="${height}" fill="#0a0a09" />
+  <rect x="56" y="56" width="${coverW}" height="${coverH}" rx="6" fill="#0f0f0e" />
+  <circle cx="80" cy="80" r="7" fill="#0a0a09" stroke="rgba(236,236,231,0.2)" stroke-width="1" />
+  <text x="${copyX}" y="130" font-size="28" font-weight="700" fill="#f6f6f2" font-family="Pathway Extreme Condensed, sans-serif">Stims</text>
+  <text x="${copyX}" y="${copyTitleY}" font-size="${isWide ? 58 : 58}" font-weight="700" fill="#f6f6f2" font-family="Pathway Extreme Condensed, sans-serif">${escapeHtml(title)}</text>
+  <text x="${copyX}" y="${copySubtitleY}" font-size="${isWide ? 26 : 28}" font-weight="500" fill="#ecece7" font-family="Pathway Extreme, sans-serif">${escapeHtml(subtitle)}</text>
+  <text x="${copyX}" y="${copyBodyY}" font-size="${isWide ? 24 : 22}" fill="#a3a29c" font-family="Pathway Extreme, sans-serif"><tspan x="${copyX}">Demo audio first, presets ready,</tspan><tspan x="${copyX}" dy="1.4em">and your own music when you want it.</tspan></text>
+  <rect x="${screenX}" y="${screenY}" width="${screenWidth}" height="${screenHeight}" rx="6" fill="#000000" stroke="rgba(236,236,231,0.14)" />
+  <circle cx="${screenX + screenWidth / 2}" cy="${screenY + 210}" r="${isWide ? 128 : 134}" fill="none" stroke="rgba(236,236,231,0.18)" stroke-width="2" />
+  <circle cx="${screenX + screenWidth / 2}" cy="${screenY + 210}" r="${isWide ? 84 : 90}" fill="none" stroke="rgba(236,236,231,0.4)" stroke-width="2" />
+  <circle cx="${screenX + screenWidth / 2}" cy="${screenY + 210}" r="30" fill="#ecece7" />
+  <rect x="${graphX}" y="${graphY + 24}" width="${bandW}" height="40" fill="#ffb21a" />
+  <rect x="${graphX + bandW + 6}" y="${graphY + 44}" width="${bandW}" height="20" fill="rgba(236,236,231,0.3)" />
+  <rect x="${graphX + (bandW + 6) * 2}" y="${graphY + 8}" width="${bandW}" height="56" fill="#ffb21a" />
+  <text x="${graphX}" y="${graphY + 84}" font-size="14" font-weight="700" fill="#ecece7" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="2">BASS</text>
+  <text x="${graphX + bandW + 6}" y="${graphY + 84}" font-size="14" font-weight="700" fill="#8f8e88" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="2">MID</text>
+  <text x="${graphX + (bandW + 6) * 2}" y="${graphY + 84}" font-size="14" font-weight="700" fill="#ecece7" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="2">TREBLE</text>
+  <rect x="${screenX + 24}" y="${stripY}" width="${screenWidth - 48}" height="64" rx="6" fill="#0f0f0e" />
+  <circle cx="${screenX + 46}" cy="${stripY + 32}" r="6" fill="#000000" stroke="rgba(236,236,231,0.2)" stroke-width="1" />
+  <text x="${screenX + 68}" y="${stripY + 41}" font-size="24" font-weight="700" fill="#f6f6f2" font-family="Pathway Extreme Condensed, sans-serif">Live stage</text>
 </svg>`;
 };
 
@@ -1277,7 +1255,7 @@ export async function buildSeoArtifacts(
   const heroNarrowSvg = buildManifestScreenshotSvg({
     width: 720,
     height: 1280,
-    title: 'Stims',
+    title: 'MilkDrop Visualizer',
     subtitle: 'MilkDrop presets on your phone',
     mode: 'narrow',
   });
@@ -1372,17 +1350,11 @@ export async function buildSeoArtifacts(
       },
       {
         relativePath: GENERATED_SCREENSHOT_HERO_WIDE_PATH,
-        contents: await renderSvgPng(heroWideSvg, {
-          width: 1280,
-          height: 720,
-        }),
+        contents: await renderOgPng(heroWideSvg, repoRoot, { width: 1280 }),
       },
       {
         relativePath: GENERATED_SCREENSHOT_HERO_NARROW_PATH,
-        contents: await renderSvgPng(heroNarrowSvg, {
-          width: 720,
-          height: 1280,
-        }),
+        contents: await renderOgPng(heroNarrowSvg, repoRoot, { width: 720 }),
       },
       {
         relativePath: GENERATED_SITEMAP_CHUNK_PATH,

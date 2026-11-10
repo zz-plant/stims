@@ -1,0 +1,225 @@
+/*
+ * The swatchbook's parts, shared by every surface that prints a preset.
+ *
+ * The chrome is a lighting-gel swatchbook: each preset is a numbered strip of
+ * black card, riveted at one end, printed with its number, name, maker and a
+ * graph of the sound it passes. Three parts recur and live here:
+ *
+ * - `.stims-stock`: the card itself. Its fill sits on a ::before layer so the
+ *   rivet hole can be punched out of it with a mask and show whatever is
+ *   behind, usually the stage. A mask clips box-shadow, so a strip that sits
+ *   on the stage takes its shadow from `filter: drop-shadow` on the element,
+ *   which is drawn after the hole is punched.
+ * - `.stims-swatch-graph`: three live columns, bass, mid, treble. Lit columns
+ *   are the bands the preset reads (Swatch.tsx).
+ * - `.stims-swatch-number`: the catalog number, narrow and heavy.
+ *
+ * One line weight for every rule, outline and eyelet: 1px.
+ */
+
+.stims-stock {
+  --stock-fill: var(--bg-color);
+  --rivet-x: 18px;
+  --rivet-y: 18px;
+  --rivet-r: 6px;
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-lg);
+}
+
+.stims-stock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--stock-fill);
+  -webkit-mask: radial-gradient(
+    circle at var(--rivet-x) var(--rivet-y),
+    transparent var(--rivet-r),
+    #000 calc(var(--rivet-r) + 0.5px)
+  );
+  mask: radial-gradient(
+    circle at var(--rivet-x) var(--rivet-y),
+    transparent var(--rivet-r),
+    #000 calc(var(--rivet-r) + 0.5px)
+  );
+  pointer-events: none;
+}
+
+/* The eyelet: a faint 1px ring hugging the punched hole, so the hole still
+   reads where the stage behind it is as dark as the card. Tight to the edge
+   and quiet, or hole and ring read as an empty radio button. */
+.stims-stock::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: calc(var(--rivet-x) - var(--rivet-r) - 1px);
+  top: calc(var(--rivet-y) - var(--rivet-r) - 1px);
+  width: calc((var(--rivet-r) + 1px) * 2);
+  height: calc((var(--rivet-r) + 1px) * 2);
+  border: 1px solid var(--stims-line);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* On the stage: the card throws a real shadow onto the light behind it. */
+.stims-stock[data-on-stage="true"] {
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* ── Transmission graph ──────────────────────────────────────────── */
+
+.stims-swatch-graph {
+  --graph-height: 28px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  align-items: end;
+  inline-size: 100%;
+}
+
+.stims-swatch-graph[data-legend="true"] {
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  column-gap: 3px;
+}
+
+/* The graph's title, printed as a row header beside the columns, level with
+   their band names: it says what lit means without colour having to. */
+.stims-swatch-graph__legend {
+  align-self: end;
+  margin-right: 8px;
+  font-size: var(--text-2xs);
+  font-stretch: var(--font-stretch-legend);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--stims-ink-dim);
+}
+
+.stims-swatch-graph__band {
+  display: grid;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.stims-swatch-graph__level {
+  --graph-ink: var(--stims-line-strong);
+  position: relative;
+  display: block;
+  block-size: var(--graph-height);
+  border-block-end: 1px solid var(--graph-ink);
+  overflow: hidden;
+}
+
+/* The level is a scaled block, not a resized one: the custom property moves
+   every frame while music plays, and a transform stays on the compositor. */
+.stims-swatch-graph__level::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--graph-ink);
+  transform-origin: 50% 100%;
+  transform: scaleY(clamp(0.03, var(--band-level, 0), 1));
+}
+
+.stims-swatch-graph__band[data-band="bass"] .stims-swatch-graph__level {
+  --band-level: var(--band-bass);
+}
+
+.stims-swatch-graph__band[data-band="mid"] .stims-swatch-graph__level {
+  --band-level: var(--band-mid);
+}
+
+.stims-swatch-graph__band[data-band="treble"] .stims-swatch-graph__level {
+  --band-level: var(--band-treble);
+}
+
+.stims-swatch-graph__band[data-lit="true"] .stims-swatch-graph__level {
+  --graph-ink: var(--stims-accent);
+}
+
+.stims-swatch-graph__label {
+  font-size: var(--text-2xs);
+  font-stretch: var(--font-stretch-legend);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--stims-ink-dim);
+}
+
+.stims-swatch-graph__band[data-lit="true"] .stims-swatch-graph__label {
+  color: var(--stims-ink);
+}
+
+/* ── Catalog number ──────────────────────────────────────────────── */
+
+.stims-swatch-number {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stims-swatch-number__prefix {
+  font-size: 0.62em;
+  font-weight: var(--font-weight-semibold);
+  font-stretch: var(--font-stretch-legend);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--stims-ink-dim);
+}
+
+.stims-swatch-number__digits {
+  font-weight: var(--font-weight-bold);
+  font-stretch: 75%;
+  letter-spacing: 0.02em;
+  color: inherit;
+}
+
+.stims-swatch-number__edit {
+  align-self: center;
+  padding: 1px 4px;
+  border: 1px solid var(--stims-line-strong);
+  border-radius: var(--radius-xs);
+  font-size: 0.58em;
+  font-weight: var(--font-weight-semibold);
+  font-stretch: var(--font-stretch-legend);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stims-ink);
+}
+
+@media (forced-colors: active) {
+  .stims-stock::before {
+    background: Canvas;
+  }
+
+  .stims-swatch-graph__level {
+    --graph-ink: CanvasText;
+  }
+}
+
+/* Edge graph: the dock has no height for columns, so the three bands run
+   as horizontal meters along the strip's top rule, filling from the left. */
+.stims-swatch-graph[data-orient="edge"] {
+  --graph-height: 2px;
+  gap: 4px;
+  align-items: start;
+}
+
+.stims-swatch-graph[data-orient="edge"] .stims-swatch-graph__level {
+  border-block-end: 0;
+  background: var(--stims-line);
+}
+
+.stims-swatch-graph[data-orient="edge"] .stims-swatch-graph__level::before {
+  transform-origin: 0 50%;
+  transform: scaleX(clamp(0.02, var(--band-level, 0), 1));
+}

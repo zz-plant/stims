@@ -107,6 +107,7 @@ export function createMilkdropCatalogStore({
               toCatalogEntry(cachedCompiled.source, cachedCompiled, meta, {
                 tags: entry.tags ?? [],
                 curatedRank: entry.curatedRank,
+                catalogNumber: entry.catalogNumber,
                 // Lab measurements live only on the manifest entry; the
                 // compiled projection has no way to derive them.
                 quality: entry.quality,

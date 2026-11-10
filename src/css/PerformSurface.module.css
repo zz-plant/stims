@@ -36,7 +36,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
 }
 
 .pick {
@@ -76,7 +76,7 @@
 }
 
 .picker button:hover {
-  border-color: var(--stims-cool, #77c9ff);
+  border-color: var(--stims-cool, #ecece7);
 }
 
 .control {
@@ -114,8 +114,8 @@
 }
 
 .control[data-overridden="true"] .state {
-  border-color: var(--stims-focus-95, #f47a54);
-  color: var(--stims-focus-95, #f47a54);
+  border-color: var(--stims-focus-95, #ffb21a);
+  color: var(--stims-focus-95, #ffb21a);
 }
 
 .control[data-overridden="true"] input[type="range"] {
@@ -139,14 +139,14 @@
 
 .control input[type="range"] {
   width: 100%;
-  accent-color: var(--stims-cool, #77c9ff);
+  accent-color: var(--stims-cool, #ecece7);
 }
 
 .warning {
   margin: 0;
   font-size: 0.6875rem;
   line-height: 1.35;
-  color: var(--stims-focus-95, #f47a54);
+  color: var(--stims-focus-95, #ffb21a);
 }
 
 .empty {

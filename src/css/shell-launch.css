@@ -6,7 +6,7 @@
 
 @scope (.stims-shell) {
   .stims-shell__stage-frame[data-mode="home"] {
-    background: #05070c;
+    background: #0a0a09;
   }
 
   /* The top padding is where the column starts: half the viewport less

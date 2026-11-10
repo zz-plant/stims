@@ -1,0 +1,6 @@
+# Review captures and decision-page logs are working output of a design run,
+# not records: the surface briefs and design.json are what later sessions read.
+review/
+questions/
+mocks/
+config.local.json

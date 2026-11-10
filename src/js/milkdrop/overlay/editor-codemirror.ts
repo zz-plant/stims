@@ -426,9 +426,9 @@ function createEditorTheme() {
     '&': {
       color: 'var(--ed-code-ink)',
       backgroundColor: 'transparent',
-      // Martian Mono runs ~8% wider per character than the mono it replaced,
-      // with a taller x-height; one step down keeps the same columns per line
-      // and the same apparent size.
+      // The code face (Atkinson Hyperlegible Mono) has a tall x-height; one
+      // step down keeps an equation's columns on one line in a side panel
+      // at the same apparent size as the panel's text.
       fontSize: 'var(--text-sm)',
     },
     '.cm-scroller': {

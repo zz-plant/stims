@@ -26,6 +26,7 @@ import '../../css/app-shell.css';
 // and the theme/launch/chrome sheets below.
 import '../../css/shell/preset-identity.css';
 import '../../css/shell/preset-grid.css';
+import '../../css/shell/swatch.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/shell/fold-layout.css';

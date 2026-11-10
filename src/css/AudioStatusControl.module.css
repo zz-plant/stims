@@ -16,7 +16,7 @@
   height: 32px;
   padding: 0 8px;
   border: none;
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ctl-ink-2);
   font: inherit;
@@ -59,7 +59,7 @@
   padding: 4px 8px;
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   border-radius: var(--radius-sm);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   color: var(--ctl-ink);
   font-size: 0.75rem;
   font-weight: var(--font-weight-medium);
@@ -92,21 +92,21 @@
 }
 
 .trigger[aria-expanded="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   background: var(--ctl-accent-dim);
 }
 
 /* Signal arriving: the cool accent, matching every other "this is on and
    selected" state in the chrome. */
 .trigger[data-signal="live"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
 }
 
 /* Connected and silent is the one state worth a warning colour — it is the
    only one where something the visitor chose is not doing what they expect. */
 .trigger[data-signal="silent"],
 .trigger[data-signal="awaiting-gesture"] {
-  color: var(--stims-warm, #f47a54);
+  color: var(--stims-warm, #ffb21a);
 }
 
 /* ── Meter ───────────────────────────────────────────────────────────
@@ -170,7 +170,7 @@
   max-width: min(280px, calc(100vw - 24px));
   padding: 6px;
   border-radius: var(--radius-lg);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   animation: audio-status-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
@@ -208,7 +208,7 @@
 .nextStep {
   display: block;
   margin-top: 4px;
-  color: var(--stims-warm, #f47a54);
+  color: var(--stims-warm, #ffb21a);
 }
 
 .group {
@@ -253,9 +253,9 @@
 /* Same triple-encoded active state the stage menu uses — accent, inset lit
    edge, and a check glyph — so it never rests on colour alone. */
 .item[data-active="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   background: var(--ctl-accent-dim);
-  box-shadow: inset 2px 0 0 var(--stims-cool, #77c9ff);
+  box-shadow: inset 1px 0 0 var(--stims-cool, #ecece7);
 }
 
 .item[data-active="true"]::after {

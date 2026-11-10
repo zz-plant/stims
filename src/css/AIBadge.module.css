@@ -8,10 +8,10 @@
      --ai-badge-ink to currentColor so the badge takes the host's own ink. */
   background: color-mix(
     in srgb,
-    var(--ai-badge-ink, var(--stims-cool, #77c9ff)) 16%,
+    var(--ai-badge-ink, var(--stims-cool, #ecece7)) 16%,
     transparent
   );
-  color: var(--ai-badge-ink, var(--stims-cool, #77c9ff));
+  color: var(--ai-badge-ink, var(--stims-cool, #ecece7));
   font-size: 0.7em;
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.04em;

@@ -39,7 +39,7 @@
   max-width: 100vw;
   display: flex;
   flex-direction: column;
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   border-left: 1px solid var(--ctl-panel-line, rgba(255, 255, 255, 0.08));
   box-shadow: -16px 0 48px rgba(0, 0, 0, 0.3);
   animation: slide-in-right var(--motion-enter) both;
@@ -227,7 +227,7 @@
     transform: translateX(-50%);
     width: 36px;
     height: 4px;
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-hairline);
     background: rgba(255, 255, 255, 0.22);
   }
 }
@@ -347,7 +347,7 @@
 
   .seam:hover::after,
   .seam[data-resizing="true"]::after {
-    background: var(--stims-accent, #f47a54);
+    background: var(--stims-accent, #ffb21a);
   }
 
   /* Keyboard focus gets a louder cue than hover: a plain outline box would
@@ -357,8 +357,8 @@
   .seam:focus-visible::after {
     width: 4px;
     left: 4px;
-    background: var(--stims-accent, #f47a54);
-    box-shadow: 0 0 6px 1px var(--stims-accent, #f47a54);
+    background: var(--stims-accent, #ffb21a);
+    box-shadow: 0 0 6px 1px var(--stims-accent, #ffb21a);
   }
 
   .seamHint {
@@ -369,7 +369,7 @@
     z-index: 2;
     padding: 2px 6px;
     border-radius: var(--radius-xs);
-    background: rgba(10, 14, 22, 0.9);
+    background: rgba(15, 15, 14, 0.9);
     color: var(--stims-ink-dim, rgba(255, 255, 255, 0.6));
     font-family: var(--font-family-mono, monospace);
     font-size: 0.6875rem;
@@ -452,7 +452,7 @@
     transform: translateX(-50%);
     width: 36px;
     height: 4px;
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-hairline);
     background: rgba(255, 255, 255, 0.22);
   }
 

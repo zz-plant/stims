@@ -25,17 +25,19 @@
   padding: var(--space-sm, 8px);
   width: 100%;
   border-radius: var(--radius-lg);
-  background: #080b12;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: #0a0a09;
 
-  --stims-panel-strong: #12161f;
-  --stims-panel: #12161f;
-  --stims-line: rgba(255, 255, 255, 0.09);
-  --stims-line-strong: rgba(255, 255, 255, 0.2);
-  --stims-ink: #f2ede4;
-  --stims-muted: rgba(242, 237, 228, 0.62);
-  --stims-accent: #f47a54;
-  --stims-cool: #77c9ff;
+  /* The book opened flat: every page is the same black stock, printed in
+     the dark theme's inks whatever the chrome's theme. */
+  --stims-panel-strong: #151514;
+  --stims-panel: #151514;
+  --stims-line: rgba(236, 236, 231, 0.12);
+  --stims-line-strong: rgba(236, 236, 231, 0.3);
+  --stims-ink: #ecece7;
+  --stims-ink-dim: #8f8e88;
+  --stims-muted: #a3a29c;
+  --stims-accent: #ffb21a;
+  --stims-cool: #ecece7;
 }
 
 /* Sized to the virtualizer's total content height; rows inside are absolutely
@@ -72,8 +74,8 @@
   height: 26px;
   padding: 0;
   border: 1px solid var(--stims-line);
-  border-radius: var(--radius-round);
-  /* Opaque-ish disc: the art underneath is arbitrary and often bright, so a
+  border-radius: var(--radius-md);
+  /* Opaque-ish tab: the art underneath is arbitrary and often bright, so a
      transparent star disappears against roughly half the catalog. */
   background: color-mix(in srgb, var(--stims-panel-strong) 78%, transparent);
   cursor: pointer;
@@ -161,14 +163,13 @@
   text-align: left;
   transition:
     border-color var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
+    transform var(--motion-enter);
 }
 
+/* Pulled up out of the book, the way a swatch slides out of the fan. */
 .stims-preset-grid__item:hover {
   border-color: var(--stims-line-strong);
-  transform: translateY(-1px);
-  box-shadow: var(--stims-shadow-soft);
+  transform: translateY(-4px);
 }
 
 .stims-preset-grid__item:focus-visible {
@@ -222,6 +223,10 @@
    card and hid the digit entirely when it lived there. */
 .stims-preset-grid__quick-key,
 .ctl-preset__quick-key {
+  /* Only while the visitor is pointing at or keying through the grid: the
+     catalog number is the card's number, and a second one in the corner
+     read as a rank. */
+  visibility: hidden;
   position: absolute;
   top: var(--space-xs, 4px);
   right: var(--space-xs, 4px);
@@ -246,6 +251,19 @@
   right: 2px;
 }
 
+.stims-preset-grid:hover .stims-preset-grid__quick-key,
+.stims-preset-grid:focus-within .stims-preset-grid__quick-key,
+.ctl-preset:hover .ctl-preset__quick-key,
+.ctl-preset:focus-visible .ctl-preset__quick-key {
+  visibility: visible;
+}
+
+/* The caption under the window already prints the name, so a card with no
+   preview shows the empty window and its status, not the name twice. */
+.stims-preset-grid__item .stims-shell__preset-art-placeholder-title {
+  display: none;
+}
+
 /* Both chips in the same corner: the rarer variant count steps left. */
 .stims-preset-grid__item:has(.stims-preset-grid__quick-key)
   .stims-preset-grid__variants {
@@ -257,7 +275,7 @@
   top: var(--space-xs, 4px);
   right: var(--space-xs, 4px);
   padding: 1px 6px;
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
   border: 1px solid var(--stims-line);
   color: var(--stims-ink-soft, var(--stims-ink));
@@ -295,7 +313,7 @@
   line-height: 1.4;
   letter-spacing: 0.01em;
   padding: 1px 7px 2px;
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--stims-line);
   /* --stims-ink-2 is a chrome.css token (--ctl-ink-2) and undefined in this
      sheet, so this declaration was being dropped entirely and the chip

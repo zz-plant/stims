@@ -57,32 +57,34 @@
 }
 
 .pill {
-  /* Anchors the blend sweep hairline. */
+  /* The dock is one strip of black card riveted at its left end (the hole is
+     punched in shell/swatch.css, which also draws the card's shadow). The
+     padding on the left clears the eyelet. */
+  --stock-fill: var(--ctl-panel-bg, #0f0f0e);
+  --rivet-x: 15px;
+  --rivet-y: 50%;
+  --rivet-r: 5px;
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0;
-  padding: 3px;
-  border-radius: var(--radius-round);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
-  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  padding: 5px 5px 4px 32px;
+  border-radius: var(--radius-lg);
   pointer-events: auto;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
 }
 
-/* The audio-reactive "lit edge" echoing the dock energy bar. It lives on its
-   own childless span rather than on .pill because `--energy` is written every
-   animation frame, and a custom property inherits: changing it on the pill
-   restyled all ~50 descendants each frame — 45ms per recalc on an RK3576
-   handheld, which held the stage at 10fps while the GPU sat idle. On a leaf
-   the recalc touches one element. */
-.glow {
+/* The transmission graph along the strip's top edge. Its levels are written
+   on the graph element itself every animation frame, never on .pill: a custom
+   property inherits, and changing one on the pill restyled all ~50
+   descendants each frame (45ms per recalc on an RK3576 handheld, which held
+   the stage at 10fps while the GPU sat idle). */
+.edgeGraph {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  top: 0;
+  left: 32px;
+  right: 10px;
+  inline-size: auto;
   pointer-events: none;
-  box-shadow: 0 0 calc(var(--energy, 0) * 16px)
-    rgba(119, 201, 255, calc(var(--energy, 0) * 0.25));
 }
 
 /* A labelled control inside the bar. Fixed size like the nav buttons: the
@@ -95,7 +97,7 @@
   flex-shrink: 0;
   padding: 0 12px 0 10px;
   border: 1px solid var(--ctl-line);
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ctl-ink);
   font: inherit;
@@ -154,7 +156,7 @@
   flex-shrink: 0;
   padding: 0;
   border: none;
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ctl-ink-2);
   cursor: pointer;
@@ -191,7 +193,7 @@
 }
 
 .navBtn[data-saved="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
 }
 
 .titleBtn {
@@ -201,7 +203,7 @@
   padding: 0 10px;
   height: 36px;
   border: none;
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ctl-ink);
   font: inherit;
@@ -232,7 +234,35 @@
 /* Cool = playing/selected (the fallback already said so); the warm
    --stims-accent token is reserved for focus. */
 .titleBtn[data-active="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
+}
+
+.number {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  color: var(--ctl-ink);
+}
+
+/* On a phone every pixel here comes out of the preset's name, so the dock
+   drops the number and the rivet: the title card prints both on each
+   switch, and the strip keeps its edge graph. */
+@media (max-width: 639px), (horizontal-viewport-segments: 2) {
+  .number {
+    display: none;
+  }
+
+  .pill {
+    --rivet-r: 0px;
+    padding-left: 5px;
+  }
+
+  .pill.pill::after {
+    display: none;
+  }
+
+  .edgeGraph {
+    left: 10px;
+  }
 }
 
 .titleText {
@@ -269,7 +299,7 @@
 .statusText {
   font-size: 0.6875rem;
   font-weight: var(--font-weight-medium);
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   white-space: nowrap;
   flex-shrink: 0;
   animation: transition-pulse 1.2s ease-in-out infinite;
@@ -295,7 +325,7 @@
   bottom: 1px;
   height: 2px;
   border-radius: var(--radius-hairline);
-  background: var(--stims-cool, #77c9ff);
+  background: var(--stims-cool, #ecece7);
   opacity: 0.8;
   transform-origin: 0 50%;
   animation: blend-sweep var(--blend-ms, 2500ms) linear both;
@@ -331,7 +361,7 @@
   flex-shrink: 0;
   padding: 0;
   border: none;
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ctl-ink-2);
   cursor: pointer;
@@ -347,7 +377,7 @@
 }
 
 .menuBtn[aria-expanded="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   background: var(--ctl-accent-dim);
 }
 
@@ -377,7 +407,7 @@
   padding: 4px 8px;
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   border-radius: var(--radius-sm);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   color: var(--ctl-ink);
   font-size: 0.75rem;
   font-weight: var(--font-weight-medium);
@@ -425,7 +455,7 @@
   position: fixed;
   inset: 0;
   z-index: calc(var(--z-stage-menu) - 1);
-  background: rgba(4, 7, 12, 0.55);
+  background: rgba(10, 10, 9, 0.55);
   animation: menu-scrim-in 0.16s ease-out both;
 }
 
@@ -457,7 +487,7 @@
   -webkit-overflow-scrolling: touch;
   padding: 4px;
   border-radius: var(--radius-lg);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   animation: menu-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
@@ -521,9 +551,9 @@
    edge the dock and preset rows use, and a trailing check glyph — so it
    never rests on a 10%-alpha tint alone. */
 .menuItem[data-active="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   background: var(--ctl-accent-dim);
-  box-shadow: inset 2px 0 0 var(--stims-cool, #77c9ff);
+  box-shadow: inset 1px 0 0 var(--stims-cool, #ecece7);
 }
 
 .menuItem[data-active="true"]::after {
@@ -596,7 +626,7 @@
 /* Same double encoding as active menu items: cool accent plus a visible
    border, never a 10%-alpha tint alone. */
 .menuOption[data-active="true"] {
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   background: var(--ctl-accent-dim);
   border-color: var(--ctl-accent);
 }
@@ -721,7 +751,7 @@
   min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-lg);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   color: var(--stims-ink);
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   font-size: 0.75rem;
@@ -757,7 +787,7 @@
     width: 44px;
     height: 44px;
     border-radius: var(--radius-lg);
-    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
     color: var(--stims-ink);
     border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
@@ -786,7 +816,7 @@
   min-height: 44px;
   padding: 8px 18px;
   border-radius: var(--radius-lg);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
   color: var(--stims-ink);
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   font-size: 0.75rem;
@@ -857,7 +887,7 @@
 :global(html.light) .handle,
 :global(html.light) .foldedEdit {
   background: rgba(8, 14, 22, 0.92);
-  color: #f7f4eb;
+  color: #ecece7;
   border-color: var(--ctl-line-strong);
 }
 
@@ -991,9 +1021,15 @@
    targets, larger glyphs, and the playing preset's name set as the
    headline it is. Phones keep the compact geometry untouched. */
 @media (min-width: 768px) {
+  /* The left padding clears the rivet (shell/swatch.css punches it at
+     --rivet-x), leaving a visible gap before the audio meter. */
   .pill {
-    padding: 5px;
+    padding: 5px 5px 5px 34px;
     gap: 2px;
+  }
+
+  .edgeGraph {
+    left: 34px;
   }
 
   .navBtn,

@@ -29,7 +29,7 @@
   margin: 0;
   padding: 6px 10px;
   border: 1px solid var(--stims-on-stage-line-strong);
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: var(--stims-on-stage-panel-strong);
   color: var(--stims-on-stage-ink-strong);
   font-size: var(--text-xs);
@@ -40,7 +40,7 @@
 .notice kbd {
   padding: 1px 6px;
   border: 1px solid var(--stims-on-stage-line-strong);
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-size: var(--text-xs);
 }

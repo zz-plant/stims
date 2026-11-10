@@ -36,6 +36,7 @@ const STARTER_PATH = join(PRESETS_DIR, 'starter-catalog.json');
  */
 const STARTER_FIELDS = [
   'id',
+  'order',
   'title',
   'author',
   'authorUrl',

@@ -1,18 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Stims: 2,600+ MilkDrop visuals that react to your music, free in your browser">
   <defs>
     <linearGradient id="ground-fade" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#070a0e" />
-      <stop offset="0.5" stop-color="#070a0e" />
-      <stop offset="0.64" stop-color="#070a0e" stop-opacity="0.82" />
-      <stop offset="0.8" stop-color="#070a0e" stop-opacity="0.22" />
-      <stop offset="1" stop-color="#070a0e" stop-opacity="0" />
+      <stop offset="0" stop-color="#0f0f0e" />
+      <stop offset="0.5" stop-color="#0f0f0e" />
+      <stop offset="0.64" stop-color="#0f0f0e" stop-opacity="0.82" />
+      <stop offset="0.8" stop-color="#0f0f0e" stop-opacity="0.22" />
+      <stop offset="1" stop-color="#0f0f0e" stop-opacity="0" />
     </linearGradient>
-    <radialGradient id="warm" cx="0.1" cy="1" r="0.7">
-      <stop offset="0" stop-color="#f47a54" stop-opacity="0.18" />
-      <stop offset="1" stop-color="#f47a54" stop-opacity="0" />
-    </radialGradient>
   </defs>
-  <rect width="1200" height="630" fill="#070a0e" />
+  <rect width="1200" height="630" fill="#0f0f0e" />
   <g>
     <clipPath id="tile-0"><rect x="560" y="-58" width="272" height="153" rx="6" /></clipPath>
     <image href="frames/geiss-cosmic-dust-2-quasistatic-noise-dual-pane-window.jpg" x="560" y="-58" width="272" height="153" preserveAspectRatio="xMidYMid slice" clip-path="url(#tile-0)" />
@@ -58,12 +54,12 @@
     <rect x="1124.5" y="556.5" width="271" height="152" rx="6" fill="none" stroke="rgba(255,255,255,0.1)" />
   </g>
   <rect width="1000" height="630" fill="url(#ground-fade)" />
-  <rect width="1200" height="630" fill="url(#warm)" />
+  
 
-  <text x="64" y="118" font-size="20" font-weight="700" font-family="Space Mono, monospace" letter-spacing="3"><tspan fill="rgba(247,244,235,0.72)">BROWSER MUSIC VISUALIZER</tspan></text>
-  <text x="60" y="266" font-size="128" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, sans-serif" letter-spacing="-2">Stims</text>
-  <text x="64" y="336" font-size="30" font-weight="500" fill="rgba(247,244,235,0.82)" font-family="Space Grotesk, sans-serif">2,600+ MilkDrop visuals that react</text>
-  <text x="64" y="376" font-size="30" font-weight="500" fill="rgba(247,244,235,0.82)" font-family="Space Grotesk, sans-serif">to your music. Free, in your browser.</text>
+  <text x="64" y="118" font-size="20" font-weight="700" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="3"><tspan fill="rgba(236,236,231,0.72)">BROWSER MUSIC VISUALIZER</tspan></text>
+  <text x="60" y="266" font-size="128" font-weight="700" fill="#ecece7" font-family="Pathway Extreme Condensed, sans-serif" letter-spacing="-1">Stims</text>
+  <text x="64" y="336" font-size="30" font-weight="500" fill="rgba(236,236,231,0.82)" font-family="Pathway Extreme, sans-serif">2,600+ MilkDrop visuals that react</text>
+  <text x="64" y="376" font-size="30" font-weight="500" fill="rgba(236,236,231,0.82)" font-family="Pathway Extreme, sans-serif">to your music. Free, in your browser.</text>
 
-  <text x="64" y="566" font-size="24" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace" letter-spacing="1">toil.fyi</text>
+  <text x="64" y="566" font-size="24" font-weight="700" fill="#ffb21a" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="1">toil.fyi</text>
 </svg>

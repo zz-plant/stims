@@ -1,34 +1,36 @@
 /*
- * Self-hosted type, latin subset: Archivo for everything people read and
- * press, Martian Mono for everything a machine wrote.
+ * Self-hosted type, latin subset: Pathway Extreme for everything people read
+ * and press, Atkinson Hyperlegible Mono for everything a machine wrote.
  *
- * Archivo is a grotesque with a real width axis (62–125%), and the width is
- * the part this UI uses. Uppercase panel legends run condensed, like the
- * engraved labels on a mixing desk; the preset title card picks a width per
- * name so "Orbasonic" and "Witchcraft Unleashed 00 — The Template" each set
- * on one line (PresetTitleCard.tsx). One variable file covers every width
- * and weight in use, so none of it is synthesised.
+ * The chrome is a lighting-gel swatchbook, and a swatchbook is printed in
+ * one technical grotesque at several widths: the filter number and name
+ * narrow and heavy, the spec lines narrow and small, the text at full width.
+ * Pathway Extreme has that width axis (75-100%) plus an optical-size axis
+ * (8-12) that the browser sets from the font size, so small spec lines get
+ * the open small-size cut. The preset title card picks a width per name so
+ * long and short names each set on one line (PresetTitleCard.tsx).
  *
- * Martian Mono carries preset code and the numbers the engine reports —
- * counts, timers, register values. It is pinned to its 87.5% width (the file
- * has no width axis left), narrow enough for equations in a side panel.
+ * Atkinson Hyperlegible Mono carries preset code and the numbers the engine
+ * reports. It was drawn for low-vision readers, so 0/O and 1/l/I stay apart
+ * in an equation, and its 200-800 weights cover the editor's bold tokens
+ * without synthesis.
  *
- * Both files are preloadable and same-origin; only Archivo is preloaded,
- * because the mono is not on the first screen. font-display: swap is kept
- * deliberately: with the preload the swap window is short, and swapping beats
- * invisible text on a slow network.
+ * Both files are same-origin; only Pathway Extreme is preloaded, because the
+ * mono is not on the first screen. font-display: swap is kept deliberately:
+ * with the preload the swap window is short, and swapping beats invisible
+ * text on a slow network.
  *
- * Licences: SIL Open Font License 1.1 — public/fonts/OFL-Archivo.txt and
- * public/fonts/OFL-MartianMono.txt.
+ * Licences: SIL Open Font License 1.1 — public/fonts/OFL-PathwayExtreme.txt
+ * and public/fonts/OFL-AtkinsonHyperlegibleMono.txt.
  */
 
 @font-face {
-  font-family: "Archivo";
+  font-family: "Pathway Extreme";
   font-style: normal;
   font-weight: 100 900;
-  font-stretch: 62% 125%;
+  font-stretch: 75% 100%;
   font-display: swap;
-  src: url("/fonts/archivo-latin-var.woff2") format("woff2");
+  src: url("/fonts/pathway-extreme-latin-var.woff2") format("woff2");
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
     U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
@@ -36,11 +38,11 @@
 }
 
 @font-face {
-  font-family: "Martian Mono";
+  font-family: "Atkinson Hyperlegible Mono";
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 200 800;
   font-display: swap;
-  src: url("/fonts/martian-mono-latin-875.woff2") format("woff2");
+  src: url("/fonts/atkinson-hyperlegible-mono-latin-var.woff2") format("woff2");
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
     U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,

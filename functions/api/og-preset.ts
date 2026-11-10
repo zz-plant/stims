@@ -42,27 +42,30 @@ const CARD_W = 1200;
 const CARD_H = 630;
 const MARGIN = 64;
 
-const INK = '#f7f4eb';
-const CORAL = '#f47a54';
-const GROUND = '#070a0e';
+// The swatchbook palette (DESIGN.md): print white on the black card stock,
+// with the safelight amber for the one lit mark.
+const INK = '#ecece7';
+const AMBER = '#ffb21a';
+const GROUND = '#0f0f0e';
 
-// Space Grotesk Bold measures ~0.55em per character across mixed-case Latin.
-// Good enough to pick a size and wrap point without shaping the text.
-const TITLE_CHAR_RATIO = 0.55;
+// Pathway Extreme Condensed Bold measures ~0.48em per character across
+// mixed-case Latin; 0.525 keeps the margin the old 0.55 had over Space
+// Grotesk's 0.51. Good enough to pick a size and wrap point without shaping.
+const TITLE_CHAR_RATIO = 0.525;
 const TITLE_MAX_WIDTH = CARD_W - MARGIN * 2;
 
 // The brand lockup is right-aligned on the byline's own baseline, so the
-// byline has to stop before it. Space Mono is monospaced at 0.6em, which makes
-// the lockup's width exact rather than estimated. Collaboration credits in the
+// byline has to stop before it. Atkinson Hyperlegible Mono is monospaced at
+// 0.632em, which makes the lockup's width exact rather than estimated. Collaboration credits in the
 // corpus run to 94 characters ("The NG + Stahlregen & Boz + EoS + Geiss + ..."),
 // and 60 of them exceed 40, so an unconstrained byline runs straight through
 // the branding and off the card.
 const BRAND_TEXT = 'STIMS · toil.fyi';
 const BRAND_FONT_SIZE = 19;
-const BRAND_WIDTH = BRAND_TEXT.length * BRAND_FONT_SIZE * 0.6;
+const BRAND_WIDTH = BRAND_TEXT.length * BRAND_FONT_SIZE * 0.632;
 const BYLINE_GAP = 40;
 const BYLINE_FONT_SIZE = 25;
-const BYLINE_CHAR_RATIO = 0.52;
+const BYLINE_CHAR_RATIO = 0.54;
 const BYLINE_PREFIX = 'by ';
 // The collection label over the title. At 14px it was a smudge once a feed
 // scaled the card to ~500px wide; 18px is the smallest that survives that.
@@ -195,29 +198,29 @@ export function buildPresetOgSvg({
       <stop offset="100%" stop-color="${GROUND}" stop-opacity="0.97"/>
     </linearGradient>
     <radialGradient id="empty-cool" cx="18%" cy="12%" r="85%">
-      <stop offset="0%" stop-color="#16202c"/>
+      <stop offset="0%" stop-color="#1c1c1a"/>
       <stop offset="100%" stop-color="${GROUND}"/>
     </radialGradient>
     <radialGradient id="empty-warm" cx="88%" cy="96%" r="60%">
-      <stop offset="0%" stop-color="${CORAL}" stop-opacity="0.16"/>
-      <stop offset="100%" stop-color="${CORAL}" stop-opacity="0"/>
+      <stop offset="0%" stop-color="${INK}" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="${INK}" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
   ${backdrop}
 
-  <text x="${MARGIN}" y="${labelBaseline}" font-size="${LABEL_FONT_SIZE}" font-weight="700" fill="rgba(247,244,235,0.78)" font-family="Space Mono, monospace" letter-spacing="3">${label}</text>
+  <text x="${MARGIN}" y="${labelBaseline}" font-size="${LABEL_FONT_SIZE}" font-weight="700" fill="rgba(236,236,231,0.78)" font-family="Atkinson Hyperlegible Mono, monospace" letter-spacing="3">${label}</text>
 
   ${safeLines
     .map(
       (line, i) =>
-        `<text x="${MARGIN}" y="${firstBaseline + i * lineHeight}" font-size="${titleSize}" font-weight="700" fill="${INK}" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-1">${line}</text>`,
+        `<text x="${MARGIN}" y="${firstBaseline + i * lineHeight}" font-size="${titleSize}" font-weight="700" fill="${INK}" font-family="Pathway Extreme Condensed, Pathway Extreme, sans-serif" letter-spacing="-0.5">${line}</text>`,
     )
     .join('\n  ')}
 
-  ${safeAuthor ? `<text x="${MARGIN}" y="${authorBaseline}" font-size="${BYLINE_FONT_SIZE}" font-weight="500" fill="rgba(247,244,235,0.74)" font-family="Space Grotesk, system-ui, sans-serif">by ${safeAuthor}</text>` : ''}
+  ${safeAuthor ? `<text x="${MARGIN}" y="${authorBaseline}" font-size="${BYLINE_FONT_SIZE}" font-weight="500" fill="rgba(236,236,231,0.74)" font-family="Pathway Extreme, sans-serif">by ${safeAuthor}</text>` : ''}
 
-  <text x="${CARD_W - MARGIN}" y="${authorBaseline}" text-anchor="end" font-size="${BRAND_FONT_SIZE}" font-weight="700" font-family="Space Mono, monospace"><tspan fill="${CORAL}" letter-spacing="2">STIMS</tspan><tspan fill="rgba(247,244,235,0.45)"> · toil.fyi</tspan></text>
+  <text x="${CARD_W - MARGIN}" y="${authorBaseline}" text-anchor="end" font-size="${BRAND_FONT_SIZE}" font-weight="700" font-family="Atkinson Hyperlegible Mono, monospace"><tspan fill="${AMBER}" letter-spacing="2">STIMS</tspan><tspan fill="rgba(236,236,231,0.45)"> · toil.fyi</tspan></text>
 </svg>`;
 }
 
@@ -294,12 +297,12 @@ export async function rasterizePresetOg(
   await ensureWasm(assets.wasm);
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: 1200 },
-    background: '#0b1014',
+    background: GROUND,
     font: {
       fontBuffers: assets.fonts,
-      defaultFontFamily: 'Space Grotesk',
-      sansSerifFamily: 'Space Grotesk',
-      monospaceFamily: 'Space Mono',
+      defaultFontFamily: 'Pathway Extreme',
+      sansSerifFamily: 'Pathway Extreme',
+      monospaceFamily: 'Atkinson Hyperlegible Mono',
     },
   });
   try {
@@ -327,11 +330,10 @@ export async function renderPresetOgJpeg(
 }
 
 const FONT_PATHS = [
-  '/og/fonts/SpaceGrotesk-Regular.ttf',
-  '/og/fonts/SpaceGrotesk-Medium.ttf',
-  '/og/fonts/SpaceGrotesk-Bold.ttf',
-  '/og/fonts/SpaceMono-Regular.ttf',
-  '/og/fonts/SpaceMono-Bold.ttf',
+  '/og/fonts/PathwayExtreme-Regular.ttf',
+  '/og/fonts/PathwayExtreme-Medium.ttf',
+  '/og/fonts/PathwayExtremeCondensed-Bold.ttf',
+  '/og/fonts/AtkinsonHyperlegibleMono-Bold.ttf',
 ];
 
 type StaticAssetFetcher = {

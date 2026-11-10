@@ -105,6 +105,8 @@ export type PresetCatalogEntry = {
   /** Curation rank: curated tier first, mass import stamped >= 10_000 by
    * catalog-bundled-pipeline. Drives the "curated" browse sort. */
   curatedRank?: number;
+  /** The catalog's number for this preset, printed on its swatch strip. */
+  catalogNumber?: number;
   isFavorite?: boolean;
   rating?: number;
   historyIndex?: number;

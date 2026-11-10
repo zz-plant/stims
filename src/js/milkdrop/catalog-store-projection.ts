@@ -107,6 +107,7 @@ export function toCatalogEntry(
   options: {
     tags?: string[];
     curatedRank?: number;
+    catalogNumber?: number;
     bundledFile?: string;
     historyIndex?: number;
     corpusTier?: MilkdropCatalogEntry['corpusTier'];
@@ -151,6 +152,7 @@ export function toCatalogEntry(
       ]),
     ),
     curatedRank: options.curatedRank,
+    catalogNumber: options.catalogNumber,
     isFavorite: Boolean(meta?.favorite),
     rating: meta?.rating ?? 0,
     lastOpenedAt: meta?.lastOpenedAt,
@@ -199,6 +201,7 @@ export function toUnavailableBundledCatalogEntry(
     tags: entry.tags ?? [],
     searchTerms: entry.searchTerms,
     curatedRank: entry.curatedRank,
+    catalogNumber: entry.catalogNumber,
     similarity: entry.similarity,
     // Carried through because the browse row reads them. This projection
     // builds an explicit entry rather than spreading the manifest, so any
@@ -372,6 +375,7 @@ export function toBundledCatalogEntryFromManifest(
     tags: entry.tags ?? [],
     searchTerms: entry.searchTerms,
     curatedRank: entry.curatedRank,
+    catalogNumber: entry.catalogNumber,
     similarity: entry.similarity,
     quality: entry.quality,
     sensoryProfile: entry.sensoryProfile,

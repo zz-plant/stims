@@ -59,7 +59,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
 }
 
 .tempo {
@@ -151,8 +151,8 @@
    (~2.4:1). This literal is ~6:1 on the accent in both themes.
    guard-allow-hex: theme-independent accent surface, so the ink is too. */
 .take {
-  border-color: var(--stims-focus-95, #f47a54);
-  background: var(--stims-focus-95, #f47a54);
+  border-color: var(--stims-focus-95, #ffb21a);
+  background: var(--stims-focus-95, #ffb21a);
   color: #1a0d08;
 }
 
@@ -173,7 +173,7 @@
 
 .take:focus-visible,
 .skip:focus-visible {
-  outline: 2px solid var(--stims-focus-95, #f47a54);
+  outline: 2px solid var(--stims-focus-95, #ffb21a);
   outline-offset: 2px;
 }
 
@@ -205,7 +205,7 @@
 /* Armed: the next press clears the queue. Warm, the accent this card keeps
    for the controls that change what plays. */
 .clear[data-armed="true"] {
-  color: var(--stims-focus-95, #f47a54);
+  color: var(--stims-focus-95, #ffb21a);
 }
 
 /* Phones: the dock and the stage gestures own the bottom-right corner, and a
@@ -241,10 +241,10 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
 }
 
 .fader input[type="range"] {
   width: 100%;
-  accent-color: var(--stims-focus-95, #f47a54);
+  accent-color: var(--stims-focus-95, #ffb21a);
 }

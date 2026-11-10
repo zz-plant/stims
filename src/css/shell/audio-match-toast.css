@@ -14,7 +14,7 @@
   max-width: min(420px, calc(100vw - 32px));
   padding: 10px 14px 12px;
   border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the stripe marks the audio-match toast's found-match status */
+  border-left: 1px solid var(--stims-cool);
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   box-shadow: var(--stims-shadow);

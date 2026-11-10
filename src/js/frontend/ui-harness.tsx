@@ -87,7 +87,7 @@ function SingleViewport({
   const renderComponent =
     COMPONENT_REGISTRY[component] ??
     (() => (
-      <div style={{ padding: 24, color: '#ffb4a2' }}>
+      <div style={{ padding: 24, color: '#ff6a5c' }}>
         <h2 style={{ margin: '0 0 8px' }}>Unknown component "{component}"</h2>
         <p style={{ margin: 0 }}>
           Registered: {Object.keys(COMPONENT_REGISTRY).join(', ')}. Add it to
@@ -102,7 +102,7 @@ function SingleViewport({
         border: '1px dashed rgba(255,255,255,0.15)',
         borderRadius: '12px',
         overflow: 'hidden',
-        background: '#05070d',
+        background: '#0a0a09',
       }}
     >
       {width ? (

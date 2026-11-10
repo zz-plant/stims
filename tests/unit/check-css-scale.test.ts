@@ -41,7 +41,7 @@ describe('check:css-scale', () => {
       `.a { border-radius: 10px; font-size: 0.875rem; }
        .b { border-radius: var(--radius-lg); }
        .c { border-radius: 50%; }
-       .d { border-radius: 14px 14px 0 0; }`,
+       .d { border-radius: 6px 6px 0 0; }`,
     );
     expect(code).toBe(0);
   });

@@ -165,4 +165,39 @@ describe('StageWarpGizmo', () => {
 
     rendered.dispose();
   });
+
+  test('keeps its label on the stage at the edges, without a minus zero', () => {
+    const at = (cx: string) => {
+      const rendered = render(`cx=${cx}\ncy=0.5\n`, {});
+      const handle = handleOf(rendered.container);
+      const reading = { edge: handle?.dataset.edge, text: handle?.textContent };
+      rendered.dispose();
+      return reading;
+    };
+    const markerLeft = (cx: string) => {
+      const rendered = render(`cx=${cx}\ncy=0.5\n`, {});
+      const left = handleOf(rendered.container)?.style.left;
+      rendered.dispose();
+      return left;
+    };
+
+    // A centre a hair below zero sits on the stage's left edge: the label
+    // runs inward from the handle and does not print "-0.00".
+    expect(at('-0.001')).toEqual({
+      edge: 'start',
+      text: 'Warp center 0.00, 0.50',
+    });
+    expect(at('0.95')).toEqual({ edge: 'end', text: 'Warp center 0.95, 0.50' });
+    expect(at('0.5')).toEqual({
+      edge: undefined,
+      text: 'Warp center 0.50, 0.50',
+    });
+    // A centre off the stage is marked at the edge, but still reported
+    // exactly.
+    expect(markerLeft('-0.3')).toBe('0%');
+    expect(at('-0.3')).toEqual({
+      edge: 'start',
+      text: 'Warp center -0.30, 0.50',
+    });
+  });
 });

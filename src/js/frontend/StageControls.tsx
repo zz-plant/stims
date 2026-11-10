@@ -41,10 +41,6 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
 import { AudioStatusControl } from './AudioStatusControl.tsx';
-import {
-  getAudioEnergy,
-  subscribeAudioEnergy,
-} from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
 import {
   useBottomOverlaySignal,
@@ -57,6 +53,7 @@ import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { prefetchMenuPanelChunks } from './panel-chunks.ts';
 import { getPanelTitle } from './panel-registry.ts';
 import { openPerformPicker } from './perform-pins.ts';
+import { SwatchGraph, SwatchNumber, useStageBandReads } from './Swatch.tsx';
 import {
   ariaKeyShortcutsFor,
   readShortcutOverrides,
@@ -296,6 +293,9 @@ export function StageControls({
   );
   const currentPresetId =
     engine.selectedPreset?.id ?? engine.featuredPreset?.id ?? null;
+  const activeCatalogNumber = (engine.selectedPreset ?? engine.featuredPreset)
+    ?.catalogNumber;
+  const stageBandReads = useStageBandReads();
   const embedState = embedCodeState(
     findActivePresetEntry(engineSnapshot?.activePresetId, engine) ??
       engine.selectedPreset ??
@@ -428,7 +428,6 @@ export function StageControls({
     playbackLabel: (paused) =>
       playbackToggleLabel(engineSnapshot?.audioSource ?? null, paused),
   });
-  const energyRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const shareBtnRef = useRef<HTMLButtonElement>(null);
@@ -486,15 +485,6 @@ export function StageControls({
     prefetchMenuPanelChunks();
     refreshCameraInput();
   }, [showMenu]);
-
-  useEffect(() => {
-    const updateEnergy = () => {
-      const e = Math.min(1, Math.max(0, getAudioEnergy()));
-      energyRef.current?.style.setProperty('--energy', String(e));
-    };
-    updateEnergy();
-    return subscribeAudioEnergy(updateEnergy);
-  }, []);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -1175,7 +1165,8 @@ export function StageControls({
             can actually hit — the bar around it is pointer-events: none. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: these handlers only note that a pointer or focus is inside the container of buttons, to keep it from auto-hiding; the buttons themselves are the interactions */}
         <div
-          className={styles.pill}
+          className={`${styles.pill} stims-stock`}
+          data-on-stage="true"
           data-transition={
             transition.phase !== 'idle' ? transition.phase : undefined
           }
@@ -1195,7 +1186,14 @@ export function StageControls({
             }
           }}
         >
-          <span ref={energyRef} className={styles.glow} aria-hidden="true" />
+          {/* The strip's transmission graph along its top edge: the three
+              bands live, lit where this preset's equations read them. */}
+          <SwatchGraph
+            reads={stageBandReads}
+            labels={false}
+            orient="edge"
+            className={styles.edgeGraph}
+          />
           {transition.phase === 'blending' ? (
             <span
               key={transition.blendNonce}
@@ -1329,6 +1327,11 @@ export function StageControls({
             )}
             onClick={handleBrowse}
           >
+            <SwatchNumber
+              value={activeCatalogNumber}
+              edited={engineSnapshot?.sessionState?.dirty ?? false}
+              className={styles.number}
+            />
             <span className={styles.titleText}>{presetTitle}</span>
             {playbackPaused ? (
               <span className={styles.statusText} data-static="true">

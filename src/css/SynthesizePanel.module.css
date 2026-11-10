@@ -141,8 +141,8 @@
   padding: 12px 16px;
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
-  background: var(--stims-accent);
-  color: var(--stims-on-accent, #071019);
+  background: var(--stims-ink-strong);
+  color: var(--bg-color);
   font: inherit;
   font-weight: var(--font-weight-bold);
   cursor: pointer;

@@ -66,9 +66,8 @@ canvas {
 .skip-link:focus-visible {
   top: max(4.2rem, calc(env(safe-area-inset-top) + 3.4rem));
   opacity: 1;
-  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline: var(--tv-focus-outline-width) solid var(--stims-accent);
   outline-offset: var(--tv-focus-outline-offset);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
 @media (hover: none) and (pointer: coarse) {
@@ -82,14 +81,7 @@ html {
   padding: 0;
   font-family: var(--font-family-base);
   font-size: calc(16px * var(--tv-scale-multiplier) * var(--ui-scale));
-  background:
-    radial-gradient(
-      circle at 15% 0%,
-      rgba(95, 192, 181, 0.14),
-      rgba(211, 137, 84, 0.16) 42%,
-      transparent 50%
-    ),
-    linear-gradient(180deg, var(--bg-color) 0%, var(--bg-color-secondary) 100%);
+  background: var(--bg-color);
   color: var(--text-color);
   overflow-x: hidden;
   min-height: 100%;
@@ -137,13 +129,6 @@ footer {
   border-top: 1px solid var(--surface-border);
 }
 
-@media (max-width: 900px) {
-  :root {
-    --radius-lg: 18px;
-    --radius-md: 12px;
-  }
-}
-
 @media (max-width: 680px) {
   body {
     font-size: 1rem;
@@ -186,39 +171,15 @@ html {
   /* No font-family here: --display-font was never defined, which made this
      declaration invalid at computed-value time and silently dropped the whole
      app back to the UA serif. The stack set earlier in this file stands. */
-  background:
-    radial-gradient(
-      circle at 12% 0%,
-      color-mix(in srgb, var(--accent-purple) 20%, transparent),
-      transparent 26%
-    ),
-    radial-gradient(
-      circle at 88% 14%,
-      color-mix(in srgb, var(--accent-magenta) 18%, transparent),
-      transparent 28%
-    ),
-    linear-gradient(
-      145deg,
-      var(--bg-color) 0%,
-      color-mix(in srgb, var(--bg-color-secondary) 88%, #071112) 54%,
-      #050a0b 100%
-    );
-  /* The gradients above carry no colour of their own, and on a light system
-     they run cream behind a black stage. Safari fills the space beside its
-     side controls on iPhone Duo's outer display with the page's background
-     colour, so name the stage's. */
-  background-color: #05070c;
+  /* The stage floor, flat. Safari fills the space beside its side controls
+     on iPhone Duo's outer display with the page's background colour, so it
+     names the stage's rather than the theme's. */
+  background: #0a0a09;
 }
 
 .control-panel,
 .active-toy-status__content {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--panel-highlight) 88%, transparent),
-      transparent 58%
-    ),
-    var(--surface-texture), var(--panel-gradient);
+  background: var(--bg-color);
   border-color: var(--surface-border-strong);
   box-shadow: var(--shadow-panel);
   backdrop-filter: none;
@@ -235,9 +196,7 @@ html {
 
 .control-panel,
 .active-toy-status__content {
-  background:
-    linear-gradient(180deg, var(--stims-white-12), var(--stims-white-02) 18%),
-    var(--surface-texture), var(--panel-gradient);
+  background: var(--bg-color);
   border: 1px solid var(--surface-border-strong);
   box-shadow: var(--shadow-panel);
 }
@@ -252,10 +211,8 @@ html {
   left: 10px;
   right: 10px;
   top: 10px;
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, transparent, #f47a54 50%, transparent);
-  opacity: 0.82;
+  height: 1px;
+  background: var(--stims-line-strong);
   pointer-events: none;
 }
 

@@ -3,6 +3,7 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { SwatchNumber } from './Swatch.tsx';
 
 /**
  * How a preset presents itself inside a selectable control: its artwork, then
@@ -65,8 +66,15 @@ export function PresetIdentity({
         <span className="stims-preset-identity__title">
           {title ?? entryDisplay?.title}
         </span>
-        {(subtitle ?? entryDisplay?.byline) ? (
+        {/* The spec line, as a swatch prints it: the catalog number, then
+            the maker. */}
+        {(subtitle ?? entryDisplay?.byline) ||
+        entry?.catalogNumber !== undefined ? (
           <span className="stims-preset-identity__subtitle">
+            <SwatchNumber
+              value={entry?.catalogNumber}
+              className="stims-preset-identity__number"
+            />
             {subtitle ?? entryDisplay?.byline}
           </span>
         ) : null}

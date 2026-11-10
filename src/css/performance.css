@@ -3,7 +3,7 @@ html {
   height: auto;
   min-height: 100%;
   overflow-y: auto;
-  background: #05070d;
+  background: #0a0a09;
 }
 
 body[data-page="performance"] {
@@ -13,14 +13,7 @@ body[data-page="performance"] {
   overflow-x: hidden;
   overflow-y: visible;
   color: var(--text-color);
-  background:
-    radial-gradient(circle at 12% 0%, rgba(244, 122, 84, 0.16), transparent 24%),
-    radial-gradient(
-      circle at 88% 4%,
-      rgba(119, 201, 255, 0.16),
-      transparent 24%
-    ),
-    linear-gradient(180deg, #05070d 0%, #08111b 48%, #03050a 100%);
+  background: #0a0a09;
   font-family: var(--font-family-base);
 }
 
@@ -40,13 +33,7 @@ body[data-page="performance"] {
   overflow: hidden;
   border: 1px solid var(--stims-line);
   border-radius: var(--radius-xl);
-  background:
-    linear-gradient(180deg, rgba(10, 14, 22, 0.96), rgba(7, 10, 17, 0.88)),
-    radial-gradient(
-      circle at top right,
-      rgba(119, 201, 255, 0.08),
-      transparent 30%
-    );
+  background: var(--bg-color);
   box-shadow: var(--stims-shadow);
 }
 
@@ -67,10 +54,8 @@ body[data-page="performance"] {
   left: 16px;
   right: 16px;
   top: 0;
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, transparent, #f47a54 50%, transparent);
-  opacity: 0.8;
+  height: 1px;
+  background: var(--stims-line-strong);
 }
 
 .stims-performance__eyebrow,
@@ -90,7 +75,7 @@ body[data-page="performance"] {
   margin: 0 0 12px;
   line-height: 0.95;
   letter-spacing: -0.04em;
-  color: #fff8ef;
+  color: #f6f6f2;
 }
 
 .stims-performance__hero h1 {
@@ -162,20 +147,19 @@ body[data-page="performance"] {
 }
 
 .stims-performance__button--primary {
-  border-color: rgba(244, 122, 84, 0.4);
-  background:
-    linear-gradient(180deg, rgba(244, 122, 84, 0.26), rgba(244, 122, 84, 0.14)),
-    rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+  background: var(--stims-ink-strong);
+  color: var(--bg-color);
 }
 
 .stims-performance__text-link {
-  color: color-mix(in srgb, var(--stims-accent) 82%, #fff8ef);
+  color: color-mix(in srgb, var(--stims-accent) 82%, #f6f6f2);
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.18em;
 }
 
 .stims-performance__text-link:hover {
-  color: #fff8ef;
+  color: #f6f6f2;
 }
 
 .stims-performance__text-link:focus-visible {
@@ -206,7 +190,7 @@ body[data-page="performance"] {
 .stims-performance__table thead th {
   border-top: 0;
   background: rgba(255, 255, 255, 0.05);
-  color: #fff8ef;
+  color: #f6f6f2;
   font-weight: var(--font-weight-bold);
 }
 
