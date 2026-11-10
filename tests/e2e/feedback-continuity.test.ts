@@ -472,6 +472,10 @@ for (const { backend, run } of BACKENDS) {
 // drawn and moves with the history from the next frame on.
 for (const { backend, run } of BACKENDS) {
   describe(`the feedback warp moves history, not new geometry (${backend})`, () => {
+    // The quad touches the frame's left and top edges and the targets clamp,
+    // so a move right or down smears that lit edge across the gap it leaves
+    // (MilkDrop clamps the same way). Moving left and up keeps the
+    // arithmetic to the quad alone.
     run(
       'dx shifts the previous frame and leaves this frame where it was drawn',
       async () => {
@@ -487,10 +491,10 @@ for (const { backend, run } of BACKENDS) {
               // this frame's quad alone.
               harness.applyWarp({ decay: 0 });
               const fresh = await harness.renderFrame();
-              harness.applyWarp({ dx: 0.25, decay: 0 });
+              harness.applyWarp({ dx: -0.25, decay: 0 });
               const freshUnderDx = await harness.renderFrame();
               // Decay 1 and nothing drawn: the frame is the moved history.
-              harness.applyWarp({ dx: 0.25, decay: 1 });
+              harness.applyWarp({ dx: -0.25, decay: 1 });
               harness.setScene('empty');
               const historyUnderDx = await harness.renderFrame();
               return { fresh, freshUnderDx, historyUnderDx };
@@ -499,11 +503,51 @@ for (const { backend, run } of BACKENDS) {
             }
           },
         );
-        expectSamePicture('this frame under dx = 0.25', freshUnderDx, fresh, 2);
-        // dx is a quarter of the frame, half the quad: the history keeps
-        // about half of the top-left quadrant lit.
+        expectSamePicture(
+          'this frame under dx = -0.25',
+          freshUnderDx,
+          fresh,
+          2,
+        );
+        // dx is a quarter of the frame, half the quad. A negative dx moves
+        // the picture left, as in MilkDrop (zz-plant/stims#1695), so half the
+        // quad leaves the frame and the top-right quadrant stays dark. Moved
+        // right instead, the clamped left edge fills the top-left quadrant.
         expect(historyUnderDx[0]).toBeGreaterThan(fresh[0] * 0.3);
         expect(historyUnderDx[0]).toBeLessThan(fresh[0] * 0.7);
+        expect(historyUnderDx[1]).toBeLessThan(fresh[0] * 0.1);
+      },
+      { timeout: 120000 },
+    );
+
+    run(
+      'a negative dy moves the previous frame up',
+      async () => {
+        const { fresh, historyUnderDy } = await runScenario(
+          backend,
+          async ({ harnessModule, backend }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const harness = await createFeedbackHarness(backend);
+            try {
+              harness.applyWarp({ decay: 0 });
+              const fresh = await harness.renderFrame();
+              harness.applyWarp({ dy: -0.25, decay: 1 });
+              harness.setScene('empty');
+              const historyUnderDy = await harness.renderFrame();
+              return { fresh, historyUnderDy };
+            } finally {
+              harness.dispose();
+            }
+          },
+        );
+        // MilkDrop's y runs down the screen, so a negative dy moves the
+        // picture up: half the quad leaves the top and the bottom-left
+        // quadrant stays dark.
+        expect(historyUnderDy[0]).toBeGreaterThan(fresh[0] * 0.3);
+        expect(historyUnderDy[0]).toBeLessThan(fresh[0] * 0.7);
+        expect(historyUnderDy[2]).toBeLessThan(fresh[0] * 0.1);
       },
       { timeout: 120000 },
     );
