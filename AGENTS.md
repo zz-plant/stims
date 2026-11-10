@@ -4,6 +4,28 @@ Stims plays and live-edits MilkDrop presets in the browser: Bun and TypeScript,
 rendered by Three.js on WebGL or WebGPU. Every coding agent starts here; the
 tool-specific files listed at the end point back to this one.
 
+## Hobby project (since 2026-11-10)
+
+Stims is a hobby: the owner decided on 2026-11-10 to keep it for enjoyment, not develop it as a product. Until this section is removed, it overrides the roadmap and any other document that names work to do next.
+
+**Budget:** two merged pull requests a week across Video Night (`zz-plant/video-night`) and Stims (`zz-plant/stims`) together. A fix for something broken does not count against it. Before starting other work, count this repository's merges in the last seven days (`git log --first-parent --since="7 days ago" --oneline origin/main`). When the two repositories together are at two, stop and say the budget is spent; the owner can still ask for more.
+
+Always take:
+
+- a fix for something broken: a failing build or check, a page error, a deploy that stopped;
+- security updates and the monthly dependency pull request;
+- a preset that no longer compiles or renders, and breakage on either backend.
+
+The player and the editor are the hobby. The Workers (embed, MCP, sync), their D1, Durable Objects and Workers AI bindings, and the parity and certification pipeline do not grow.
+
+Decline, and say in your reply that this is a hobby project:
+
+- new paid services, Workers, bindings, secrets or scheduled jobs;
+- work aimed at audience growth, accounts, sign-ups or anything else that leaves the owner owing users;
+- large refactors and redesigns.
+
+The owner can still ask for any of these. Do one only when the request says it overrides this section.
+
 ## Start here
 
 ```bash
