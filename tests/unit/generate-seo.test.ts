@@ -27,6 +27,7 @@ import {
   buildSitemapChunk,
   buildSitemapEntries,
   formatPresetCountClaim,
+  GITHUB_SOCIAL_PREVIEW_CANVAS,
   getSitemapRouteSpecs,
   layoutOgTiles,
   OG_FRAME_DIR,
@@ -159,6 +160,28 @@ describe('generate-seo social cards', () => {
         expect(adjacent).toBe(false);
       }
     }
+  });
+
+  // Unfurlers show this card cropped; a tile cut by the edge reads as broken.
+  test('the GitHub social preview keeps every tile inside its edges', () => {
+    const { width, height, tiles } = GITHUB_SOCIAL_PREVIEW_CANVAS;
+    expect([width, height]).toEqual([1280, 640]);
+    expect(new Set(tiles.map((tile) => tile.frame)).size).toBe(tiles.length);
+    for (const { x, y, width: w = 0, height: h = 0 } of tiles) {
+      expect(x).toBeGreaterThanOrEqual(64);
+      expect(x + w).toBeLessThanOrEqual(width - 64);
+      expect(y).toBeGreaterThanOrEqual(48);
+      expect(y + h).toBeLessThanOrEqual(height - 48);
+    }
+    const svg = buildOgSvg({
+      headline: ['MilkDrop,'],
+      subline: ['Open source.'],
+      eyebrow: 'Music visualizer',
+      ariaLabel: 'MilkDrop',
+      canvas: GITHUB_SOCIAL_PREVIEW_CANVAS,
+    });
+    expect(svg).toContain('viewBox="0 0 1280 640"');
+    expect(svg).not.toContain('ground-fade)');
   });
 
   test('the committed SVG points at the frame files beside it', () => {

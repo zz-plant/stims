@@ -231,7 +231,14 @@ const TILE_COLUMNS: OgColumn[] = [
   },
 ];
 
-type OgTile = { x: number; y: number; frame: string };
+type OgTile = {
+  x: number;
+  y: number;
+  frame: string;
+  /** Tile size; the wall's 16:9 TILE_W x TILE_H when left out. */
+  width?: number;
+  height?: number;
+};
 
 export function layoutOgTiles(columns: OgColumn[] = TILE_COLUMNS): OgTile[] {
   const tiles: OgTile[] = [];
@@ -261,14 +268,80 @@ function buildOgTileWall(tiles: OgTile[], frameHref: OgFrameHref) {
   return tiles
     .map(
       (
-        { x, y, frame },
+        { x, y, frame, width = TILE_W, height = TILE_H },
         index,
-      ) => `<clipPath id="tile-${index}"><rect x="${x}" y="${y}" width="${TILE_W}" height="${TILE_H}" rx="6" /></clipPath>
-    <image href="${escapeXml(frameHref(frame))}" x="${x}" y="${y}" width="${TILE_W}" height="${TILE_H}" preserveAspectRatio="xMidYMid slice" clip-path="url(#tile-${index})" />
-    <rect x="${x + 0.5}" y="${y + 0.5}" width="${TILE_W - 1}" height="${TILE_H - 1}" rx="6" fill="none" stroke="rgba(255,255,255,0.1)" />`,
+      ) => `<clipPath id="tile-${index}"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="6" /></clipPath>
+    <image href="${escapeXml(frameHref(frame))}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" clip-path="url(#tile-${index})" />
+    <rect x="${x + 0.5}" y="${y + 0.5}" width="${width - 1}" height="${height - 1}" rx="6" fill="none" stroke="rgba(255,255,255,0.1)" />`,
     )
     .join('\n    ');
 }
+
+/**
+ * The canvas a card is drawn on and the tiles on its right. The site's
+ * og:image cards are 1200x630 with the wall bleeding off the edge, faded
+ * under the words.
+ */
+export type OgCanvas = {
+  width: number;
+  height: number;
+  tiles: OgTile[];
+  /** Fade the ground over the tiles, for a wall that runs under the words. */
+  fadeTiles: boolean;
+};
+
+const OG_CARD_CANVAS: OgCanvas = {
+  width: ogWidth,
+  height: ogHeight,
+  tiles: layoutOgTiles(),
+  fadeTiles: true,
+};
+
+// GitHub's social preview is 2:1 at 1280x640, and Slack, LinkedIn and
+// iMessage unfurl it cropped, trimming about 30px off each side. A tile cut
+// by the canvas edge reads there as a broken crop, so this card keeps its
+// frames in a grid inside the edges, clear of the words: 64px from the sides,
+// as the text is, and between the eyebrow's cap height and the footer's
+// baseline top to bottom. All six frames differ, so no two neighbours match.
+export const GITHUB_SOCIAL_PREVIEW_WIDTH = 1280;
+export const GITHUB_SOCIAL_PREVIEW_HEIGHT = 640;
+const GITHUB_GRID = {
+  columns: 2,
+  right: GITHUB_SOCIAL_PREVIEW_WIDTH - OG_MARGIN,
+  top: 108,
+  bottom: 571,
+  tileWidth: 240,
+  gap: 14,
+  frames: [
+    FRAME.strangelyDynamic,
+    FRAME.eightySix,
+    FRAME.threeLayers,
+    FRAME.polyevolution,
+    FRAME.glowsticks,
+    FRAME.astral,
+  ],
+};
+
+function layoutGithubSocialPreviewTiles(): OgTile[] {
+  const { columns, right, top, bottom, tileWidth, gap, frames } = GITHUB_GRID;
+  const rows = Math.ceil(frames.length / columns);
+  const tileHeight = Math.round((bottom - top - gap * (rows - 1)) / rows);
+  const left = right - columns * tileWidth - (columns - 1) * gap;
+  return frames.map((frame, index) => ({
+    x: left + (index % columns) * (tileWidth + gap),
+    y: top + Math.floor(index / columns) * (tileHeight + gap),
+    frame,
+    width: tileWidth,
+    height: tileHeight,
+  }));
+}
+
+export const GITHUB_SOCIAL_PREVIEW_CANVAS: OgCanvas = {
+  width: GITHUB_SOCIAL_PREVIEW_WIDTH,
+  height: GITHUB_SOCIAL_PREVIEW_HEIGHT,
+  tiles: layoutGithubSocialPreviewTiles(),
+  fadeTiles: false,
+};
 
 export const buildOgSvg = ({
   headline,
@@ -278,6 +351,7 @@ export const buildOgSvg = ({
   eyebrow,
   ariaLabel,
   frameHref = relativeOgFrameHref,
+  canvas = OG_CARD_CANVAS,
 }: {
   /** One entry per line. Two lines at 84px is the design size. */
   headline: string[];
@@ -288,15 +362,19 @@ export const buildOgSvg = ({
   eyebrow: string;
   ariaLabel: string;
   frameHref?: OgFrameHref;
+  canvas?: OgCanvas;
 }) => {
+  const { width, height } = canvas;
+  // A taller canvas centres the same column of words.
+  const dy = (height - ogHeight) / 2;
   const headlineLeading = Math.round(headlineSize * 1.04);
-  const eyebrowY = 118;
+  const eyebrowY = 118 + dy;
   const firstHeadlineY = eyebrowY + 38 + headlineSize * 0.86;
   const lastHeadlineY =
     firstHeadlineY + (headline.length - 1) * headlineLeading;
   const firstSublineY = lastHeadlineY + 70;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(ariaLabel)}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(ariaLabel)}">
   <defs>
     <linearGradient id="ground-fade" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="${OG_GROUND}" />
@@ -310,12 +388,11 @@ export const buildOgSvg = ({
       <stop offset="1" stop-color="${OG_CORAL}" stop-opacity="0" />
     </radialGradient>
   </defs>
-  <rect width="${ogWidth}" height="${ogHeight}" fill="${OG_GROUND}" />
+  <rect width="${width}" height="${height}" fill="${OG_GROUND}" />
   <g>
-    ${buildOgTileWall(layoutOgTiles(), frameHref)}
+    ${buildOgTileWall(canvas.tiles, frameHref)}
   </g>
-  <rect width="1000" height="${ogHeight}" fill="url(#ground-fade)" />
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#warm)" />
+  ${canvas.fadeTiles ? `<rect width="1000" height="${height}" fill="url(#ground-fade)" />\n  ` : ''}<rect width="${width}" height="${height}" fill="url(#warm)" />
 
   <text x="${OG_MARGIN}" y="${eyebrowY}" font-size="20" font-weight="700" font-family="Space Mono, monospace" letter-spacing="3">${
     eyebrowLead
@@ -335,7 +412,7 @@ export const buildOgSvg = ({
     )
     .join('\n  ')}
 
-  <text x="${OG_MARGIN}" y="566" font-size="24" font-weight="700" fill="${OG_CORAL}" font-family="Space Mono, monospace" letter-spacing="1">toil.fyi</text>
+  <text x="${OG_MARGIN}" y="${566 + dy}" font-size="24" font-weight="700" fill="${OG_CORAL}" font-family="Space Mono, monospace" letter-spacing="1">toil.fyi</text>
 </svg>`;
 };
 
@@ -451,18 +528,6 @@ export async function renderOgPng(
     .png({ palette: true, quality: 90, effort: 10, compressionLevel: 9 })
     .toBuffer();
 }
-
-/**
- * GitHub's social preview is 2:1 at 1280x640, not the 1.9:1 of og:image. The
- * same card is re-framed rather than re-laid-out: a 1200x600 window through
- * its middle (y 15-615) keeps the eyebrow and footer and trims only the
- * bleeding tile wall, scaled up to 1280 wide.
- */
-export const toGithubSocialPreviewSvg = (cardSvg: string) =>
-  cardSvg.replace(
-    `width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}"`,
-    'width="1280" height="640" viewBox="0 15 1200 600"',
-  );
 
 /** Presets on offer, floored to the hundred so the card ages gracefully. */
 export const formatPresetCountClaim = (count: number) =>
@@ -1256,11 +1321,13 @@ export async function buildSeoArtifacts(
       {
         relativePath: GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
         contents: await renderOgPng(
-          toGithubSocialPreviewSvg(
-            buildOgSvg({ ...githubSocialCard, frameHref: inlineFrames }),
-          ),
+          buildOgSvg({
+            ...githubSocialCard,
+            frameHref: inlineFrames,
+            canvas: GITHUB_SOCIAL_PREVIEW_CANVAS,
+          }),
           rootDir,
-          { width: 1280 },
+          { width: GITHUB_SOCIAL_PREVIEW_WIDTH },
         ),
       },
       {
