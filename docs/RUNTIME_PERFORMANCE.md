@@ -465,6 +465,76 @@ The tracked change records the spike. The four-preset result qualifies
 local promotion for the issue's separate compiler-pass evaluation on a
 12-preset sample.
 
+## 2026-11-11 Local promotion in the JIT (#1642)
+
+Local promotion is now a compiler pass in `expression-jit.ts`. A variable is
+kept in a JS local for the length of one call when no call can tell the
+difference:
+
+- every read follows a write made earlier in the same call, on every path (a
+  write inside a `loop` or `while` body counts only for the rest of that body);
+- a statement outside any loop writes it;
+- every read spells it the way the store does (`SAM` reads `e["SAM"]` before
+  `e["sam"]`);
+- no assignment nested inside an expression writes it;
+- it is not a `q`/`t` register or a buffer.
+
+Each local is stored back once, through the statement path's own store, when
+the call ends. The env, locals, state and register bank therefore hold the
+same values after every call as before. Of the 10,307 program blocks in the
+1,787-preset catalog, 8,846 promote at least one variable. Each per-point body
+of `shifter-glassworms-flare` promotes 28, where the spike picked 21 by hand.
+
+**Output.** Old and new JIT gave the same values on every preset in the
+catalog: 30 frames each on both backends, 107,220 frame digests. 129 presets
+differed only in key order. A call now creates a promoted variable's key at
+its end rather than at its first write, so the first frame can enumerate keys
+in a different order. Sorting keys made all 7,740 of their digests match. The
+inspector sorts its rows by name, and trace capture sorts its keys. `lab:replay`
+traces recorded on main replayed bit for bit on the change: 240 frames each
+of the 12 presets below. Against the interpreter, 198 of 199 sampled presets
+(every ninth) matched exactly on both backends over 40 frames. The exception,
+`stahlregen-benski-fvese-geiss-rovastar-voyager-spark-call-jester-s-smashing-atoms-rmx-1`,
+already differs from the interpreter on its WebGL mesh under main's JIT, and
+the new JIT matches main's there.
+
+**Time.** Production builds of `d34630ca` with and without the pass, headless
+Chromium 158 on WebGL through ANGLE Metal, Apple M1 Max, CDP 6× CPU throttle,
+1280×720, demo audio, balanced quality step (2) locked. Each trial used a
+fresh browser context, waited 2.5 s, then read the runtime tracker's mean over
+its last 120 frames. Three rounds put each condition in each position once per
+preset. `rediculator-qrem-glob` logged a console error on every build, so the
+runner rejected its trials and 11 presets remain.
+
+Simulation phase, median of three trials in milliseconds, with min–max in
+brackets:
+
+| Preset | Before | After | Change |
+| --- | ---: | ---: | ---: |
+| `schglasmia-danqueer` | 25.70 [25.64–26.87] | 18.13 [17.31–18.55] | −29.5% |
+| `eos-glowsticks-v2-03-music` | 12.25 [11.88–12.31] | 8.59 [8.11–8.84] | −29.9% |
+| `shifter-glassworms-flare` | 9.74 [9.14–10.08] | 7.06 [6.94–7.37] | −27.6% |
+| `flexi-age-of-shading-chaos` | 14.11 [13.35–14.38] | 10.32 [9.98–10.43] | −26.9% |
+| `eos-apocalypse` | 20.09 [19.92–20.47] | 15.08 [14.93–15.29] | −24.9% |
+| `shifter-digi` | 22.22 [21.82–22.27] | 16.90 [16.03–17.66] | −24.0% |
+| `martin-the-bridge-of-khazad-dum` | 10.31 [9.73–10.41] | 9.24 [9.09–9.52] | −10.4% |
+| `eos-phat-magnetosphere-13-pulsar` | 7.34 [7.23–7.54] | 6.72 [6.38–6.82] | −8.4% |
+| `krash-rovastar-cerebral-demons-stars` | 11.04 [10.95–12.18] | 10.27 [10.04–10.82] | −7.1% |
+| `martin-journey-into-space` | 6.13 [5.90–6.52] | 5.96 [5.90–6.29] | −2.7% |
+| `shifter-curlique` | 6.93 [6.86–7.32] | 7.08 [6.86–7.17] | +2.2% |
+
+The median reduction is 24.0%, against the issue's 15% gate. The six presets
+with the heaviest per-point or per-pixel code in the sample each lost 24–30%,
+and their mean frame work fell by 9.9–14.2%. Render time did not move: its
+medians stayed within 3.2% either way on every preset. `shifter-curlique` and
+`martin-journey-into-space` run seven per-pixel statements or fewer and no
+custom waves, and their before and after ranges overlap.
+
+What this does not establish: any device other than this one, the WebGPU
+backend's CPU time, or unthrottled frames, where these presets are display
+capped. Delivered frame rate rose about 10% on the heavy six, but every
+condition here sits below 30 fps, so that number is about this throttle.
+
 ## 2026-11-04 WebGPU platform features (#1541)
 
 Each item in [#1541](https://github.com/zz-plant/stims/issues/1541) gets a decision
@@ -764,6 +834,9 @@ bun run lab:vm-tier-bench -- \
 - `tests/unit/milkdrop-program-jit.test.ts` asserts that aliased environment
   and local scopes receive one ordinary property write, while the bundled
   program differential tests retain interpreter/JIT equivalence.
+- `packages/milkdrop-toolchain/tests/milkdrop-program-jit.test.ts` runs each
+  local-promotion rule against the interpreter tier, and fails if the rule is
+  removed or promoted variables go back to the env.
 - `packages/milkdrop-toolchain/tests/eel-csp-fallback.test.ts` compares the JIT and interpreter-only
   paths across seeded programs.
 - `tests/unit/adaptive-quality-controller.test.ts` pins the independence of a
