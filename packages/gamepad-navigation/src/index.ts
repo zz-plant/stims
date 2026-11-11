@@ -19,6 +19,19 @@
  * too.
  */
 
+import {
+  getDirectionFromKey,
+  isBackKey,
+  isDirectionalKey,
+  isEnterLikeKey,
+} from './keys.ts';
+
+export {
+  shouldHandleBackKey,
+  shouldHandleDirectionalKey,
+  shouldHandleEnterLikeKey,
+} from './keys.ts';
+
 export type GamepadNavigationOptions = {
   /** Which elements focus can land on. Defaults to `DEFAULT_FOCUSABLE_SELECTOR`. */
   focusableSelector?: string;
@@ -468,70 +481,6 @@ const restoreLastFocusedElement = (
 export const shouldDispatchEscapeFallback = (originKey: string) =>
   originKey !== 'Escape';
 
-const DIRECTIONAL_KEYS = {
-  ArrowUp: 'up',
-  ArrowDown: 'down',
-  ArrowLeft: 'left',
-  ArrowRight: 'right',
-  Up: 'up',
-  Down: 'down',
-  Left: 'left',
-  Right: 'right',
-} as const satisfies Record<string, Exclude<FocusDirection, 'next' | 'prev'>>;
-
-const BACK_KEYS = new Set([
-  'Escape',
-  'Backspace',
-  'GoBack',
-  'BrowserBack',
-  'Back',
-  'Exit',
-  'MediaBack',
-]);
-const ENTER_KEYS = new Set([
-  'Enter',
-  'NumpadEnter',
-  'OK',
-  'Select',
-  'Return',
-  'Spacebar',
-]);
-const LEGACY_BACK_KEY_CODES = new Set([8, 27, 166, 461, 10009]);
-const LEGACY_ENTER_KEY_CODES = new Set([13, 32, 23]);
-
-const isDirectionalKey = (
-  key: string,
-): key is keyof typeof DIRECTIONAL_KEYS => {
-  return key in DIRECTIONAL_KEYS;
-};
-
-const getDirectionFromKey = (
-  key: keyof typeof DIRECTIONAL_KEYS,
-): Exclude<FocusDirection, 'next' | 'prev'> => DIRECTIONAL_KEYS[key];
-
-const isBackKey = (event: KeyboardEvent) => {
-  if (BACK_KEYS.has(event.key)) {
-    return true;
-  }
-  const keyCode = event.keyCode || event.which || 0;
-  return LEGACY_BACK_KEY_CODES.has(keyCode);
-};
-
-const isRemoteLegacyKeyEvent = (event: KeyboardEvent) => {
-  return event.key === 'Unidentified';
-};
-
-const isEnterLikeKey = (event: KeyboardEvent) => {
-  if (ENTER_KEYS.has(event.key)) {
-    return true;
-  }
-  if (!isRemoteLegacyKeyEvent(event)) {
-    return false;
-  }
-  const keyCode = event.keyCode || event.which || 0;
-  return LEGACY_ENTER_KEY_CODES.has(keyCode);
-};
-
 /** Backspace deletes in a field; the remote's own back keys do not. */
 const isDeleteKey = (event: KeyboardEvent) =>
   event.key === 'Backspace' || (event.keyCode || event.which || 0) === 8;
@@ -581,10 +530,6 @@ const fieldKeepsKey = (element: HTMLElement, event: KeyboardEvent) => {
     direction === 'up' || direction === 'left',
   );
 };
-
-export const shouldHandleBackKey = (event: KeyboardEvent) => isBackKey(event);
-export const shouldHandleEnterLikeKey = (event: KeyboardEvent) =>
-  isEnterLikeKey(event);
 
 export const initGamepadNavigation = (
   options: GamepadNavigationOptions = {},

@@ -1,3 +1,8 @@
+import {
+  shouldHandleBackKey,
+  shouldHandleDirectionalKey,
+} from 'gamepad-navigation/keys';
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
@@ -101,6 +106,46 @@ export function registerEscapeHandler(handler: () => void): () => void {
       escapeListenerAttached = false;
     }
   };
+}
+
+/**
+ * Keydowns a modal dialog let through for the TV remote layer, which the
+ * shell's shortcuts must not act on.
+ */
+const remoteKeysFromDialogs = new WeakSet<Event>();
+
+/**
+ * The `onKeyDown` of a modal dialog's card.
+ *
+ * Keys stop at the card so none of them fires a shell shortcut underneath
+ * it: typing a new binding in the shortcuts dialog must not also run the
+ * action it is bound to. Three kinds are let through:
+ *
+ * - Escape, to the document listener that closes the innermost overlay.
+ * - The arrows, and the back keys other than Escape, to the gamepad
+ *   navigation layer on `window`. On a smart TV the remote's D-pad and Back
+ *   arrive as these keys. Stopped here, the Back key could not close the
+ *   dialog and the D-pad could not move focus in it. They are recorded, and
+ *   `isRemoteKeyFromDialog` tells the shell's shortcut listener to leave
+ *   them alone: ArrowLeft and Backspace are bound to Previous.
+ */
+export function containDialogKeydown(event: {
+  key: string;
+  nativeEvent: KeyboardEvent;
+  stopPropagation: () => void;
+}): void {
+  if (event.key === 'Escape') return;
+  const native = event.nativeEvent;
+  if (shouldHandleDirectionalKey(native) || shouldHandleBackKey(native)) {
+    remoteKeysFromDialogs.add(native);
+    return;
+  }
+  event.stopPropagation();
+}
+
+/** True for a keydown `containDialogKeydown` let through for the remote. */
+export function isRemoteKeyFromDialog(event: Event): boolean {
+  return remoteKeysFromDialogs.has(event);
 }
 
 /**

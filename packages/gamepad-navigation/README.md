@@ -178,10 +178,13 @@ The layer moves focus off a slider instead of stepping it, so a slider cannot be
 | ------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `initGamepadNavigation(options?)`     | Installs the listeners and returns the function that removes them.                          |
 | `shouldHandleBackKey(event)`          | Whether a keydown is a back key, by name or by legacy key code.                             |
+| `shouldHandleDirectionalKey(event)`   | Whether a keydown is an arrow key the keyboard layer moves focus with.                      |
 | `shouldHandleEnterLikeKey(event)`     | Whether a keydown is Enter or OK. Key codes count only when the key reads `Unidentified`.   |
 | `shouldDispatchEscapeFallback(key)`   | Whether a back key should dispatch Escape: every key but `Escape` itself.                   |
 | `DEFAULT_FOCUSABLE_SELECTOR`          | The default value of `focusableSelector`.                                                   |
 | `GamepadNavigationOptions`, `FocusDirection` | Types.                                                                               |
+
+The three `shouldHandle…Key` predicates are also exported from `gamepad-navigation/keys`, which does not load the rest of the layer. A page that defers the layer can use them to let those keys through to it.
 
 | Option                 | Default                         | Purpose                                                                |
 | ---------------------- | ------------------------------- | ---------------------------------------------------------------------- |
