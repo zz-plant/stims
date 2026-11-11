@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { containDialogKeydown } from '../core/modal-utils.ts';
 import { DialogCloseButton } from './DialogCloseButton.tsx';
 import {
   useBottomOverlaySignal,
@@ -124,11 +125,7 @@ export function ManageSetsDialog({
         aria-label="Manage Preset Sets"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key !== 'Escape') {
-            e.stopPropagation();
-          }
-        }}
+        onKeyDown={containDialogKeydown}
       >
         <div className="stims-shell__dialog-head">
           <h2 className="stims-shell__dialog-title">Preset Sets</h2>

@@ -58,6 +58,8 @@ const ALLOWED: Record<string, string> = {
     'MILKDROP_DOC_LOOKUP and the completion arrays derive once at module load from the constant builtin-docs table; they are fixed lookup tables, not growth containers.',
   'src/js/milkdrop/overlay/editor-language.ts':
     'The SHADER_* word sets are fixed vocabulary literals built once at module load (the GLSL/HLSL keywords, types, stage variables, and intrinsics the highlighter recognises) — lookup tables derived from the shader translation layer, never grown at runtime.',
+  'packages/gamepad-navigation/src/keys.ts':
+    'BACK_KEYS, ENTER_KEYS and the two legacy key-code sets are fixed literals of remote key names and codes, built once at module load — lookup tables, never written to.',
   'src/js/core/services/stage-utilities.ts':
     'The only container is the subscription set for useSyncExternalStore: one entry per mounted StageUtilitiesOverlay, removed by the unsubscribe the hook returns on unmount — bounded by the component lifecycle, not accumulation.',
 };

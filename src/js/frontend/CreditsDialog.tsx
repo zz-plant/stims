@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+import { containDialogKeydown } from '../core/modal-utils.ts';
 import { CreditsPanel } from './CreditsPanel.tsx';
 import { DialogCloseButton } from './DialogCloseButton.tsx';
 import {
@@ -64,14 +65,7 @@ export function CreditsDialog({
         // the sheet opens at its heading rather than scrolled to a control.
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          // Escape is deliberately let through to the document listener that
-          // closes the innermost overlay; everything else is contained so it
-          // cannot reach the global shortcut handler.
-          if (e.key !== 'Escape') {
-            e.stopPropagation();
-          }
-        }}
+        onKeyDown={containDialogKeydown}
       >
         <div className="stims-shell__dialog-head">
           <h2 className="stims-credits-title">About Stims</h2>

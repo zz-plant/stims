@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { containDialogKeydown } from '../core/modal-utils.ts';
 import {
   availableStageKeyDocs,
   availableStageSignalKeys,
@@ -152,16 +153,7 @@ export function ShortcutsDialog({
         // the sheet opens at its heading rather than scrolled to a control.
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          // Suppress everything else from reaching the global shortcut
-          // listener — typing a new binding while editing must not also fire
-          // the action it is bound to. Escape is deliberately let through, so
-          // it reaches the document listener that closes the innermost
-          // overlay; this dialog is registered there as long as it is open.
-          if (e.key !== 'Escape') {
-            e.stopPropagation();
-          }
-        }}
+        onKeyDown={containDialogKeydown}
       >
         <div className="stims-shell__dialog-head">
           <h2>Shortcuts and gestures</h2>

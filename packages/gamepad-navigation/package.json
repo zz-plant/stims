@@ -38,6 +38,12 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./keys": {
+      "stims-source": "./src/keys.ts",
+      "bun": "./src/keys.ts",
+      "types": "./dist/keys.d.ts",
+      "default": "./dist/keys.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

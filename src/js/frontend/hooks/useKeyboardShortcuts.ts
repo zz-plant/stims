@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { escapeIsClaimed } from '../../core/modal-utils.ts';
+import {
+  escapeIsClaimed,
+  isRemoteKeyFromDialog,
+} from '../../core/modal-utils.ts';
 import { noteActionUse } from '../../core/services/action-telemetry.ts';
 import {
   handleBlackoutKeyDown,
@@ -125,6 +128,10 @@ export function useKeyboardShortcuts({
       // mounts, before any overlay exists, so it runs first; without this a
       // rebound Escape would run its action and dismiss the overlay at once.
       if (event.key === 'Escape' && escapeIsClaimed()) return;
+      // A modal dialog lets the remote's D-pad and Back keys through to the
+      // TV navigation layer on window; they are for that layer, not for the
+      // preset shortcuts behind the dialog.
+      if (isRemoteKeyFromDialog(event)) return;
       const shortcutOverrides = readShortcutOverrides();
       if (
         event.target instanceof HTMLInputElement ||

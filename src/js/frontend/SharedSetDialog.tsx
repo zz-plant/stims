@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { useMemo, useRef, useState } from 'react';
+import { containDialogKeydown } from '../core/modal-utils.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import {
@@ -88,11 +89,7 @@ export function SharedSetDialog({
         aria-label={`Shared Preset Set: ${payload.title}`}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key !== 'Escape') {
-            e.stopPropagation();
-          }
-        }}
+        onKeyDown={containDialogKeydown}
       >
         <div className="stims-shell__dialog-head stims-shell__dialog-head--bordered">
           <h2 className="stims-shell__dialog-title">{payload.title}</h2>
