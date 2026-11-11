@@ -489,3 +489,264 @@ describe('a back press on a native dialog', () => {
     cleanup();
   });
 });
+
+describe('controls whose focus() does nothing', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    document.body.classList.remove('gamepad-active');
+    sessionStorage.clear();
+  });
+
+  /** A first button, a section holding a button, and a last button. */
+  const mount = (section: HTMLElement) => {
+    const first = document.createElement('button');
+    const inside = document.createElement('button');
+    section.append(inside);
+    const last = document.createElement('button');
+    document.body.append(first, section, last);
+    first.focus();
+    return { first, inside, last };
+  };
+
+  test('RB steps past a button under an inert ancestor', async () => {
+    const section = document.createElement('div');
+    section.setAttribute('inert', '');
+    const { last } = mount(section);
+    const cleanup = initGamepadNavigation({ restoreFocus: false });
+    await pressOnPad(PAD_RB);
+    expect(document.activeElement).toBe(last);
+    cleanup();
+  });
+
+  test('RB steps past a section the page made inert from script', async () => {
+    const section = document.createElement('div');
+    const { last } = mount(section);
+    section.inert = true;
+    const cleanup = initGamepadNavigation({ restoreFocus: false });
+    await pressOnPad(PAD_RB);
+    expect(document.activeElement).toBe(last);
+    cleanup();
+  });
+
+  test('RB steps past a button in a disabled fieldset', async () => {
+    const fieldset = document.createElement('fieldset');
+    fieldset.disabled = true;
+    const { last } = mount(fieldset);
+    const cleanup = initGamepadNavigation({ restoreFocus: false });
+    await pressOnPad(PAD_RB);
+    expect(document.activeElement).toBe(last);
+    cleanup();
+  });
+
+  test('a button in the first legend of a disabled fieldset is still reached', async () => {
+    const fieldset = document.createElement('fieldset');
+    fieldset.disabled = true;
+    const legend = document.createElement('legend');
+    const inLegend = document.createElement('button');
+    legend.append(inLegend);
+    fieldset.append(legend);
+    mount(fieldset);
+    const cleanup = initGamepadNavigation({ restoreFocus: false });
+    await pressOnPad(PAD_RB);
+    expect(document.activeElement).toBe(inLegend);
+    cleanup();
+  });
+
+  test('a link in a disabled fieldset is still reached', async () => {
+    const fieldset = document.createElement('fieldset');
+    fieldset.disabled = true;
+    const link = document.createElement('a');
+    link.href = '#help';
+    fieldset.append(link);
+    mount(fieldset);
+    const cleanup = initGamepadNavigation({ restoreFocus: false });
+    await pressOnPad(PAD_RB);
+    expect(document.activeElement).toBe(link);
+    cleanup();
+  });
+});
+
+describe('keys inside a text field', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    document.body.classList.remove('gamepad-active');
+    sessionStorage.clear();
+  });
+
+  /** A button, then the field, then a button, with focus in the field. */
+  const mount = <T extends HTMLElement>(field: T) => {
+    const before = document.createElement('button');
+    const after = document.createElement('button');
+    document.body.append(before, field, after);
+    field.focus();
+    const escapes: string[] = [];
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') escapes.push(event.key);
+    };
+    document.addEventListener('keydown', onEscape);
+    const cleanup = initGamepadNavigation({
+      restoreFocus: false,
+      keyboardNavigation: true,
+    });
+    return {
+      before,
+      after,
+      escapes,
+      cleanup: () => {
+        document.removeEventListener('keydown', onEscape);
+        cleanup();
+      },
+    };
+  };
+
+  const textarea = (value: string, caret: number) => {
+    const field = document.createElement('textarea');
+    field.value = value;
+    field.setSelectionRange(caret, caret);
+    return field;
+  };
+
+  const numberInput = () => {
+    const field = document.createElement('input');
+    field.type = 'number';
+    field.value = '5';
+    return field;
+  };
+
+  const press = (target: HTMLElement, name: string, keyCode = 0) => {
+    const event = new window.KeyboardEvent('keydown', {
+      key: name,
+      keyCode,
+      bubbles: true,
+      cancelable: true,
+    });
+    target.dispatchEvent(event);
+    return event;
+  };
+
+  for (const [label, make] of [
+    ['textarea', () => textarea('abc', 2)],
+    ['number input', numberInput],
+  ] as const) {
+    test(`Backspace in a ${label} is left to delete, not sent back`, () => {
+      const field = make();
+      const { escapes, cleanup } = mount(field);
+      const event = press(field, 'Backspace', 8);
+      expect(event.defaultPrevented).toBeFalse();
+      expect(escapes).toEqual([]);
+      expect(document.activeElement).toBe(field);
+      cleanup();
+    });
+
+    test(`a remote back key in a ${label} still goes back`, () => {
+      const field = make();
+      const { escapes, cleanup } = mount(field);
+      for (const [name, code] of [
+        ['GoBack', 0],
+        ['XF86Back', 10009],
+      ] as const) {
+        expect(press(field, name, code).defaultPrevented).toBeTrue();
+      }
+      expect(escapes).toEqual(['Escape', 'Escape']);
+      cleanup();
+    });
+
+    test(`a real Escape in a ${label} is still claimed`, () => {
+      const field = make();
+      const { cleanup } = mount(field);
+      expect(press(field, 'Escape', 27).defaultPrevented).toBeTrue();
+      cleanup();
+    });
+  }
+
+  test('Backspace in a textarea inside a dialog leaves the dialog open', () => {
+    const dialog = document.createElement('dialog');
+    const field = textarea('abc', 3);
+    dialog.append(field);
+    document.body.append(dialog);
+    dialog.show();
+    field.focus();
+    const cleanup = initGamepadNavigation({
+      restoreFocus: false,
+      keyboardNavigation: true,
+    });
+    press(field, 'Backspace', 8);
+    expect(dialog.open).toBeTrue();
+    cleanup();
+  });
+
+  test('textarea arrows move the caret while it can move, then move focus', () => {
+    const field = textarea('ab\ncd', 2);
+    const { before, after, cleanup } = mount(field);
+    for (const name of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
+      expect(press(field, name).defaultPrevented).toBeFalse();
+      expect(document.activeElement).toBe(field);
+    }
+    field.setSelectionRange(0, 0);
+    expect(press(field, 'ArrowUp').defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(before);
+
+    field.focus();
+    field.setSelectionRange(5, 5);
+    press(field, 'ArrowRight');
+    expect(document.activeElement).toBe(after);
+    cleanup();
+  });
+
+  test('a selection in a textarea keeps the arrow, which collapses it', () => {
+    const field = textarea('abc', 0);
+    const { cleanup } = mount(field);
+    field.setSelectionRange(0, 3);
+    expect(press(field, 'ArrowLeft').defaultPrevented).toBeFalse();
+    expect(document.activeElement).toBe(field);
+    cleanup();
+  });
+
+  test('a number input keeps Up and Down to step, and leaves on Left and Right', () => {
+    const field = numberInput();
+    const { after, cleanup } = mount(field);
+    expect(press(field, 'ArrowUp').defaultPrevented).toBeFalse();
+    expect(press(field, 'ArrowDown').defaultPrevented).toBeFalse();
+    expect(document.activeElement).toBe(field);
+    expect(press(field, 'ArrowRight').defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(after);
+    cleanup();
+  });
+
+  test('Enter in a textarea is left to make a new line', () => {
+    const field = textarea('abc', 3);
+    const { cleanup } = mount(field);
+    let clicks = 0;
+    field.addEventListener('click', () => clicks++);
+    expect(press(field, 'Enter', 13).defaultPrevented).toBeFalse();
+    expect(clicks).toBe(0);
+    cleanup();
+  });
+
+  test('a single-line text field leaves on Down, and on Left at its start', () => {
+    const field = document.createElement('input');
+    field.value = 'abc';
+    const { before, after, cleanup } = mount(field);
+    field.setSelectionRange(1, 1);
+    expect(press(field, 'ArrowLeft').defaultPrevented).toBeFalse();
+    expect(document.activeElement).toBe(field);
+    press(field, 'ArrowDown');
+    expect(document.activeElement).toBe(after);
+
+    field.focus();
+    field.setSelectionRange(0, 0);
+    press(field, 'ArrowLeft');
+    expect(document.activeElement).toBe(before);
+    cleanup();
+  });
+});
