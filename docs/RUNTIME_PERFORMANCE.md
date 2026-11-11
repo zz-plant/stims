@@ -674,6 +674,56 @@ reinterpreted look is wanted, since the parity captures are sRGB and cannot judg
 it. Re-run `lab:flash-audit` too, because P3 red has a higher luminance coefficient
 than sRGB red (0.2289 against 0.2126) and the flash limits are calibrated on sRGB.
 
+## 2026-11-11 Frame-variable overlays snapshotted the VM every frame
+
+Since #1685 the predictability dial wraps the frame's `variables` in a Proxy
+on every frame, at its default setting of 0.5, for every visitor. The
+breathing and motion overlays do the same when they are on. Each wrapper's
+target was the VM's own variables proxy. After a Proxy's get trap returns, the
+engine asks the target for that key's own descriptor to enforce the Proxy
+invariants. On the VM proxy that runs its `getOwnPropertyDescriptor` trap,
+which builds the whole frame snapshot (state, registers, every wave and shape
+local) once a frame and then a descriptor object on every read. The feedback
+pass reads `q1`–`q32` twice a frame, plus `zoom`, `rot`, `dx` and `dy`,
+through the wrapper.
+
+A CDP profile of the production build on `shifter-curlique` (WebGL, 6× CPU
+throttle) put 21% of page CPU in `getStateSnapshot` and 22% in that trap. The
+three overlays now share one view whose target is an empty object, and its
+traps forward reads, `in` and enumeration to the bag beneath. Reads return the
+same values and enumeration lists the same keys.
+`tests/unit/milkdrop-motion-dampener.test.ts` fails if a read through the
+overlays makes the VM snapshot its state.
+
+Production builds of `d34630ca` with and without the change, headless Chromium
+158 through ANGLE Metal on an Apple M1 Max, 1280×720, demo audio, balanced
+quality step (2) locked, default comfort settings. Each trial used a fresh
+browser context, waited 2.5 s, then read the runtime tracker's mean over its
+last 120 frames. Rounds rotated condition order. Medians in milliseconds:
+
+| Backend, CPU throttle | Presets × trials | Render before → after | Frame work before → after | Delivered fps before → after |
+| --- | --- | --- | --- | --- |
+| WebGL, 6× | 11 × 3 | 21.9–24.3 → 2.3–3.8 (−84 to −90%) | 29.0–49.5 → 8.5–29.5 (−40 to −70%) | 17–27 → 27–58 |
+| WebGPU, 6× | 3 × 4 | 21.8–23.9 → 4.1–5.5 (−76 to −83%) | 24.9–37.9 → 7.0–20.3 (−47 to −74%) | 21–30 → 34–60 |
+| WebGL, 1× | 3 × 4 | 3.0–3.1 → 0.3–0.4 (−88 to −90%) | 4.1–6.1 → 1.4–3.2 (−48 to −67%) | 60 → 60 |
+
+The WebGL 6× sample is `shifter-glassworms-flare`,
+`eos-glowsticks-v2-03-music`, `shifter-curlique`,
+`martin-the-bridge-of-khazad-dum`, `krash-rovastar-cerebral-demons-stars`,
+`martin-journey-into-space`, `eos-apocalypse`, `shifter-digi`,
+`schglasmia-danqueer`, `flexi-age-of-shading-chaos` and
+`eos-phat-magnetosphere-13-pulsar`. A twelfth, `rediculator-qrem-glob`, logs a
+console error on every build, which fails its trials. The other two rows use
+`shifter-curlique`, `eos-glowsticks-v2-03-music` and `eos-apocalypse`. The
+cost barely varied by preset: about 2.7 ms of render time a frame unthrottled,
+and 17–21 ms at 6× on either backend. It weighed most on light presets. The
+frame work of `shifter-curlique`, the first-run preset, fell by two thirds or
+more in all three rows.
+
+What this does not establish: any device other than this one. Unthrottled, all
+three presets were display capped at 60 fps before and after, so the 1× row
+shows headroom rather than a frame-rate change.
+
 ## Reproduce a tier
 
 The runner builds and serves production output by default. Run the same preset
@@ -732,6 +782,8 @@ bun run lab:vm-tier-bench -- \
   app/Worker build.
 - `tests/unit/loading-screen.test.ts` pins the static loader outside the React
   root and its transition-driven handoff into the app shell.
+- `tests/unit/milkdrop-motion-dampener.test.ts` reads through all three
+  comfort overlays on a real VM and fails if that snapshots the VM's state.
 
 Run `bun run verify --changed` during iteration and `bun run check` before
 committing runtime changes. Source inspection or a successful browser load
