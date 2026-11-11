@@ -648,6 +648,128 @@ describe('compiled milkdrop programs', () => {
   });
 });
 
+describe('local promotion', () => {
+  // The JIT keeps a variable in a JS local for the length of a call when
+  // every read follows a write made earlier in that call, and stores it back
+  // once at the end. Each test runs the JIT and the interpreter tier (the CSP
+  // fallback, which stores every assignment as it happens) on their own parse
+  // of the same lines and requires every object to end up identical. Calling
+  // twice stands for consecutive wave samples or mesh vertices, which share
+  // one env object.
+  function runTier(
+    jit: boolean,
+    lines: string[],
+    scopes: RunResult,
+    calls: number,
+  ) {
+    const block = parsedBlock(lines);
+    __setJitAvailableForTests(jit);
+    try {
+      const program = compileMilkdropProgram(block);
+      for (let call = 0; call < calls; call += 1) {
+        program(
+          scopes.env,
+          scopes.state,
+          scopes.registers,
+          scopes.locals,
+          scopes.megabuf,
+          scopes.gmegabuf,
+          makeRandom(),
+        );
+      }
+    } finally {
+      __setJitAvailableForTests(null);
+    }
+    return scopes;
+  }
+
+  /** Per-point and per-pixel shape: one object is both env and locals. */
+  function sharedScopes(extra: Scope = {}): RunResult {
+    const scopes = makeScopes(true);
+    const shared: Scope = { ...scopes.env, ...scopes.locals, ...extra };
+    return { ...scopes, env: shared, locals: shared };
+  }
+
+  function expectTiersAgree(lines: string[], extra: Scope = {}, calls = 1) {
+    const compiled = runTier(true, lines, sharedScopes(extra), calls);
+    const interpreted = runTier(false, lines, sharedScopes(extra), calls);
+    expectSameScopes(compiled, interpreted);
+    return compiled.env;
+  }
+
+  test('a variable read before its first write sees the previous call', () => {
+    const env = expectTiersAgree(['b = a + 1', 'a = b * 2'], {}, 2);
+    // Call one leaves a = 2, so call two reads it: b = 3, a = 6.
+    expect(env.a).toBe(6);
+    expect(env.b).toBe(3);
+  });
+
+  test('a write inside a loop body does not count after the loop', () => {
+    const env = expectTiersAgree(['loop(n, w = 5;);', 'u = w', 'w = 9'], {
+      n: 0,
+      w: 7,
+    });
+    expect(env.u).toBe(7);
+    expect(env.w).toBe(9);
+  });
+
+  test('a variable written only inside a loop that does not run is untouched', () => {
+    const env = expectTiersAgree(['loop(n, w = 5; u = w;);'], { n: 0, w: 7 });
+    expect(env.w).toBe(7);
+    expect('u' in env).toBe(false);
+  });
+
+  test('a read spelled differently from its store sees the stored value', () => {
+    const env = expectTiersAgree(['sam = bass * 2', 'x = SAM + 1']);
+    expect(env.x).toBeCloseTo(2.2);
+  });
+
+  test('an assignment nested in an expression is seen by later reads', () => {
+    const env = expectTiersAgree(['w = 1', 'y = (w = 3) + w']);
+    expect(env.y).toBe(6);
+    expect(env.w).toBe(3);
+  });
+
+  test('q registers and buffers keep their own stores', () => {
+    const env = expectTiersAgree([
+      'q1 = bass',
+      'x = q1 + 1',
+      'megabuf(2) = 5',
+      'y = megabuf(2) + 1',
+    ]);
+    expect(env.q1).toBeCloseTo(0.6);
+    expect(env.megabuf).toBe(5);
+    expect(env.y).toBe(6);
+  });
+
+  test('a promoted variable reaches the env once per call and is never read from it', () => {
+    const lines = ['a = bass', 'a = a * 2', 'a = a + 1', 'x = a'];
+    const scopes = sharedScopes();
+    const reads = new Map<string, number>();
+    const writes = new Map<string, number>();
+    const count = (map: Map<string, number>, key: string | symbol) => {
+      if (typeof key === 'string') map.set(key, (map.get(key) ?? 0) + 1);
+    };
+    const watched = new Proxy(scopes.env, {
+      get(target, key, receiver) {
+        count(reads, key);
+        return Reflect.get(target, key, receiver);
+      },
+      set(target, key, value, receiver) {
+        count(writes, key);
+        return Reflect.set(target, key, value, receiver);
+      },
+    });
+    runTier(true, lines, { ...scopes, env: watched, locals: watched }, 1);
+
+    expect(writes.get('a')).toBe(1);
+    expect(reads.get('a') ?? 0).toBe(0);
+    expect(watched.a).toBeCloseTo(2.2);
+    const interpreted = runTier(false, lines, sharedScopes(), 1);
+    expect({ ...scopes.env }).toEqual({ ...interpreted.env });
+  });
+});
+
 /** A block parsed fresh on every call. compileMilkdropPresetSource caches by
  * source and compileMilkdropProgram memoises per block, so a block from
  * blockFromSource would hand the interpreter tier the JIT's function. */

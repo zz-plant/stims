@@ -143,9 +143,14 @@ type CompileContext = {
   cseEligible: ReadonlySet<string>;
   /** Iterations between wall-clock deadline checks (see deadlineGuard). */
   deadlineInterval: number;
+  /** Env key → JS local for the variables {@link collectPromotedLocals}
+   * proved are written before every read. Empty for the CSP fallback's
+   * consumers and for blocks with nothing to promote. */
+  promoted: ReadonlyMap<string, string>;
 };
 
 const EMPTY_CSE_ELIGIBLE: ReadonlySet<string> = new Set();
+const NO_PROMOTED_LOCALS: ReadonlyMap<string, string> = new Map();
 
 type IdentifierReadInfo = {
   identity: string;
@@ -198,6 +203,141 @@ function identifierReadInfo(
   }
   identifierReadCache.set(node.name, info);
   return info;
+}
+
+/** Every env key a store to `target` could be seen through: the spelling the
+ * store writes, its lowercase form, and that form's alias. */
+function storeKeys(target: string): string[] {
+  const normalized = target.toLowerCase();
+  const aliased = aliasMap[normalized] || normalized;
+  return [target, normalized, aliased];
+}
+
+/**
+ * Local promotion: the variables of a block that can live in JS `let`
+ * bindings for the length of one call instead of in the env object.
+ *
+ * Per-point and per-pixel programs run once per wave sample or mesh vertex
+ * against an env object holding the frame's locals over the signal env.
+ * That object is in dictionary mode, so each `e["sam"]` read and each store
+ * is a hash lookup, and a preset's private temporaries are read and written
+ * many times per call. The #1642 spike measured 35–38% less simulation time
+ * on the two custom-wave presets it tried when those temporaries were locals.
+ *
+ * A variable qualifies when no call can observe the difference:
+ *
+ * - Every read follows a write made earlier in the same call, on every path.
+ *   A read before the first write would see the previous vertex's value, the
+ *   frame's, or a signal from the env's prototype, and those live in the env.
+ *   Writes inside a `loop`/`while` body count only for the rest of that body,
+ *   because the body may run zero times; the loop condition and count are
+ *   checked against what was written before the loop.
+ * - A statement outside any loop writes it, so the local holds a value from
+ *   this call when the call ends.
+ * - Every read spells it exactly as the store does. A read like `SAM`
+ *   checks `e["SAM"]` before `e["sam"]`, which a local cannot reproduce.
+ * - No assignment nested inside an expression writes it, under any spelling.
+ *   Those store through {@link compileStoreExpression} mid-expression.
+ * - It is not a `q`/`t` register or a buffer, which store elsewhere.
+ *
+ * Each promoted local is stored back once when the call ends, with the
+ * statement path's own store, so the env, locals, state and register bank
+ * hold exactly what they held before promotion. Only the stores between the
+ * first write and the last, and every read, stay off the env.
+ *
+ * Returned in the order of each variable's first write.
+ */
+function collectPromotedLocals(block: MilkdropProgramBlock): string[] {
+  const unsafe = new Set<string>();
+  const written = new Set<string>();
+  const order: string[] = [];
+
+  const checkReads = (
+    root: MilkdropExpressionNode | undefined,
+    defined: ReadonlySet<string>,
+  ) => {
+    if (!root) return;
+    const stack: MilkdropExpressionNode[] = [root];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      if (!node) continue;
+      switch (node.type) {
+        case 'literal':
+          break;
+        case 'identifier': {
+          const { readKeys } = identifierReadInfo(node);
+          const key = readKeys[0];
+          if (readKeys.length !== 1 || key === undefined) {
+            for (const readKey of readKeys) unsafe.add(readKey);
+          } else if (!defined.has(key)) {
+            unsafe.add(key);
+          }
+          break;
+        }
+        case 'unary':
+          stack.push(node.operand);
+          break;
+        case 'binary':
+          if (node.operator === '=') {
+            if (node.left.type === 'identifier') {
+              for (const key of storeKeys(node.left.name)) unsafe.add(key);
+            } else {
+              stack.push(node.left);
+            }
+          } else {
+            stack.push(node.left);
+          }
+          stack.push(node.right);
+          break;
+        case 'call':
+          for (const arg of node.args) stack.push(arg);
+          break;
+      }
+    }
+  };
+
+  const visit = (
+    statements: readonly MilkdropCompiledStatement[],
+    defined: Set<string>,
+    topLevel: boolean,
+  ) => {
+    for (const statement of statements) {
+      if (!statement) continue;
+      if (statement.control) {
+        checkReads(statement.expression, defined);
+        checkReads(statement.control.count, defined);
+        checkReads(statement.control.condition, defined);
+        visit(statement.control.body, new Set(defined), false);
+        continue;
+      }
+      checkReads(statement.expression, defined);
+      checkReads(statement.targetExpression, defined);
+      const target = statement.target;
+      if (
+        target === 'megabuf' ||
+        target === 'gmegabuf' ||
+        REGISTER_PATTERN.test(target.toLowerCase())
+      ) {
+        continue;
+      }
+      // A store reaches the env under the target's other spellings too
+      // (see invalidateCseReads); promote only a target that is its own
+      // canonical key, so the local and the env key are one variable.
+      const keys = storeKeys(target);
+      if (keys.some((key) => key !== target)) {
+        for (const key of keys) unsafe.add(key);
+        continue;
+      }
+      defined.add(target);
+      if (topLevel && !written.has(target)) {
+        written.add(target);
+        order.push(target);
+      }
+    }
+  };
+
+  visit(block.statements, new Set(), true);
+  return order.filter((key) => !unsafe.has(key));
 }
 
 /** Drops cached reads whose value a store to `target` could have changed.
@@ -278,6 +418,12 @@ function compileNode(
       return Object.is(node.value, -0) ? '-0.0' : String(node.value);
     case 'identifier': {
       const info = identifierReadInfo(node);
+      if (context.promoted.size > 0 && info.readKeys.length === 1) {
+        const local = context.promoted.get(info.readKeys[0] as string);
+        if (local) {
+          return local;
+        }
+      }
       if (!context.cseEligible.has(info.identity)) {
         return info.read;
       }
@@ -485,17 +631,34 @@ function compileStore(
   }
 
   invalidateCseReads(context, target);
+  const local = context.promoted.get(target);
+  if (local) {
+    return `${local} = _v;`;
+  }
+  return compileVariableStore(target, '_v');
+}
+
+/** The statement path's store of `valueVar` into `target`, without the `e`
+ * mirror: the register bank for `q`, otherwise the caller's locals when a
+ * local scope is active, else the register bank (`t`) or preset state. */
+function compileVariableStore(target: string, valueVar: string) {
   const rawKey = JSON.stringify(target);
   const normalized = target.toLowerCase();
   const registerMatch = normalized.match(REGISTER_PATTERN);
 
   if (registerMatch?.[1] === 'q') {
-    return `r[${JSON.stringify(normalized)}] = _v;`;
+    return `r[${JSON.stringify(normalized)}] = ${valueVar};`;
   }
   if (registerMatch) {
-    return `if (l !== null) { l[${rawKey}] = _v; } else { r[${JSON.stringify(normalized)}] = _v; }`;
+    return `if (l !== null) { l[${rawKey}] = ${valueVar}; } else { r[${JSON.stringify(normalized)}] = ${valueVar}; }`;
   }
-  return `if (l !== null) { l[${rawKey}] = _v; } else { s[${rawKey}] = _v; }`;
+  return `if (l !== null) { l[${rawKey}] = ${valueVar}; } else { s[${rawKey}] = ${valueVar}; }`;
+}
+
+/** The `e` mirror the statement path adds after every non-buffer, non-`q`
+ * store (see compileStatementSource). */
+function compileEnvMirror(target: string, valueVar: string) {
+  return `if (e !== l) { e[${JSON.stringify(target)}] = ${valueVar}; }`;
 }
 
 const MILKDROP_LOOP_ITERATION_CAP = 2_097_152;
@@ -623,6 +786,10 @@ function compileStatementSource(
   body.push('if (!Number.isFinite(_v)) { _v = 0; }');
   body.push(compileStore(statement, context));
   const target = statement.target;
+  if (context.promoted.has(target)) {
+    // The local is the variable until the epilogue stores it back.
+    return;
+  }
   const registerMatch = target.toLowerCase().match(REGISTER_PATTERN);
   if (
     target === 'megabuf' ||
@@ -631,7 +798,7 @@ function compileStatementSource(
   ) {
     body.push(`e[${JSON.stringify(target)}] = _v;`);
   } else {
-    body.push(`if (e !== l) { e[${JSON.stringify(target)}] = _v; }`);
+    body.push(compileEnvMirror(target, '_v'));
   }
 }
 
@@ -639,6 +806,10 @@ function compileProgramSource(
   block: MilkdropProgramBlock,
   rngMode: MilkdropProgramRngMode,
 ) {
+  const promotedKeys = collectPromotedLocals(block);
+  const promoted = new Map(
+    promotedKeys.map((key, index) => [key, `_p${index}`] as const),
+  );
   const context: CompileContext = {
     temporaries: [],
     rngMode,
@@ -646,6 +817,7 @@ function compileProgramSource(
     cse: new Map(),
     cseEligible: EMPTY_CSE_ELIGIBLE,
     deadlineInterval: deadlineCheckInterval(block),
+    promoted: promoted.size > 0 ? promoted : NO_PROMOTED_LOCALS,
   };
   const body: string[] = [];
 
@@ -656,7 +828,20 @@ function compileProgramSource(
     compileStatementSource(statement, context, body);
   }
 
-  const declarations = ['_v', ...context.temporaries];
+  // Store each promoted local back exactly as its statements would have, so
+  // every object the call can reach ends it holding the same values.
+  const promotedEpilogue = [...promoted]
+    .map(
+      ([key, local]) =>
+        `${compileVariableStore(key, local)} ${compileEnvMirror(key, local)}`,
+    )
+    .join('\n');
+
+  const declarations = [
+    '_v',
+    ...context.temporaries,
+    ...[...promoted.values()].map((local) => `${local} = 0`),
+  ];
   // `_g` counts this call's iterations across every loop in it; `_gl` is its
   // limit, the per-call cap or the shared budget's remainder if smaller.
   // `_dl` is the wall-clock deadline (0 = none) and `_dx` the shared stop flag
@@ -682,7 +867,7 @@ function compileProgramSource(
     rngPrologue = `${EEL_RNG_JIT_STATE} = rng.s;`;
     rngEpilogue = `rng.s = ${EEL_RNG_JIT_STATE};`;
   }
-  return `"use strict"; var ${declarations.join(', ')}; ${rngPrologue} ${body.join('\n')} ${rngEpilogue} ${loopEpilogue}`;
+  return `"use strict"; var ${declarations.join(', ')}; ${rngPrologue} ${body.join('\n')} ${promotedEpilogue} ${rngEpilogue} ${loopEpilogue}`;
 }
 
 const compiledPrograms = new WeakMap<
