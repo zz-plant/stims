@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { isHiddenTabSuspendingFrames } from '../../src/js/core/hidden-tab-policy.ts';
 import {
   type AgentCoreSnapshot,
@@ -36,7 +39,10 @@ const CATALOG = [
   'rovastar-parallel-universe',
 ];
 
-function makeProviders(overrides: Partial<AgentCoreSnapshot> = {}) {
+function makeProviders(
+  overrides: Partial<AgentCoreSnapshot> = {},
+  editorSource = 'zoom=1\nrot=0',
+) {
   const calls = {
     selectPreset: [] as string[],
     setField: [] as Array<[string, number]>,
@@ -60,7 +66,7 @@ function makeProviders(overrides: Partial<AgentCoreSnapshot> = {}) {
           : null,
     getPresetIds: () => CATALOG,
     setField: (key, value) => calls.setField.push([key, value]),
-    getEditorSource: () => 'zoom=1\nrot=0',
+    getEditorSource: () => editorSource,
     applyEditorSource: async (source) => {
       calls.applyEditorSource.push(source);
       if (source.includes('superseded')) throw new Error('superseded');
@@ -92,8 +98,11 @@ afterEach(() => {
   cleanup = null;
 });
 
-function install(overrides: Partial<AgentCoreSnapshot> = {}) {
-  const { providers, calls } = makeProviders(overrides);
+function install(
+  overrides: Partial<AgentCoreSnapshot> = {},
+  editorSource?: string,
+) {
+  const { providers, calls } = makeProviders(overrides, editorSource);
   cleanup = installAgentStateGlobal(providers);
   const agent = window.__stims_agent;
   if (!agent)
@@ -160,6 +169,48 @@ describe('run(): edit-source', () => {
     expect(result.ok).toBe(true);
     expect(calls.applyEditorSource).toEqual(['zoom=1\nrot=0\nzoom=1.2']);
     expect(result.editor).toMatchObject({ dirty: true, errorCount: 0 });
+  });
+
+  // The formatter writes shader sections last, and the parser reads every
+  // line after a [warp_shader]/[comp_shader] header as shader text: appended
+  // at the very end, this line compiled with no errors and did nothing.
+  test('append on a preset ending in shader sections joins its per-frame program', async () => {
+    const preset = readFileSync(
+      path.join(
+        process.cwd(),
+        'public/milkdrop-presets/butterchurn/royal-mashup-160.milk',
+      ),
+      'utf8',
+    );
+    const compile = (source: string) =>
+      compileMilkdropPresetSource(source, { id: 'royal-mashup-160' });
+    const before = compile(preset).ir;
+    expect(before.shaderText.comp).not.toBe('');
+
+    const { agent, calls } = install({}, preset);
+    const result = await agent.run('edit-source', {
+      append: 'per_frame_99=zoom = 1.2345;',
+    });
+    expect(result.ok).toBe(true);
+    const after = compile(calls.applyEditorSource[0] ?? '');
+    expect(
+      after.diagnostics.filter((diagnostic) => diagnostic.severity === 'error'),
+    ).toEqual([]);
+    expect(after.ir.programs.perFrame.statements.at(-1)?.source).toBe(
+      'zoom = 1.2345',
+    );
+    expect(after.ir.shaderText).toEqual(before.shaderText);
+  });
+
+  test('append that opens a section of its own still goes at the end', async () => {
+    const { agent, calls } = install(
+      {},
+      '[preset00]\nzoom=1\n[warp_shader]\nret = 0;\n',
+    );
+    await agent.run('edit-source', { append: '[comp_shader]\nret = 1;' });
+    expect(calls.applyEditorSource).toEqual([
+      '[preset00]\nzoom=1\n[warp_shader]\nret = 0;\n[comp_shader]\nret = 1;',
+    ]);
   });
 
   test('source replaces the buffer, and a compile error is reported, not hidden', async () => {
