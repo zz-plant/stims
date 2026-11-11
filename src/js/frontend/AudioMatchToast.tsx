@@ -60,7 +60,6 @@ export function AudioMatchToast({
         }
       }}
     >
-      <span className="stims-shell__eyebrow">Suggested for this audio</span>
       {/* No percentage: the score is embedding similarity between a
           three-clause description of the audio ("vibrant red-centered
           palette, dense edges, high motion") and a preset's description.
@@ -75,11 +74,13 @@ export function AudioMatchToast({
         onClick={() => onSelect(match.presetId)}
       >
         <span className="stims-shell__audio-match-title">{match.name}</span>
-        {match.byline ? (
-          <span className="stims-shell__audio-match-byline">
-            {match.byline}
-          </span>
-        ) : null}
+        {/* Why this name appeared, said once under it rather than as a
+            label over it: the maker, then the reason. */}
+        <span className="stims-shell__audio-match-byline">
+          {match.byline
+            ? `${match.byline} · suggested for this audio`
+            : 'Suggested for this audio'}
+        </span>
       </button>
       {/* The timer pauses while the toast is hovered or focused, so a
           keyboard user who Tabs in to read it has no other way to send it

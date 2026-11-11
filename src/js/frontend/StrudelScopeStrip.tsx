@@ -19,13 +19,25 @@ const ATT_K = 0.12;
 const BEAT_WINDOW = 60;
 const BEAT_THRESHOLD = 1.25;
 
-const BAND_COLORS = {
-  bass: '#f47a54',
-  mid: '#f6efe4',
-  treble: '#77c9ff',
-} as const;
+type BandKey = 'bass' | 'mid' | 'treble';
 
-type BandKey = keyof typeof BAND_COLORS;
+/** The band inks, read from the page's tokens when a strip mounts: the
+ * lit amber for bass, the print greys for mid and treble. Named colours are
+ * only the fallback for a page with no tokens loaded. */
+const BAND_COLORS: Record<BandKey, string> = {
+  bass: 'orange',
+  mid: 'silver',
+  treble: 'white',
+};
+
+function readBandColors(node: Element) {
+  const style = getComputedStyle(node);
+  const token = (name: string, fallback: string) =>
+    style.getPropertyValue(name).trim() || fallback;
+  BAND_COLORS.bass = token('--stims-accent', BAND_COLORS.bass);
+  BAND_COLORS.mid = token('--stims-ink-muted', BAND_COLORS.mid);
+  BAND_COLORS.treble = token('--stims-ink', BAND_COLORS.treble);
+}
 const BANDS: BandKey[] = ['bass', 'mid', 'treble'];
 
 interface BandHistory {
@@ -92,6 +104,7 @@ export function StrudelScopeStrip({
     const attenuated: Record<BandKey, number> = { bass: 0, mid: 0, treble: 0 };
 
     const ctx2d = canvas.getContext('2d');
+    readBandColors(canvas);
     let frame = 0;
 
     // This strip is decorative; don't pay for a second full audio-analysis
@@ -233,7 +246,7 @@ function drawLabel(
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
-  color = 'rgba(246, 239, 228, 0.55)',
+  color = 'rgba(236, 236, 231, 0.55)',
 ) {
   ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
   ctx.fillStyle = color;
@@ -251,7 +264,7 @@ function drawWaveform(
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
   ctx.strokeRect(x + 0.5, 0.5, width - 1, height - 1);
   ctx.beginPath();
-  ctx.strokeStyle = '#f6efe4';
+  ctx.strokeStyle = BAND_COLORS.treble;
   ctx.lineWidth = 1;
   for (let i = 0; i < waveform.length; i += 1) {
     const px = x + (i / (waveform.length - 1)) * width;
@@ -284,8 +297,7 @@ function drawSpectrum(
     if (value === 0) {
       continue;
     }
-    const band: keyof typeof BAND_COLORS =
-      i < bassEnd ? 'bass' : i < midEnd ? 'mid' : 'treble';
+    const band: BandKey = i < bassEnd ? 'bass' : i < midEnd ? 'mid' : 'treble';
     ctx.fillStyle = BAND_COLORS[band];
     ctx.globalAlpha = 0.85;
     const barWidth = width / len;

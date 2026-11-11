@@ -940,7 +940,7 @@ chromeTest(
           (shift) => shift.value > 0 && shift.at < (record.shellAt ?? 0),
         );
         // Below 0.001, which Lighthouse reports as 0.000. The cover's own
-        // text can move a fraction of a pixel when Archivo swaps in for a
+        // text can move a fraction of a pixel when its face swaps in for a
         // fallback with other metrics (0.000002 on Linux CI); the reflow
         // this guards against scored 0.01-0.47.
         const total = underCover.reduce((sum, shift) => sum + shift.value, 0);

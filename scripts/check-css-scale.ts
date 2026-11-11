@@ -31,7 +31,7 @@ const ARG_ROOTS = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const CSS_ROOTS = ARG_ROOTS.length > 0 ? ARG_ROOTS : ['src/css'];
 
 /** Steps from the --radius-* ladder in tokens.css, in px. */
-const RADIUS_STEPS = new Set([0, 2, 4, 6, 10, 14, 20, 28, 999]);
+const RADIUS_STEPS = new Set([0, 1, 2, 3, 4, 6, 8, 10, 999]);
 
 /** Steps from the --text-* ladder in tokens.css, in rem. */
 const TEXT_STEPS = new Set([

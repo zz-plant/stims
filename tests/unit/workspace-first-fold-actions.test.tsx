@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { act } from 'react';
 import { resolveSemanticRoute } from '../../functions/discover-slugs.ts';
 import { saveLastSession } from '../../src/js/core/state/last-session-store.ts';
@@ -222,34 +223,46 @@ describe('workspace first-fold launch hierarchy', () => {
     }
   });
 
-  test('names the preset running behind a first visit, only while it runs', () => {
-    const entry = makePresetEntry({
-      id: 'krash-rovastar-cerebral-demons-stars',
-      title: 'Krash & Rovastar - Cerebral Demons (Stars Remix)',
-      author: 'Krash',
-    });
-    const caption = (attractPreviewLive: boolean, runtimeReady: boolean) => {
+  test('the cover graph says in words which sounds drive the preset behind it', () => {
+    const compiled = compileMilkdropPresetSource(
+      ['[preset00]', 'per_frame_1=zoom=1+bass*0.1;'].join('\n'),
+      { id: 'cover-graph' },
+    );
+    const graphLabel = (onStage: typeof compiled | null) => {
       const rendered = renderWorkspace(<NewHomePage />, {
-        engine: { attractPreviewLive, selectedPreset: entry, catalog: [entry] },
         snapshot: {
           ...createEmptyEngineSnapshot(),
-          runtimeReady,
-          activePresetId: entry.id,
+          sessionState: onStage
+            ? {
+                source: '',
+                latestCompiled: onStage,
+                activeCompiled: onStage,
+                diagnostics: [],
+                dirty: false,
+              }
+            : null,
         },
       });
-      const text =
-        rendered.container.querySelector('.stims-shell__attract-caption')
-          ?.textContent ?? null;
+      const graph = rendered.container.querySelector(
+        '.stims-shell__launch-graph',
+      );
+      const reading = {
+        label: graph?.getAttribute('aria-label') ?? null,
+        legend: graph?.textContent?.includes('Driven by') ?? false,
+      };
       rendered.dispose();
-      return text;
+      return reading;
     };
-    expect(caption(true, true)).toBe(
-      'Running nowCerebral Demons (Stars Remix)Krash + Rovastar',
-    );
-    // Gated off (low power, reduced motion) or paused as blank: nothing is
-    // running, so nothing is named.
-    expect(caption(false, true)).toBeNull();
-    expect(caption(true, false)).toBeNull();
+    expect(graphLabel(compiled)).toEqual({
+      label: 'Driven by bass',
+      legend: true,
+    });
+    // Nothing compiled on stage yet: the graph only shows levels and makes
+    // no claim about what drives anything.
+    expect(graphLabel(null)).toEqual({
+      label: 'Bass, mid and treble levels',
+      legend: false,
+    });
   });
 
   test('the audio panel keeps YouTube first-class and drops the demo fallback', () => {
@@ -327,10 +340,6 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(demoButtons[0].className).toContain(
         'stims-shell__launch-demo-link',
       );
-      // The returning card names the preset itself, so no second caption.
-      expect(
-        container.querySelector('.stims-shell__attract-caption'),
-      ).toBeNull();
     } finally {
       rendered.dispose();
     }

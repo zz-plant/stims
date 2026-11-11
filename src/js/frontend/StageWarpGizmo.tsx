@@ -21,6 +21,12 @@ import { useWorkspace } from './workspace-context.tsx';
  */
 const CENTER_FIELDS = ['cx', 'cy'] as const;
 
+/** Two decimals, without the "-0.00" a value a hair below zero prints. */
+function formatCoordinate(value: number): string {
+  const text = value.toFixed(2);
+  return text === '-0.00' ? '0.00' : text;
+}
+
 export function StageWarpGizmo() {
   const { engine, ui } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -149,6 +155,13 @@ export function StageWarpGizmo() {
   }
 
   const label = `Warp center: cx ${cx.toFixed(3)}, cy ${cy.toFixed(3)}`;
+  // A centre outside the stage (MilkDrop allows it) is marked at the nearest
+  // edge; the label and the accessible name still give the exact value. The
+  // readout centres on the handle, so near either side it runs inward from
+  // the handle instead of off the stage.
+  const shownX = Math.min(1, Math.max(0, cx));
+  const shownY = Math.min(1, Math.max(0, cy));
+  const edge = shownX < 0.15 ? 'start' : shownX > 0.85 ? 'end' : undefined;
 
   return (
     // The layer itself is inert; only the handle takes the pointer, so
@@ -159,7 +172,8 @@ export function StageWarpGizmo() {
         className="stims-stage-gizmo__handle"
         data-dragging={dragging ? 'true' : undefined}
         data-driven={driven ? 'true' : undefined}
-        style={{ left: `${cx * 100}%`, top: `${cy * 100}%` }}
+        data-edge={edge}
+        style={{ left: `${shownX * 100}%`, top: `${shownY * 100}%` }}
         aria-label={
           driven
             ? `${label}. This preset recomputes the center every frame, so dragging changes only the starting value in its code.`
@@ -201,7 +215,7 @@ export function StageWarpGizmo() {
         <span className="stims-stage-gizmo__readout">
           {driven
             ? 'Warp center · set by the code'
-            : `Warp center ${cx.toFixed(2)}, ${cy.toFixed(2)}`}
+            : `Warp center ${formatCoordinate(cx)}, ${formatCoordinate(cy)}`}
         </span>
       </button>
     </div>

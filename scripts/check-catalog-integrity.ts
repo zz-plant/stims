@@ -98,6 +98,24 @@ export function checkCatalogIntegrity(): boolean {
     idFirstSeen.set(preset.id, preset.title);
   }
 
+  // `order` is the catalog number printed on every preset's swatch strip
+  // (Swatch.tsx, "No. 0043"), so two presets sharing one print the same
+  // number. The ingest scripts assign max + 1; a hand edit or a batch that
+  // renumbers can still collide.
+  const orderFirstSeen = new Map<number, string>();
+  for (const preset of catalog.presets) {
+    if (typeof preset.order !== 'number') continue;
+    const previousId = orderFirstSeen.get(preset.order);
+    if (previousId !== undefined) {
+      logError(
+        `Duplicate catalog number ${preset.order} ("${previousId}" and "${preset.id}"). The order field is printed as each preset's number and must be unique; give the newer entry the next free number.`,
+      );
+      errorsCount += 1;
+      continue;
+    }
+    orderFirstSeen.set(preset.order, preset.id);
+  }
+
   const validFidelityClasses = new Set([
     'exact',
     'near-exact',

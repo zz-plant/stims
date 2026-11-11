@@ -123,7 +123,7 @@ function buildMarkup(theme: string): string {
       display: flex;
       flex-direction: column;
       background: #000;
-      color: var(--text-color, #f7f4eb);
+      color: var(--text-color, #ecece7);
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     }
     #picture { position: relative; flex: 1; min-height: 0; }
@@ -136,7 +136,7 @@ function buildMarkup(theme: string): string {
       justify-content: center;
       align-items: center;
       padding: 8px;
-      background: var(--card-bg, #151e24);
+      background: var(--card-bg, #171716);
       border-top: 1px solid var(--surface-border, rgba(255,255,255,0.14));
     }
     button {
@@ -149,9 +149,9 @@ function buildMarkup(theme: string): string {
       font-size: 15px;
       cursor: pointer;
     }
-    button:hover { border-color: var(--accent-color, #77c9ff); }
+    button:hover { border-color: var(--accent-color, #ecece7); }
     button:focus-visible {
-      outline: 2px solid var(--accent-color, #77c9ff);
+      outline: 2px solid var(--accent-color, #ecece7);
       outline-offset: 2px;
     }
   </style>

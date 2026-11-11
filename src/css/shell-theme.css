@@ -8,7 +8,7 @@
    dialogs follow the selected page theme. */
 html.light body[data-page="workspace"] {
   color: var(--stims-ink);
-  background: linear-gradient(180deg, #f4efe4 0%, #e5ded0 100%);
+  background: linear-gradient(180deg, #f2f2ee 0%, #e7e7e2 100%);
 }
 
 /* The home stage is NOT repainted for the light theme.
@@ -30,14 +30,12 @@ html.light .stims-shell__field-label {
   color: var(--stims-ink-strong);
 }
 
-html.light .stims-shell__eyebrow,
 html.light .stims-shell__meta-copy,
 html.light .stims-shell__source-card span,
 html.light .stims-shell__youtube-feedback {
   color: var(--stims-muted);
 }
 
-html.light .stims-shell__eyebrow,
 html.light .stims-shell__section-label {
   color: var(--stims-cool);
 }
@@ -48,24 +46,24 @@ html.light .stims-shell__sheet-callout,
 html.light .stims-shell__settings-advanced,
 html.light .stims-shell__starter-card {
   border-color: var(--stims-line);
-  background: #fffaf0;
+  background: #fbfbf8;
   color: var(--stims-ink);
-  box-shadow: 0 8px 18px rgba(35, 48, 56, 0.08);
+  box-shadow: 0 8px 18px rgba(22, 22, 21, 0.08);
 }
 
 html.light .stims-shell__source-card:hover:not(:disabled),
 html.light .stims-shell__starter-card:hover {
   border-color: var(--stims-line-strong);
-  background: #f1f7f5;
-  box-shadow: 0 10px 22px rgba(35, 48, 56, 0.12);
+  background: #f2f2ee;
+  box-shadow: 0 10px 22px rgba(22, 22, 21, 0.12);
 }
 
 html.light .stims-shell__input,
 html.light .stims-shell__refine-textarea {
   border-color: var(--stims-line-strong);
-  background: #fffdf8;
+  background: #fbfbf8;
   color: var(--stims-ink-strong);
-  box-shadow: inset 0 1px 2px rgba(35, 48, 56, 0.08);
+  box-shadow: inset 0 1px 2px rgba(22, 22, 21, 0.08);
 }
 
 html.light .stims-shell__input::placeholder,
@@ -78,42 +76,39 @@ html.light .stims-shell__input:focus,
 html.light .stims-shell__refine-textarea:focus {
   border-color: var(--stims-cool);
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(13, 99, 129, 0.2);
+  box-shadow: 0 0 0 3px rgba(138, 78, 0, 0.2);
 }
 
 html.light .stims-shell__text-button {
   border-color: var(--stims-line-strong);
   background: var(--stims-control-fill);
   color: var(--stims-ink-strong);
-  box-shadow: 0 4px 10px rgba(35, 48, 56, 0.08);
+  box-shadow: 0 4px 10px rgba(22, 22, 21, 0.08);
 }
 
 html.light .stims-shell__text-button:hover {
   border-color: var(--stims-cool);
   background: var(--stims-control-fill-hover);
   color: #102b39;
-  box-shadow: 0 6px 14px rgba(35, 48, 56, 0.12);
+  box-shadow: 0 6px 14px rgba(22, 22, 21, 0.12);
 }
 
 html.light .stims-shell .cta-button {
   border-color: var(--stims-line-strong);
-  background: #fffaf0;
+  background: transparent;
   color: var(--stims-ink-strong);
-  box-shadow: 0 4px 10px rgba(35, 48, 56, 0.08);
 }
 
-/* The light accent, not the success green it used to borrow: one primary
-   colour per theme. White on #a44723 is 5.99:1. --stims-on-accent stays dark
-   in light mode, so the ink is set here. */
+/* The white pages' primary tab is printed in black: the inverse of the dark
+   theme's white tab, so it is still the strongest mark on the page. */
 html.light .stims-shell .cta-button.primary {
-  border-color: color-mix(in srgb, var(--stims-accent) 82%, #000000);
-  background: var(--stims-accent);
-  color: #ffffff;
-  box-shadow: 0 6px 14px var(--stims-accent-soft);
+  border-color: transparent;
+  background: var(--stims-ink-strong);
+  color: #fbfbf8;
 }
 
 html.light .stims-shell .cta-button.primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--stims-accent) 84%, #000000);
+  background: #2b2b29;
 }
 
 /* TV: a bigger target for a remote's focus ring, as index.css used to set. */
@@ -125,17 +120,17 @@ body.tv-mode .stims-shell .cta-button {
 
 html.light .stims-shell .cta-button:disabled,
 html.light .stims-shell .cta-button.primary:disabled {
-  border-color: #aeb8bc;
-  background: #e2e7e6;
-  color: #66747b;
+  border-color: #c9c8c2;
+  background: #ecece7;
+  color: #5e5d58;
   opacity: 1;
 }
 
 html.light [data-shell-dialog="true"] {
-  border-color: #9eabb2;
-  background: #fffaf0;
+  border-color: rgba(22, 22, 21, 0.2);
+  background: #fbfbf8;
   color: var(--stims-ink);
-  box-shadow: 0 22px 48px rgba(35, 48, 56, 0.18);
+  box-shadow: 0 22px 48px rgba(22, 22, 21, 0.18);
 }
 
 html.light [data-shell-dialog="true"] [class*="header"] {
@@ -148,7 +143,7 @@ html.light [data-shell-dialog="true"] [class*="closeBtn"] {
 
 html.light [data-shell-dialog="true"] [class*="closeBtn"]:hover {
   border-color: var(--stims-line-strong);
-  background: #e8f0ef;
+  background: #ecece7;
 }
 
 html.light .stims-shell__shortcut-grid kbd,
@@ -157,7 +152,7 @@ html.light .stims-shell__shortcut-row kbd {
   border-color: var(--stims-line-strong);
   color: var(--stims-ink-strong);
   box-shadow:
-    0 2px 0 rgba(35, 48, 56, 0.14),
+    0 2px 0 rgba(22, 22, 21, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
@@ -168,9 +163,9 @@ html.light .stims-shell__shortcut-row:hover {
 
 html.light .stims-shell__toast {
   border-color: var(--stims-line-strong);
-  background: #fffaf0;
+  background: #fbfbf8;
   color: var(--stims-ink-strong);
-  box-shadow: 0 16px 30px rgba(35, 48, 56, 0.16);
+  box-shadow: 0 16px 30px rgba(22, 22, 21, 0.16);
 }
 
 html.light .stims-shell__toast[data-tone="warn"] {
@@ -183,29 +178,23 @@ html.light .stims-shell__toast[data-tone="error"] {
   color: #8d1b14;
 }
 
-html.light
-  .stims-shell__stage-frame[data-mode="live"]
-  .stims-shell__frame-header {
-  color: #f7f4eb;
-}
-
 @media (prefers-contrast: more) {
   .stims-shell {
-    --stims-muted: #dce7ed;
-    --stims-line: #91a6b3;
-    --stims-line-strong: #c4d4dd;
-    --stims-line-soft: #6f8491;
-    --stims-cool: #b8edff;
-    --stims-accent: #ffb39e;
+    --stims-muted: #e4e4df;
+    --stims-line: #a3a29c;
+    --stims-line-strong: #d4d3cd;
+    --stims-line-soft: #7a7974;
+    --stims-cool: #ffffff;
+    --stims-accent: #ffc85a;
   }
 
   html.light .stims-shell {
-    --stims-muted: #263d48;
-    --stims-line: #71838b;
-    --stims-line-strong: #3d5964;
-    --stims-line-soft: #9aabb2;
-    --stims-cool: #075574;
-    --stims-accent: #7e2c12;
+    --stims-muted: #2b2b29;
+    --stims-line: #6b6a65;
+    --stims-line-strong: #3a3a37;
+    --stims-line-soft: #a3a29c;
+    --stims-cool: #0b0b0a;
+    --stims-accent: #6b3c00;
   }
 
   .stims-shell button,
@@ -221,7 +210,7 @@ html.light
 
   .stims-shell :focus-visible,
   html.light [data-shell-dialog] :focus-visible {
-    outline: 3px solid var(--stims-cool);
+    outline: 3px solid var(--stims-accent);
     outline-offset: 3px;
   }
 }
@@ -244,22 +233,22 @@ html.light
 /* Mirrors the prefers-contrast: more block so users on systems without
    that OS toggle can still get stronger borders and brighter text. */
 [data-contrast="high"] .stims-shell {
-  --stims-muted: #dce7ed;
-  --stims-line: #91a6b3;
-  --stims-line-strong: #c4d4dd;
-  --stims-line-soft: #6f8491;
-  --stims-cool: #b8edff;
-  --stims-accent: #ffb39e;
+  --stims-muted: #e4e4df;
+  --stims-line: #a3a29c;
+  --stims-line-strong: #d4d3cd;
+  --stims-line-soft: #7a7974;
+  --stims-cool: #ffffff;
+  --stims-accent: #ffc85a;
 }
 
 html.light [data-contrast="high"] .stims-shell,
 [data-contrast="high"].light .stims-shell {
-  --stims-muted: #263d48;
-  --stims-line: #71838b;
-  --stims-line-strong: #3d5964;
-  --stims-line-soft: #9aabb2;
-  --stims-cool: #075574;
-  --stims-accent: #7e2c12;
+  --stims-muted: #2b2b29;
+  --stims-line: #6b6a65;
+  --stims-line-strong: #3a3a37;
+  --stims-line-soft: #a3a29c;
+  --stims-cool: #0b0b0a;
+  --stims-accent: #6b3c00;
 }
 
 [data-contrast="high"] .stims-shell button,
@@ -275,7 +264,7 @@ html.light [data-contrast="high"] .stims-shell,
 
 [data-contrast="high"] .stims-shell :focus-visible,
 [data-contrast="high"].light [data-shell-dialog] :focus-visible {
-  outline: 3px solid var(--stims-cool);
+  outline: 3px solid var(--stims-accent);
   outline-offset: 3px;
 }
 
@@ -286,7 +275,7 @@ html.light [data-contrast="high"] .stims-shell,
  * rather than the page. The light rules above are page chrome rules: they
  * paint panels, sheets and cards cream so they read on a cream page. Applied
  * inside the hero they did the opposite of their purpose, giving the audio
- * source cards and the YouTube field a #fffaf0 fill while the text on them
+ * source cards and the YouTube field a #fbfbf8 fill while the text on them
  * stayed near-white — a row of blank slabs with invisible labels.
  *
  * This block is last in the file so it wins, and restates one rule rather
@@ -328,7 +317,7 @@ html.light .stims-shell__launch .stims-shell__input:focus {
 }
 
 /* A disabled control should recede. On the dark stage the light theme's
-   disabled fill (#e2e7e6 at full opacity) was brighter than anything around
+   disabled fill (#ecece7 at full opacity) was brighter than anything around
    it, so "Load" — unavailable until a link is pasted — was the most eye-
    catching element in the audio section. */
 html.light .stims-shell__launch .cta-button:disabled,

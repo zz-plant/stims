@@ -422,13 +422,13 @@ requiredBrowserTest(
   'the page background is the dark stage on a light system too',
   async () => {
     // Safari paints this colour beside its side controls on iPhone Duo's outer
-    // display. Under it, the gradients that fill the page run cream.
+    // display. It has to be the stage floor, not the light theme's page.
     const page = await openPhone(BOOK_VIEWPORT, { colorScheme: 'light' });
     try {
       const colour = await page.evaluate(
         () => getComputedStyle(document.documentElement).backgroundColor,
       );
-      expect(colour).toBe('rgb(5, 7, 12)');
+      expect(colour).toBe('rgb(10, 10, 9)');
     } finally {
       await page.context().close();
     }

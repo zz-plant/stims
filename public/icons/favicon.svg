@@ -1,8 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Stims app icon">
-  <rect width="512" height="512" rx="112" fill="#0b1014" />
-  <g transform="translate(256 256)">
-    <path d="M-152 -152 L-56 -56 M152 -152 L56 -56 M152 152 L56 56 M-152 152 L-56 56" stroke="#2f5f88" stroke-width="36" />
-    <rect x="-170" y="-170" width="340" height="340" fill="none" stroke="#77c9ff" stroke-width="46" />
-    <rect x="-62" y="-62" width="124" height="124" fill="#f47a54" />
-  </g>
+  <rect width="512" height="512" rx="112" fill="#0f0f0e" />
+  <rect x="164" y="64" width="184" height="384" rx="28" fill="#ecece7" />
+  <circle cx="256" cy="122" r="28" fill="#0f0f0e" />
+  <rect x="200" y="196" width="112" height="208" rx="8" fill="#ffb21a" />
 </svg>

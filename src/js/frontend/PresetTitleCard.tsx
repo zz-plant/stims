@@ -27,6 +27,7 @@ import {
   subscribeToStageOverlayPreference,
 } from '../core/stage-overlay-preferences.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
+import { SwatchGraph, SwatchNumber, useStageBandReads } from './Swatch.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /** How long the card holds before it starts leaving. */
@@ -34,14 +35,13 @@ export const TITLE_CARD_HOLD_MS = 2600;
 /** Matches the exit transition in app-shell.css. */
 export const TITLE_CARD_EXIT_MS = 450;
 
-/** Archivo's narrowest width, and the widest the card will open a short name
- * to: past ~112% a short title stops reading as a name and starts reading as
- * a logo. */
-export const TITLE_STRETCH_MIN = 62;
-export const TITLE_STRETCH_MAX = 112;
+/** Pathway Extreme's width axis runs 75-100%: the narrowest it prints, and
+ * the full width a short name opens to. */
+export const TITLE_STRETCH_MIN = 75;
+export const TITLE_STRETCH_MAX = 100;
 /** A name too long for one line even fully condensed wraps to two lines at
  * this width instead of being crushed further. */
-export const TITLE_STRETCH_WRAPPED = 78;
+export const TITLE_STRETCH_WRAPPED = 82;
 
 export type TitleFit = { stretch: number; wrap: boolean };
 
@@ -87,6 +87,7 @@ type TitleCard = {
   nonce: number;
   title: string;
   byline: string | null;
+  catalogNumber: number | undefined;
 };
 
 export function PresetTitleCard() {
@@ -125,7 +126,12 @@ export function PresetTitleCard() {
     );
     nonceRef.current += 1;
     setLeaving(false);
-    setCard({ nonce: nonceRef.current, title, byline });
+    setCard({
+      nonce: nonceRef.current,
+      title,
+      byline,
+      catalogNumber: selectedPreset.catalogNumber,
+    });
   }, [activeId, enabled, panelOpen, selectedPreset]);
 
   // Hold, then leave, then unmount. Keyed on the nonce so a switch arriving
@@ -182,7 +188,7 @@ export function PresetTitleCard() {
     };
     fit();
     // Refit when the line changes size — including from zero, once the stage
-    // is laid out — and once Archivo has loaded, since a card that lands
+    // is laid out — and once the display face has loaded, since a card that lands
     // before the font would otherwise stay fitted to the fallback face.
     let cancelled = false;
     const observer =
@@ -197,22 +203,35 @@ export function PresetTitleCard() {
     };
   }, [nonce]);
 
+  const bandReads = useStageBandReads();
+
   if (!card) return null;
 
+  // A swatch page swung into place on its rivet: the number on the spec line,
+  // the name fitted to one line, the maker, and the transmission graph.
   return (
     <div
       key={card.nonce}
-      className="stims-shell__title-card"
+      className="stims-shell__title-card stims-stock"
+      data-on-stage="true"
       data-leaving={leaving ? 'true' : undefined}
       aria-hidden="true"
     >
       <span className="stims-shell__title-card-measure" ref={measureRef} />
+      <SwatchNumber
+        value={card.catalogNumber}
+        className="stims-shell__title-card-number"
+      />
       <span className="stims-shell__title-card-title" ref={titleRef}>
         {card.title}
       </span>
       {card.byline ? (
         <span className="stims-shell__title-card-byline">{card.byline}</span>
       ) : null}
+      <SwatchGraph
+        reads={bandReads}
+        className="stims-shell__title-card-graph"
+      />
     </div>
   );
 }

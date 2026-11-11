@@ -89,7 +89,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Launch deck');
     expect(uiSource).not.toContain('Single-route workspace');
     expect(stageSource).toContain('className="stims-shell__stage-frame"');
-    expect(stageControlsSource).toContain('className={styles.pill}');
+    expect(stageControlsSource).toContain('${styles.pill} stims-stock');
     // The name rides in data-hint (shown on hover and focus) with the
     // current keyboard shortcut appended through withHint().
     expect(stageControlsSource).toContain("withHint('Play a random preset'");

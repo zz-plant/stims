@@ -1,38 +1,38 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Stims Console Chrome
+   Stims Swatchbook Chrome
    ───────────────────────────────────────────────────────────────────
-   The panels sit on top of a live, moving canvas, so the chrome is
-   built to recede: flat surfaces, hairline rules, no per-card blur.
+   The panels are pages of a lighting-gel swatchbook laid over a live,
+   moving canvas: opaque black card, printed in one off-white at three
+   weights, ruled with 1px lines. Nothing here emits light except:
+     amber (--ctl-accent) = lit: playing / selected / active / on
+   and the same amber marks what you saved (--ctl-saved), because a
+   saved preset is one you lit. Anything else is ink at one of three
+   weights.
 
-   Two accents carry all meaning:
-     cyan  (--ctl-accent) = playing / selected / active
-     amber (--ctl-saved)  = saved by you
-   Anything else is ink at one of three weights.
-
-   Signature: the "lit edge" — an inset accent bar on the leading edge
-   of whatever is active, echoing the audio-energy bar in the dock.
+   Signature: the lit edge, a 1px amber rule on whatever is active,
+   the same ink as the dock's transmission graph.
    ═══════════════════════════════════════════════════════════════════ */
 
 .stims-shell {
-  --ctl-line: rgba(255, 255, 255, 0.09);
-  --ctl-line-strong: rgba(255, 255, 255, 0.17);
-  --ctl-fill: rgba(255, 255, 255, 0.035);
-  --ctl-fill-hover: rgba(255, 255, 255, 0.07);
-  --ctl-fill-sunk: rgba(0, 0, 0, 0.24);
+  --ctl-line: rgba(236, 236, 231, 0.12);
+  --ctl-line-strong: rgba(236, 236, 231, 0.24);
+  --ctl-fill: rgba(236, 236, 231, 0.05);
+  --ctl-fill-hover: rgba(236, 236, 231, 0.09);
+  --ctl-fill-sunk: rgba(0, 0, 0, 0.3);
 
-  --ctl-accent: #77c9ff;
-  --ctl-accent-dim: rgba(119, 201, 255, 0.13);
+  --ctl-accent: #ffb21a;
+  --ctl-accent-dim: rgba(255, 178, 26, 0.14);
   /* Text that sits on top of the accent fill. */
-  --ctl-on-accent: #06121c;
-  --ctl-saved: #f0b866;
+  --ctl-on-accent: #141210;
+  --ctl-saved: #ffb21a;
 
-  --ctl-ink: rgba(233, 243, 255, 0.94);
-  --ctl-ink-2: rgba(233, 243, 255, 0.62);
-  /* 0.48 rather than 0.4: the lighter value fell to 3.5:1 on the panel fill. */
-  --ctl-ink-3: rgba(233, 243, 255, 0.48);
+  --ctl-ink: #ecece7;
+  --ctl-ink-2: #a3a29c;
+  /* 5.8:1 on the panel stock. */
+  --ctl-ink-3: #8f8e88;
 
-  --ctl-panel-bg: rgba(10, 14, 22, 0.97);
-  --ctl-panel-line: rgba(255, 255, 255, 0.08);
+  --ctl-panel-bg: #0f0f0e;
+  --ctl-panel-line: rgba(236, 236, 231, 0.1);
 
   --ctl-radius: var(--radius-md);
   --ctl-radius-lg: var(--radius-lg);
@@ -56,24 +56,24 @@
 }
 
 html.light .stims-shell {
-  --ctl-line: rgba(20, 32, 40, 0.14);
-  --ctl-line-strong: rgba(20, 32, 40, 0.28);
-  --ctl-fill: rgba(20, 32, 40, 0.04);
-  --ctl-fill-hover: rgba(20, 32, 40, 0.08);
-  --ctl-fill-sunk: rgba(20, 32, 40, 0.06);
+  --ctl-line: rgba(22, 22, 21, 0.16);
+  --ctl-line-strong: rgba(22, 22, 21, 0.32);
+  --ctl-fill: rgba(22, 22, 21, 0.04);
+  --ctl-fill-hover: rgba(22, 22, 21, 0.08);
+  --ctl-fill-sunk: rgba(22, 22, 21, 0.06);
 
-  --ctl-accent: #0d6381;
-  --ctl-accent-dim: rgba(13, 99, 129, 0.12);
+  --ctl-accent: #8a4e00;
+  --ctl-accent-dim: rgba(138, 78, 0, 0.12);
   /* The light accent is dark, so text on it has to be light. */
-  --ctl-on-accent: #ffffff;
-  --ctl-saved: #9a6318;
+  --ctl-on-accent: #fbfbf8;
+  --ctl-saved: #8a4e00;
 
-  --ctl-ink: #1c2a33;
-  --ctl-ink-2: #5b666c;
-  --ctl-ink-3: #6b7478;
+  --ctl-ink: #161615;
+  --ctl-ink-2: #55544f;
+  --ctl-ink-3: #5e5d58;
 
-  --ctl-panel-bg: rgba(255, 252, 246, 0.98);
-  --ctl-panel-line: rgba(20, 32, 40, 0.14);
+  --ctl-panel-bg: #fbfbf8;
+  --ctl-panel-line: rgba(22, 22, 21, 0.14);
 }
 
 @scope (.stims-shell) {
@@ -235,7 +235,7 @@ html.light .stims-shell {
     margin: 0;
     padding: 0;
     border: 1px solid var(--ctl-line-strong);
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
     background: var(--ctl-fill-sunk);
     cursor: pointer;
     transition:
@@ -250,7 +250,7 @@ html.light .stims-shell {
     left: 3px;
     width: 16px;
     height: 16px;
-    border-radius: 50%;
+    border-radius: var(--radius-sm);
     background: var(--ctl-ink-2);
     transform: translateY(-50%);
     transition:
@@ -314,8 +314,7 @@ html.light .stims-shell {
   }
 
   .ctl-midi-binding-dot--live {
-    background: #4ade80;
-    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+    background: var(--ctl-accent);
   }
 
   .ctl-midi-binding-badge {
@@ -413,7 +412,7 @@ html.light .stims-shell {
   /* The lit edge. */
   .ctl-option:has(.ctl-option__input:checked) {
     background: var(--ctl-accent-dim);
-    box-shadow: inset 2px 0 0 var(--ctl-accent);
+    box-shadow: inset 1px 0 0 var(--ctl-accent);
   }
 
   .ctl-option:has(.ctl-option__input:checked) .ctl-option__label {
@@ -665,7 +664,7 @@ html.light .stims-shell {
     min-height: var(--ctl-size-sm);
     padding: 6px 12px;
     border: 1px solid var(--ctl-line);
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--ctl-ink-2);
     font: inherit;
@@ -868,7 +867,7 @@ html.light .stims-shell {
   /* The lit edge, again — same language as the quality options. */
   .ctl-preset[data-active="true"] {
     background: var(--ctl-accent-dim);
-    box-shadow: inset 2px 0 0 var(--ctl-accent);
+    box-shadow: inset 1px 0 0 var(--ctl-accent);
   }
 
   .ctl-preset[data-active="true"] .ctl-preset__title {
@@ -1185,7 +1184,7 @@ html.light .stims-shell {
      that makes the rest of the list legible as relatives. */
   .ctl-lineage__btn[aria-current="true"] {
     background: var(--ctl-accent-dim);
-    box-shadow: inset 2px 0 0 var(--ctl-accent);
+    box-shadow: inset 1px 0 0 var(--ctl-accent);
     cursor: default;
   }
 
@@ -1209,7 +1208,7 @@ html.light .stims-shell {
   .ctl-lineage__shader {
     flex: none;
     padding: 1px 5px;
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
     background: var(--ctl-fill-sunk);
     color: var(--ctl-ink-3);
     font-size: 0.6875rem;
@@ -1361,7 +1360,7 @@ html.light .stims-shell {
     padding: 4px 8px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
-    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
     color: var(--ctl-ink-2);
     font-size: 0.75rem;
     opacity: 0;
@@ -1401,7 +1400,7 @@ html.light .stims-shell {
     gap: 10px;
     margin: -16px -16px 0;
     padding: 16px 16px 12px;
-    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
     border-bottom: 1px solid var(--ctl-line);
   }
 
@@ -1750,7 +1749,7 @@ html.light .stims-shell {
     min-height: var(--ctl-size-sm);
     padding: 5px 10px;
     border: 1px solid var(--ctl-line);
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
     background: transparent;
     box-shadow: none;
     color: var(--ctl-ink-2);

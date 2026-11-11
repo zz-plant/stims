@@ -4,8 +4,8 @@
   "description": "Play and live-edit MilkDrop presets in your browser: the original .milk files, against any audio. Open source, no account.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1014",
-  "theme_color": "#0b1014",
+  "background_color": "#0f0f0e",
+  "theme_color": "#0f0f0e",
   "orientation": "any",
   "icons": [
     {

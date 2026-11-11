@@ -82,7 +82,7 @@ describe('minimal workspace surfaces', () => {
     const css = cssSource('app-shell.css');
     const artwork = frontendSource('PresetArtwork.tsx');
 
-    expect(controls).toContain('className={styles.pill}');
+    expect(controls).toContain('${styles.pill} stims-stock');
     expect(controls).toContain('className={styles.navBtn}');
     expect(artwork).not.toContain('stims-shell__preset-art-caption');
     expect(artwork).not.toContain('stims-shell__preset-art-status');
@@ -137,9 +137,9 @@ describe('minimal workspace surfaces', () => {
     const sidePanel = cssSource('SidePanel.module.css');
     const sidePanelSource = frontendSource('SidePanel.tsx');
 
-    expect(tokens).toContain('--stims-muted: #42525c;');
-    expect(tokens).toContain('--stims-cool: #0d6381;');
-    expect(tokens).toContain('--stims-accent: #a44723;');
+    expect(tokens).toContain('--stims-muted: #55544f;');
+    expect(tokens).toContain('--stims-cool: #161615;');
+    expect(tokens).toContain('--stims-accent: #8a4e00;');
     expect(css).toContain(
       'html.light .stims-shell__stage-frame[data-mode="home"]',
     );
@@ -149,7 +149,7 @@ describe('minimal workspace surfaces', () => {
     // The panel follows the theme now, but still resolves to the same opaque
     // dark fill when the chrome tokens are unavailable.
     expect(sidePanel).toContain(
-      'background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));',
+      'background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));',
     );
     expect(cssSource('chrome.css')).toMatch(
       /html\.light \.stims-shell \{[\s\S]*?--ctl-panel-bg:/u,

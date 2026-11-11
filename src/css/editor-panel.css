@@ -1,4 +1,4 @@
-/* Preset code editor — "Signal Panel" instrument console.
+/* Preset code editor: a page of the swatchbook, black stock in print inks.
  *
  * Layout contract: the panel is a fixed-height flex column that never grows
  * past its dock. Only three regions scroll, each on its own: the CodeMirror
@@ -37,29 +37,29 @@
      its chrome from these, so the well follows the app theme. Every token
      colour and the line numbers clear 4.5:1 on the well and on the active
      line. One flat colour: the fade under the last line dissolves into it. */
-  --ed-code-bg: #0d151c;
-  --ed-code-raised: #18232d;
-  --ed-code-ink: #dbe4ec;
-  --ed-code-gutter-ink: #8494a3;
-  --ed-code-edge: rgba(255, 255, 255, 0.07);
-  --ed-code-edge-strong: rgba(255, 255, 255, 0.18);
-  --ed-code-active: rgba(119, 201, 255, 0.06);
-  --ed-code-selection: rgba(119, 201, 255, 0.24);
-  --ed-code-match: rgba(119, 201, 255, 0.14);
-  --ed-code-caret: var(--stims-cool);
+  --ed-code-bg: #0a0a09;
+  --ed-code-raised: #171716;
+  --ed-code-ink: #e4e4df;
+  --ed-code-gutter-ink: #8f8e88;
+  --ed-code-edge: rgba(236, 236, 231, 0.08);
+  --ed-code-edge-strong: rgba(236, 236, 231, 0.2);
+  --ed-code-active: rgba(236, 236, 231, 0.05);
+  --ed-code-selection: rgba(255, 178, 26, 0.28);
+  --ed-code-match: rgba(255, 178, 26, 0.14);
+  --ed-code-caret: var(--stims-accent);
   /* The Tune chips' "equations own this" colour. */
-  --ed-code-sources: var(--stims-warn);
-  --ed-tok-heading: #ff9e7a;
-  --ed-tok-comment: #8d9aa8;
-  --ed-tok-keyword: #d4a5f5;
-  --ed-tok-atom: #f2b67a;
-  --ed-tok-variable: #e9c77f;
-  --ed-tok-builtin: #f49ab8;
-  --ed-tok-number: #93d9a6;
-  --ed-tok-operator: #9fb4c8;
-  --ed-tok-property: #86c5ff;
-  --ed-tok-string: #b6dd8c;
-  --ed-tok-type: #7fd3d0;
+  --ed-code-sources: var(--stims-accent);
+  --ed-tok-heading: #f6f6f2;
+  --ed-tok-comment: #8f8e88;
+  --ed-tok-keyword: #f6f6f2;
+  --ed-tok-atom: #d9c4a0;
+  --ed-tok-variable: #ecece7;
+  --ed-tok-builtin: #d9c4a0;
+  --ed-tok-number: #b5c9a8;
+  --ed-tok-operator: #a3a29c;
+  --ed-tok-property: #ecece7;
+  --ed-tok-string: #b5c9a8;
+  --ed-tok-type: #c9c8c2;
 
   display: flex;
   flex-direction: column;
@@ -77,28 +77,28 @@
 /* The light theme's accent is a dark rust, so accent-filled controls need
    light ink rather than the dark-theme's near-black. */
 html.light .stims-editor {
-  --ed-on-accent: #fffaf0;
+  --ed-on-accent: #fbfbf8;
 
-  --ed-code-bg: #f4efe4;
-  --ed-code-raised: #fffaf0;
-  --ed-code-ink: #1f2a31;
-  --ed-code-gutter-ink: #56626c;
+  --ed-code-bg: #fbfbf8;
+  --ed-code-raised: #f2f2ee;
+  --ed-code-ink: #161615;
+  --ed-code-gutter-ink: #5e5d58;
   --ed-code-edge: var(--stims-line-soft);
   --ed-code-edge-strong: var(--stims-line);
-  --ed-code-active: rgba(35, 48, 56, 0.05);
-  --ed-code-selection: rgba(13, 99, 129, 0.18);
-  --ed-code-match: rgba(13, 99, 129, 0.1);
-  --ed-tok-heading: #a44723;
-  --ed-tok-comment: #56626c;
-  --ed-tok-keyword: #7a2db3;
-  --ed-tok-atom: #0b6180;
-  --ed-tok-variable: #8a4600;
-  --ed-tok-builtin: #a3154e;
-  --ed-tok-number: #11704a;
-  --ed-tok-operator: #465460;
-  --ed-tok-property: #1f4fad;
-  --ed-tok-string: #3f6a12;
-  --ed-tok-type: #0d6a66;
+  --ed-code-active: rgba(22, 22, 21, 0.05);
+  --ed-code-selection: rgba(138, 78, 0, 0.18);
+  --ed-code-match: rgba(138, 78, 0, 0.1);
+  --ed-tok-heading: #0b0b0a;
+  --ed-tok-comment: #5e5d58;
+  --ed-tok-keyword: #0b0b0a;
+  --ed-tok-atom: #6b4f1d;
+  --ed-tok-variable: #161615;
+  --ed-tok-builtin: #6b4f1d;
+  --ed-tok-number: #3d5c2e;
+  --ed-tok-operator: #55544f;
+  --ed-tok-property: #161615;
+  --ed-tok-string: #3d5c2e;
+  --ed-tok-type: #3a3a37;
 }
 
 .stims-editor__sr-only {
@@ -248,7 +248,7 @@ html.light .stims-editor {
 }
 
 .stims-editor__state[data-state="synced"] .stims-editor__dot {
-  background: var(--stims-good);
+  background: var(--stims-ink);
 }
 
 @keyframes stims-editor-pulse {
@@ -322,6 +322,9 @@ html.light .stims-editor {
   font: inherit;
   font-size: 0.75rem;
   font-weight: var(--font-weight-semibold);
+  /* Labels, set at the face's compact width: at full width the row ran
+     past a 1366px laptop's panel and wrapped, pushing Tune off screen. */
+  font-stretch: var(--font-stretch-compact);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -346,18 +349,19 @@ html.light .stims-editor {
   cursor: default;
 }
 
-/* The single primary action. Warm accent is reserved for it and for
-   focus/active states, so nothing else in the panel competes with it. */
+/* The single primary action: the white page tab, the brightest thing the
+   panel prints, so nothing else in it competes. Amber stays for what is
+   lit (toggles that are on, focus, the sounds each equation follows). */
 .stims-editor__btn--primary {
-  border-color: var(--stims-accent);
-  background: var(--stims-accent);
-  color: var(--ed-on-accent);
+  border-color: var(--stims-ink-strong);
+  background: var(--stims-ink-strong);
+  color: var(--bg-color);
 }
 
 .stims-editor__btn--primary:hover:not(:disabled) {
-  border-color: var(--stims-accent);
-  background: color-mix(in srgb, var(--stims-accent) 86%, #fff);
-  color: var(--ed-on-accent);
+  border-color: var(--stims-ink);
+  background: var(--stims-ink);
+  color: var(--bg-color);
 }
 
 .stims-editor__btn--danger:hover:not(:disabled) {
@@ -1012,7 +1016,7 @@ html.light .stims-editor {
   margin-left: -1px;
   transform: translateY(-50%);
   border-radius: var(--radius-hairline);
-  background: var(--stims-warn);
+  background: var(--stims-accent);
   pointer-events: none;
 }
 
@@ -1112,7 +1116,7 @@ html.light .stims-editor {
   padding: 1px 2px 0;
   font-size: 0.6875rem;
   line-height: 1.4;
-  color: var(--stims-warn);
+  color: var(--stims-accent);
 }
 
 /* ── Subject sections ─────────────────────────────────────────────────
@@ -1133,10 +1137,19 @@ html.light .stims-editor {
 /* The first heading in the pane. The margin is gone: it existed to clear
    the hint paragraph that used to sit above it, and with the controls
    leading now it only pushed the first chip lower into the fold. */
-.stims-editor__section:first-of-type .stims-editor__subhead {
+.stims-editor__section:first-of-type .stims-editor__subhead,
+.stims-editor__section[hidden] + .stims-editor__section .stims-editor__subhead {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
+}
+
+/* The preset-parameters section leads the pane and is hidden when a preset
+   has none, which is most of them. The first section a visitor sees then
+   missed :first-of-type and kept a later section's 34px of spacing, all of
+   it between the tab and the first driven chip. */
+.stims-editor__section[hidden] + .stims-editor__section {
+  margin-top: 0;
 }
 
 /* ── Switches ─────────────────────────────────────────────────────────
@@ -1357,7 +1370,7 @@ html.light .stims-editor {
    label that says why stays at full strength (under the row's 0.75 opacity
    it measured 3.9:1). */
 .stims-editor__mod[data-state="custom"] {
-  border-left-color: var(--stims-warn);
+  border-left-color: var(--stims-line-strong);
 }
 
 .stims-editor__mod[data-state="custom"] :is(select, button, input) {
@@ -1414,7 +1427,7 @@ html.light .stims-editor {
 
 .stims-editor__mod[data-state="custom"] .stims-editor__mod-readout {
   min-width: 0;
-  color: var(--stims-warn);
+  color: var(--stims-ink);
 }
 
 /* ── Colour groups ────────────────────────────────────────────────── */
@@ -1605,7 +1618,7 @@ html.light .stims-editor {
   position: relative;
   margin-top: 8px;
   padding: 8px 26px 8px 9px;
-  border-left: 2px solid var(--stims-cool);
+  border-left: 1px solid var(--stims-cool);
   background: var(--ed-tint-3);
   color: var(--ed-muted);
   font-size: 0.75rem;
@@ -1702,7 +1715,7 @@ html.light .stims-editor {
 }
 
 .stims-editor__jump-input:focus-visible {
-  outline: 2px solid var(--ed-focus, #f47a54);
+  outline: 2px solid var(--ed-focus, #ffb21a);
   outline-offset: -2px;
 }
 
@@ -1728,8 +1741,8 @@ html.light .stims-editor {
 }
 
 .stims-editor__jump-item[data-active="true"] {
-  background: var(--ed-active-soft, rgba(244, 122, 84, 0.18));
-  box-shadow: inset 2px 0 0 var(--ed-focus, #f47a54);
+  background: var(--ed-active-soft, rgba(255, 178, 26, 0.18));
+  box-shadow: inset 1px 0 0 var(--ed-focus, #ffb21a);
 }
 
 .stims-editor__jump-count {
@@ -1922,7 +1935,7 @@ button.stims-editor__compat-row:focus-visible {
 }
 
 .stims-editor__compat-row[data-severity="approximation"] {
-  border-left-color: var(--stims-warning, #f5a524);
+  border-left-color: var(--stims-warn);
 }
 
 .stims-editor__compat-row[data-severity="breaks"] {
@@ -1931,7 +1944,7 @@ button.stims-editor__compat-row:focus-visible {
 
 .stims-editor__compat-row[data-severity="differs"],
 .stims-editor__compat-row[data-severity="needs"] {
-  border-left-color: var(--stims-warning, #f5a524);
+  border-left-color: var(--stims-warn);
 }
 
 .stims-editor__compat-section {
@@ -2169,7 +2182,7 @@ button.stims-editor__compat-row:focus-visible {
   margin-right: auto;
   font-family: var(--font-family-mono);
   font-size: var(--text-2xs);
-  color: var(--stims-warn);
+  color: var(--stims-accent);
   white-space: nowrap;
 }
 

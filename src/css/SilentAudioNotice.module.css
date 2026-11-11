@@ -9,7 +9,7 @@
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the cool stripe marks the notice as an instruction to act on */
+  border-left: 1px solid var(--stims-cool);
   box-shadow: var(--stims-shadow);
   color: var(--stims-ink);
   font-family: var(--font-family-base);

@@ -7,9 +7,17 @@ source: https://github.com/zz-plant/stims/blob/main/CHANGELOG.md
 
 # What's new in Stims
 
-6 releases since 2024. Latest v1.5.0 on 2026-10-21. 65 changes in progress.
+6 releases since 2024. Latest v1.5.0 on 2026-10-21. 66 changes in progress.
 
 ## Highlights
+
+### A new look: the swatchbook (2026-11-10)
+
+![A new look: the swatchbook](https://toil.fyi/screenshots/whats-new/swatchbook-landing.webp)
+
+Every preset is now printed like a strip from a lighting-gel swatchbook: its catalog number, its name and maker, and a graph of bass, mid and treble with the sounds it reacts to lit. The chrome is matte black card that keeps one amber for whatever is on or playing and leaves every other colour on screen to the preset.
+
+[Try it](/)
 
 ### The aesthetic compass (2026-11-08)
 
@@ -67,6 +75,7 @@ Say "next", "calm", "breathe" or "full screen". Recognition runs on your device 
 
 #### Changed
 
+- The chrome is redesigned as a lighting-gel swatchbook. Every preset prints like a numbered strip of black card: its catalog number (from `catalog.json`'s `order`), name, maker, and a live graph of bass, mid and treble that lights the bands its drawn output reads, from the same dataflow analysis as the editor's sound tags. The landing is a riveted cover sheet over the running preset, the dock a strip with that graph along its top edge, the title card a swatch that swings in on its rivet, and Browse prints one catalog number per tile. Amber `#ffb21a` is the only colour the chrome emits and marks only what is on, selected, playing or focused; the primary action is a white tab. Pathway Extreme (width axis) and Atkinson Hyperlegible Mono replace Archivo and Martian Mono, the social cards and edge share card are set in the same faces, and the app icon is a swatch strip. `DESIGN.md` records the system.
 - Preset pages link the topic hubs that list them, under **Collections**, and name those collections in their descriptions. Their structured data credits each hand in a chain as its own person, and their breadcrumb runs through `/presets/`. Every page's JSON-LD now names the same site, and identifies MilkDrop by its Wikipedia and Wikidata records; hubs add breadcrumbs and a preset list, the course hub is a `Course`, and the technique glossary is a `DefinedTermSet`.
 - Reduce flashing is on by default for new visitors and for saved preferences that predate the setting; an opt-out you saved is kept. It used to start on only when the operating system asked for reduced motion. From a first visit, Browse, shuffle and autoplay leave out presets measured above the WCAG 2.3.1 limit, and the live governor dims detected strobing (#1573).
 - The start page leads with your own audio. The main button reads Start visualizer (was Play demo), the source chips sit under Connect your audio (was Or play your own audio), the showcase is Jump into an iconic look, and a `?preset=` page says Starting visualizer… instead of Starting with demo audio… (#1614).

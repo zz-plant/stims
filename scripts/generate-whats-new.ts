@@ -350,27 +350,27 @@ ${feed}
 
   const extraStyle = `
 .wn-lede{color:var(--muted);max-width:42rem}
-.wn-activity{display:grid;gap:16px;margin:1.5em 0 2em;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--zebra)}
+.wn-activity{display:grid;gap:16px;margin:1.5em 0 2em;padding:16px 18px;border:1px solid var(--line);border-radius:6px;background:var(--code)}
 @media(min-width:640px){.wn-activity{grid-template-columns:1fr auto;align-items:end}}
 .wn-stats{display:grid;gap:6px}
 .wn-stat{margin:0;font-weight:600;font-size:1.05rem}
-.wn-stat:before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);vertical-align:middle}
+.wn-stat:before{content:"";display:inline-block;width:7px;height:7px;margin-right:9px;border-radius:50%;border:1px solid var(--muted);vertical-align:middle}
 .wn-chart{margin:0}
 .wn-chart figcaption{color:var(--muted);font-size:.8rem;margin-bottom:6px}
 .wn-bars{display:flex;align-items:flex-end;gap:6px;height:64px;margin:0;padding:0;list-style:none}
 .wn-bar{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:22px;flex:1}
-.wn-bar__fill{width:100%;max-width:18px;border-radius:4px 4px 0 0;background:var(--accent);opacity:.75;min-height:2px}
+.wn-bar__fill{width:100%;max-width:18px;background:var(--muted);min-height:2px}
 .wn-bar__label{font-size:.62rem;color:var(--muted);margin-top:4px}
 .wn-cards{display:grid;gap:18px;margin:1.2em 0}
 @media(min-width:640px){.wn-cards{grid-template-columns:1fr 1fr}}
-.wn-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--zebra)}
+.wn-card{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--code)}
 .wn-card img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-bottom:1px solid var(--line)}
 .wn-card__body{padding:14px 16px}
 .wn-card__title{margin:0 0 2px;font-size:1.1rem}
 .wn-card__date{color:var(--muted);font-size:.8rem}
 .wn-card p{margin:.5em 0 .6em}
 .wn-card__link{font-weight:600;text-decoration:none}
-details{margin:.8em 0;border:1px solid var(--line);border-radius:10px;padding:2px 16px 6px;background:var(--zebra)}
+details{margin:.8em 0;border:1px solid var(--line);border-radius:6px;padding:2px 16px 6px;background:var(--zebra)}
 summary{cursor:pointer;padding:8px 0;font-weight:600}
 .wn-release__date{color:var(--muted);font-weight:400;font-size:.9rem;margin-left:8px}
 details h4{margin:1em 0 .3em;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}

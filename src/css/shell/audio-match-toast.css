@@ -14,23 +14,13 @@
   max-width: min(420px, calc(100vw - 32px));
   padding: 10px 14px 12px;
   border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the stripe marks the audio-match toast's found-match status */
+  border-left: 1px solid var(--stims-cool);
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   box-shadow: var(--stims-shadow);
   color: var(--stims-ink);
   font-size: 0.8125rem;
   animation: fade-in 0.3s ease;
-}
-
-.stims-shell__audio-match .stims-shell__eyebrow {
-  margin: 0;
-  color: var(--stims-muted);
-  font-size: 0.6875rem;
-  font-weight: var(--font-weight-bold);
-  font-stretch: var(--font-stretch-legend);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 /* The whole title block is the button: one target, not a link-styled word. */

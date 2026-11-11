@@ -118,7 +118,8 @@ describe('preset social sharing', () => {
       const { size, lines } = fitTitle(
         'triptrap_(getting_concrete_visions_through_a_diafragma_version)',
       );
-      const maxChars = Math.floor(1072 / (size * 0.55));
+      // TITLE_CHAR_RATIO in og-preset.ts: Pathway Extreme Condensed Bold.
+      const maxChars = Math.floor(1072 / (size * 0.525));
 
       expect(lines.length).toBeGreaterThan(1);
       for (const line of lines) {
@@ -198,7 +199,7 @@ describe('preset social sharing', () => {
       expect(svg).not.toContain('animation:');
     });
 
-    // Space Mono has no U+25B6; the previous card shipped a literal tofu box
+    // The mono face has no U+25B6; an earlier card shipped a literal tofu box
     // in its call to action.
     test('uses only glyphs the bundled fonts can shape', () => {
       const svg = buildPresetOgSvg({
@@ -241,11 +242,10 @@ describe('preset social sharing', () => {
         join(repoRoot, 'node_modules', '@resvg', 'resvg-wasm', 'index_bg.wasm'),
       ),
       fonts: [
-        'SpaceGrotesk-Regular.ttf',
-        'SpaceGrotesk-Medium.ttf',
-        'SpaceGrotesk-Bold.ttf',
-        'SpaceMono-Regular.ttf',
-        'SpaceMono-Bold.ttf',
+        'PathwayExtreme-Regular.ttf',
+        'PathwayExtreme-Medium.ttf',
+        'PathwayExtremeCondensed-Bold.ttf',
+        'AtkinsonHyperlegibleMono-Bold.ttf',
       ].map(
         (name) =>
           new Uint8Array(
@@ -684,10 +684,12 @@ describe('preset social sharing', () => {
 
     test('keeps the fonts that loaded when one subrequest fails', async () => {
       const fonts = await loadFonts(
-        fontAssets((path) => path.endsWith('SpaceMono-Bold.ttf')),
+        fontAssets((path) =>
+          path.endsWith('AtkinsonHyperlegibleMono-Bold.ttf'),
+        ),
         'https://toil.fyi',
       );
-      expect(fonts).toHaveLength(4);
+      expect(fonts).toHaveLength(3);
     });
 
     test('returns an empty set rather than throwing when every font fails', async () => {

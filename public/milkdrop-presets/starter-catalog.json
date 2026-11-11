@@ -2,6 +2,7 @@
   "presets": [
     {
       "id": "shifter-glassworms-flare",
+      "order": 40,
       "title": "Shifter - Glassworms Flare",
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-glassworms-flare.milk",
@@ -52,6 +53,7 @@
     },
     {
       "id": "eos-glowsticks-v2-03-music",
+      "order": 1,
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-glowsticks-v2-03-music.milk",
@@ -105,6 +107,7 @@
     },
     {
       "id": "rovastar-parallel-universe",
+      "order": 2,
       "title": "Rovastar - Parallel Universe",
       "author": "Rovastar",
       "file": "/milkdrop-presets/rovastar-parallel-universe.milk",
@@ -161,6 +164,7 @@
     },
     {
       "id": "eos-phat-cubetrace-v2",
+      "order": 3,
       "title": "Eo.S. + Phat - Cubetrace v2",
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/eos-phat-cubetrace-v2.milk",
@@ -217,6 +221,7 @@
     },
     {
       "id": "krash-rovastar-cerebral-demons-stars",
+      "order": 4,
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "author": "Krash & Rovastar",
       "file": "/milkdrop-presets/krash-rovastar-cerebral-demons-stars.milk",
@@ -274,6 +279,7 @@
     },
     {
       "id": "aderrasi-potion-of-spirits",
+      "order": 5,
       "title": "Aderrasi - Potion of Spirits",
       "author": "Aderrasi",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/aderrasi-potion-of-spirits.milk",
@@ -320,6 +326,7 @@
     },
     {
       "id": "geiss-casino",
+      "order": 6,
       "title": "Geiss - Casino",
       "author": "Geiss",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-casino.milk",
@@ -372,6 +379,7 @@
     },
     {
       "id": "shifter-snakeskin",
+      "order": 7,
       "title": "Shifter - Snakeskin",
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-snakeskin.milk",
@@ -418,6 +426,7 @@
     },
     {
       "id": "shifter-swarm",
+      "order": 8,
       "title": "Shifter - Swarm",
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-swarm.milk",
@@ -470,6 +479,7 @@
     },
     {
       "id": "shifter-curlique",
+      "order": 9,
       "title": "Shifter - Curlique",
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-curlique.milk",
@@ -522,6 +532,7 @@
     },
     {
       "id": "rovastar-harlequins-liquid-dragon",
+      "order": 10,
       "title": "Rovastar - Harlequin's Liquid Dragon",
       "author": "Rovastar",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-harlequins-liquid-dragon.milk",
@@ -576,6 +587,7 @@
     },
     {
       "id": "eos-heater-core-c",
+      "order": 11,
       "title": "Eo.S. - Heater Core C",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-heater-core-c.milk",
@@ -623,6 +635,7 @@
     },
     {
       "id": "orb-radiation",
+      "order": 12,
       "title": "Orb - Radiation",
       "author": "Orb",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-radiation.milk",
@@ -676,6 +689,7 @@
     },
     {
       "id": "eos-apocalypse",
+      "order": 13,
       "title": "Eo.S. - Apocalypse",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-apocalypse.milk",
@@ -727,6 +741,7 @@
     },
     {
       "id": "dbleja-hovering-over-mars",
+      "order": 14,
       "title": "Dbleja - Hovering Over Mars",
       "author": "Dbleja",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-mars.milk",
@@ -770,6 +785,7 @@
     },
     {
       "id": "dbleja-hovering-over-pluto",
+      "order": 15,
       "title": "Dbleja - Hovering Over Pluto",
       "author": "Dbleja",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-pluto.milk",
@@ -813,6 +829,7 @@
     },
     {
       "id": "dbleja-inside-the-tree-blue-mix",
+      "order": 16,
       "title": "Dbleja - Inside The Tree (Blue Mix)",
       "author": "Dbleja",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-inside-the-tree-blue-mix.milk",
@@ -856,6 +873,7 @@
     },
     {
       "id": "eos-dark-side-of-the-moon-clean-mix",
+      "order": 17,
       "title": "Eo.S. - Dark Side of the Moon (Clean Mix)",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-dark-side-of-the-moon-clean-mix.milk",
@@ -906,6 +924,7 @@
     },
     {
       "id": "eos-ether-posession-phat-edit-v3",
+      "order": 18,
       "title": "Eo.S. - Ether Possession (Phat Edit v3)",
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether-posession-phat-edit-v3.milk",
@@ -957,6 +976,7 @@
     },
     {
       "id": "eos-ether",
+      "order": 19,
       "title": "Eo.S. - Ether",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether.milk",
@@ -1007,6 +1027,7 @@
     },
     {
       "id": "eos-matrix-cube-c",
+      "order": 20,
       "title": "Eo.S. - Matrix Cube C",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-matrix-cube-c.milk",
@@ -1052,6 +1073,7 @@
     },
     {
       "id": "eos-phat-cat-scan-nirvana",
+      "order": 21,
       "title": "Eo.S. + Phat - CAT Scan (Nirvana)",
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-cat-scan-nirvana.milk",
@@ -1103,6 +1125,7 @@
     },
     {
       "id": "eos-phat-dark-heart",
+      "order": 22,
       "title": "Eo.S. + Phat - Dark Heart",
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-dark-heart.milk",
@@ -1153,6 +1176,7 @@
     },
     {
       "id": "eos-phat-linear-clouds-v2",
+      "order": 23,
       "title": "Eo.S. + Phat - Linear Clouds v2",
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-linear-clouds-v2.milk",
@@ -1203,6 +1227,7 @@
     },
     {
       "id": "eos-phat-magnetosphere-13-pulsar",
+      "order": 24,
       "title": "Eo.S. + Phat - Magnetosphere 13 Pulsar",
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-magnetosphere-13-pulsar.milk",

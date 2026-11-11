@@ -10,7 +10,7 @@
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong, #14100c);
-  color: var(--stims-ink-strong, #fff8ef);
+  color: var(--stims-ink-strong, #f6f6f2);
 }
 
 /* Anchor-snapped overlay: position comes only from data-anchor, never free
@@ -63,7 +63,7 @@
 .synthOnlyLabel input[type="checkbox"] {
   width: 14px;
   height: 14px;
-  accent-color: var(--stims-accent, #f47a54);
+  accent-color: var(--stims-accent, #ffb21a);
 }
 
 .synthOnlyLabel input[type="checkbox"]:disabled {
@@ -89,7 +89,7 @@
 
 .closeButton:hover,
 .moveButton:hover {
-  color: var(--stims-ink-strong, #fff8ef);
+  color: var(--stims-ink-strong, #f6f6f2);
 }
 
 .moveButton {
@@ -105,15 +105,15 @@
 .exampleChip {
   padding: 4px 10px;
   border: 1px solid var(--stims-line, rgba(255, 255, 255, 0.12));
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: none;
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   font-size: 0.75rem;
   cursor: pointer;
 }
 
 .exampleChip:hover {
-  border-color: var(--stims-cool, #77c9ff);
+  border-color: var(--stims-cool, #ecece7);
 }
 
 .editor {
@@ -129,9 +129,9 @@
 }
 
 .editor:focus-visible {
-  outline: 2px solid var(--stims-accent, #f47a54);
+  outline: 2px solid var(--stims-accent, #ffb21a);
   outline-offset: 1px;
-  border-color: var(--stims-accent, #f47a54);
+  border-color: var(--stims-accent, #ffb21a);
 }
 
 .actions {
@@ -149,8 +149,8 @@
 }
 
 .playButton {
-  border: 1px solid var(--stims-accent, #f47a54);
-  background: var(--stims-accent, #f47a54);
+  border: 1px solid var(--stims-accent, #ffb21a);
+  background: var(--stims-accent, #ffb21a);
   color: var(--stims-on-accent, #14100c);
 }
 
@@ -162,7 +162,7 @@
 .stopButton {
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   background: none;
-  color: var(--stims-ink-strong, #fff8ef);
+  color: var(--stims-ink-strong, #f6f6f2);
 }
 
 .stopButton:disabled {
@@ -239,7 +239,7 @@
 
 .scopeMoveButton:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: var(--stims-ink-strong, #fff8ef);
+  color: var(--stims-ink-strong, #f6f6f2);
 }
 
 .scopeCanvas {
@@ -255,9 +255,9 @@
   z-index: var(--z-lab-panel);
   padding: 6px 14px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-md);
   background: var(--stims-panel-strong, #14100c);
-  color: var(--stims-cool, #77c9ff);
+  color: var(--stims-cool, #ecece7);
   font-size: 0.8125rem;
   cursor: pointer;
 }

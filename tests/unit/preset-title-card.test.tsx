@@ -123,7 +123,9 @@ function nameOfWidth(naturalAt100: number) {
 
 describe('fitTitleStretch', () => {
   test('condenses a long name onto one line, without running over it', () => {
-    const measure = nameOfWidth(1000);
+    // Wide enough to need condensing, narrow enough to fit at the face's
+    // narrowest width (75%): 940 * (0.3 + 0.7 * 0.75) = 776.
+    const measure = nameOfWidth(940);
     const fit = fitTitleStretch(measure, 808);
     expect(fit.wrap).toBe(false);
     expect(fit.stretch).toBeLessThan(100);

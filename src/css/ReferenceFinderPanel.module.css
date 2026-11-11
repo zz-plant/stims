@@ -95,8 +95,8 @@
 
 .primary {
   border: 1px solid transparent;
-  background: var(--stims-accent);
-  color: var(--stims-on-accent);
+  background: var(--stims-ink-strong);
+  color: var(--bg-color);
 }
 
 .secondary,

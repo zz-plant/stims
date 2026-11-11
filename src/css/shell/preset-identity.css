@@ -30,3 +30,9 @@
   font-size: var(--text-xs);
   color: var(--stims-muted);
 }
+
+/* The catalog number leads the spec line, before the maker. */
+.stims-preset-identity__number {
+  margin-right: 0.5em;
+  color: var(--stims-ink);
+}

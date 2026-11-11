@@ -5,22 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
     <title>Stims Certification Suite</title>
+    <link rel="stylesheet" href="/src/css/fonts.css" />
     <style>
+      /* The swatchbook palette (DESIGN.md), kept local: this tool page does
+         not load the app's tokens. */
       :root {
-        --ink: #f6efe4;
-        --muted: rgba(246, 239, 228, 0.7);
-        --line: rgba(255, 255, 255, 0.12);
-        --cool: #77c9ff;
-        --good: #7de0a2;
-        --warn: #ffd166;
-        --bad: #ff7b72;
-        --bg: #080c16;
-        --panel: rgba(10, 14, 23, 0.94);
-        --radius: 12px;
+        --ink: #ecece7;
+        --muted: #a3a29c;
+        --line: rgba(236, 236, 231, 0.14);
+        --cool: #ffb21a;
+        --good: #8fd694;
+        --warn: #f6f6f2;
+        --bad: #ff6a5c;
+        --bg: #0a0a09;
+        --panel: #0f0f0e;
+        --radius: 6px;
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
-        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-family: 'Pathway Extreme', system-ui, sans-serif;
         background: var(--bg);
         color: var(--ink);
         min-height: 100vh;
@@ -34,7 +37,7 @@
         z-index: 10;
         padding: 10px 16px;
         border: 1px solid var(--cool);
-        border-radius: 8px;
+        border-radius: 4px;
         background: var(--bg);
         color: var(--cool);
         font-weight: 600;
@@ -75,7 +78,7 @@
       }
       .cert-controls button {
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 4px;
         background: rgba(255, 255, 255, 0.05);
         color: inherit;
         font: inherit;
@@ -97,7 +100,7 @@
       }
       .cert-controls select {
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 4px;
         background: rgba(255, 255, 255, 0.05);
         color: inherit;
         font: inherit;
@@ -140,7 +143,7 @@
         width: 100%;
         aspect-ratio: 16 / 9;
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 4px;
         background: #000;
         display: block;
       }
@@ -166,7 +169,7 @@
         display: grid;
         gap: 6px;
         font-size: 0.9rem;
-        font-family: 'Space Mono', monospace;
+        font-family: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
       }
       .cert-metric {
         display: flex;
@@ -193,21 +196,21 @@
         text-transform: uppercase;
       }
       .cert-status--pass {
-        background: rgba(125, 224, 162, 0.15);
+        background: rgba(143, 214, 148, 0.15);
         color: var(--good);
       }
       .cert-status--fail {
-        background: rgba(255, 123, 114, 0.15);
+        background: rgba(255, 106, 92, 0.15);
         color: var(--bad);
       }
       .cert-status--pending {
-        background: rgba(119, 201, 255, 0.1);
+        background: rgba(255, 178, 26, 0.1);
         color: var(--cool);
       }
       .cert-diff-img {
         width: 100%;
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 4px;
         background: #000;
       }
       .cert-results[hidden] {

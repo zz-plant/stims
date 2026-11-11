@@ -42,7 +42,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--card-bg, #151e24);
+  background: var(--card-bg, #171716);
   border: 1px solid var(--stims-line, rgba(255, 255, 255, 0.12));
   border-radius: var(--stims-radius-panel, 4px);
   box-shadow: var(--stims-shadow-soft, 0 14px 34px rgba(0, 0, 0, 0.22));
@@ -74,7 +74,7 @@
   border-bottom: 1px solid var(--stims-line-soft, rgba(255, 255, 255, 0.08));
   border-radius: 0;
   background: transparent;
-  color: var(--stims-ink, #f7f4eb);
+  color: var(--stims-ink, #ecece7);
   font-family: var(--font-family-base, system-ui);
   font-size: var(--text-base, 1rem);
   line-height: var(--line-height-tight, 1.2);
@@ -91,7 +91,7 @@
 }
 
 .card:focus-within {
-  border-color: var(--stims-accent, #f47a54);
+  border-color: var(--stims-accent, #ffb21a);
 }
 
 .list {
@@ -112,16 +112,16 @@
   border-radius: var(--stims-radius-control, 4px);
   /* Warm accent = focus/highlight, matching the app-wide convention. Kept
      as an inset bar + soft fill: flat, no glow. */
-  box-shadow: inset 2px 0 0 transparent;
-  color: var(--stims-ink, #f7f4eb);
+  box-shadow: inset 1px 0 0 transparent;
+  color: var(--stims-ink, #ecece7);
   font-size: var(--text-sm, 0.875rem);
   cursor: pointer;
 }
 
 .option[aria-selected="true"] {
-  background: var(--stims-accent-soft, rgba(244, 122, 84, 0.2));
-  box-shadow: inset 2px 0 0 var(--stims-accent, #f47a54);
-  color: var(--stims-ink-strong, #fff8ef);
+  background: var(--stims-accent-soft, rgba(255, 178, 26, 0.2));
+  box-shadow: inset 1px 0 0 var(--stims-accent, #ffb21a);
+  color: var(--stims-ink-strong, #f6f6f2);
 }
 
 .optionLabel {

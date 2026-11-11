@@ -1,0 +1,594 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T00:00:00Z",
+  "title": "Design System: Stims",
+  "extensions": {
+    "colorMeta": {
+      "cover-stock": {
+        "role": "neutral",
+        "displayName": "Cover Stock",
+        "canonical": "oklch(16.8% 0.002 106.6)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242423",
+          "#40403f",
+          "#5e5e5c",
+          "#7d7d7c",
+          "#9e9e9d",
+          "#c4c4c3",
+          "#eeeeed"
+        ]
+      },
+      "cover-stock-raised": {
+        "role": "neutral",
+        "displayName": "Cover Stock Raised",
+        "canonical": "oklch(19.5% 0.002 106.6)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242423",
+          "#40403f",
+          "#5e5e5c",
+          "#7d7d7c",
+          "#9e9e9d",
+          "#c4c4c3",
+          "#eeeeed"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242423",
+          "#40403f",
+          "#5e5e5c",
+          "#7d7d7c",
+          "#9e9e9d",
+          "#c4c4c3",
+          "#eeeeed"
+        ]
+      },
+      "control-fill": {
+        "role": "neutral",
+        "displayName": "Control Fill",
+        "canonical": "oklch(22.1% 0.004 106.7)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#242422",
+          "#40403e",
+          "#5e5e5b",
+          "#7d7d7b",
+          "#9e9e9c",
+          "#c4c4c1",
+          "#efefec"
+        ]
+      },
+      "control-fill-hover": {
+        "role": "neutral",
+        "displayName": "Control Fill Hover",
+        "tonalRamp": [
+          "#0b0b09",
+          "#242422",
+          "#40403e",
+          "#5e5e5b",
+          "#7d7d7b",
+          "#9e9e9c",
+          "#c4c4c1",
+          "#efefec"
+        ]
+      },
+      "stage-floor": {
+        "role": "neutral",
+        "displayName": "Stage Floor",
+        "canonical": "oklch(14.4% 0.002 106.7)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242423",
+          "#40403e",
+          "#5e5e5c",
+          "#7d7d7c",
+          "#9e9e9d",
+          "#c4c4c2",
+          "#eeeeed"
+        ]
+      },
+      "print-white": {
+        "role": "neutral",
+        "displayName": "Print White",
+        "canonical": "oklch(94.2% 0.007 106.5)",
+        "tonalRamp": [
+          "#0b0b08",
+          "#242421",
+          "#40403c",
+          "#5e5e5a",
+          "#7d7d79",
+          "#9f9f9a",
+          "#c4c4c0",
+          "#efefea"
+        ]
+      },
+      "print-white-strong": {
+        "role": "neutral",
+        "displayName": "Print White Strong",
+        "canonical": "oklch(97.2% 0.005 106.5)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#242421",
+          "#40403d",
+          "#5e5e5a",
+          "#7d7d7a",
+          "#9f9f9b",
+          "#c4c4c0",
+          "#efefeb"
+        ]
+      },
+      "spec-grey": {
+        "role": "neutral",
+        "displayName": "Spec Grey",
+        "canonical": "oklch(64.6% 0.009 99.0)",
+        "tonalRamp": [
+          "#0c0b07",
+          "#25241f",
+          "#41403b",
+          "#5f5e58",
+          "#7e7d77",
+          "#a09f98",
+          "#c5c4be",
+          "#f0efe8"
+        ]
+      },
+      "muted-grey": {
+        "role": "neutral",
+        "displayName": "Muted Grey",
+        "canonical": "oklch(71.1% 0.009 98.9)",
+        "tonalRamp": [
+          "#0c0b07",
+          "#25241f",
+          "#41403b",
+          "#5f5e58",
+          "#7e7d78",
+          "#a09f99",
+          "#c5c4be",
+          "#f0efe8"
+        ]
+      },
+      "rule-line": {
+        "role": "neutral",
+        "displayName": "Rule Line",
+        "canonical": "rgba(236, 236, 231, 0.12)"
+      },
+      "rule-line-strong": {
+        "role": "neutral",
+        "displayName": "Rule Line Strong",
+        "canonical": "rgba(236, 236, 231, 0.3)"
+      },
+      "safelight-amber": {
+        "role": "primary",
+        "displayName": "Safelight Amber",
+        "canonical": "oklch(81.7% 0.167 76.5)",
+        "tonalRamp": [
+          "#130900",
+          "#322002",
+          "#553a08",
+          "#7b5512",
+          "#a57210",
+          "#cf9119",
+          "#fcb53b",
+          "#feecd1"
+        ]
+      },
+      "on-amber": {
+        "role": "neutral",
+        "displayName": "On Amber",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242423",
+          "#40403f",
+          "#5e5e5c",
+          "#7d7d7c",
+          "#9e9e9d",
+          "#c4c4c3",
+          "#eeeeed"
+        ]
+      },
+      "signal-good": {
+        "role": "tertiary",
+        "displayName": "Signal Good",
+        "canonical": "oklch(81.2% 0.116 146.1)",
+        "tonalRamp": [
+          "#001001",
+          "#022d0a",
+          "#084e18",
+          "#286e32",
+          "#4a8f51",
+          "#6cb272",
+          "#91d996",
+          "#cbfece"
+        ]
+      },
+      "signal-bad": {
+        "role": "tertiary",
+        "displayName": "Signal Bad",
+        "canonical": "oklch(70.8% 0.185 28.0)",
+        "tonalRamp": [
+          "#1f0000",
+          "#4a0203",
+          "#7a0a0a",
+          "#ae1615",
+          "#d54339",
+          "#fc675a",
+          "#fcada2",
+          "#ffe9e5"
+        ]
+      },
+      "page-white": {
+        "role": "neutral",
+        "displayName": "Page White (light theme)",
+        "canonical": "oklch(96.0% 0.005 106.5)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#242421",
+          "#40403d",
+          "#5e5e5a",
+          "#7d7d7a",
+          "#9f9f9b",
+          "#c4c4c0",
+          "#efefeb"
+        ]
+      },
+      "page-card": {
+        "role": "neutral",
+        "displayName": "Page Card (light theme)",
+        "canonical": "oklch(98.7% 0.004 106.5)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#242422",
+          "#40403d",
+          "#5e5e5b",
+          "#7d7d7b",
+          "#9e9e9c",
+          "#c4c4c1",
+          "#efefec"
+        ]
+      },
+      "page-ink": {
+        "role": "neutral",
+        "displayName": "Page Ink (light theme)",
+        "canonical": "oklch(20.0% 0.002 106.6)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242423",
+          "#40403f",
+          "#5e5e5c",
+          "#7d7d7c",
+          "#9e9e9d",
+          "#c4c4c3",
+          "#eeeeed"
+        ]
+      },
+      "page-muted": {
+        "role": "neutral",
+        "displayName": "Page Muted (light theme)",
+        "canonical": "oklch(44.5% 0.008 97.5)",
+        "tonalRamp": [
+          "#0c0b08",
+          "#252420",
+          "#41403b",
+          "#5f5e59",
+          "#7e7d78",
+          "#a09e99",
+          "#c5c4be",
+          "#f0efe9"
+        ]
+      },
+      "page-rule-line": {
+        "role": "neutral",
+        "displayName": "Page Rule Line (light theme)",
+        "canonical": "rgba(22, 22, 21, 0.2)"
+      },
+      "safelight-amber-ink": {
+        "role": "primary",
+        "displayName": "Safelight Amber Ink (light theme)",
+        "canonical": "oklch(48.5% 0.111 62.5)",
+        "tonalRamp": [
+          "#150700",
+          "#371d02",
+          "#5d3507",
+          "#854f11",
+          "#ab6d2e",
+          "#cf8e51",
+          "#f8b476",
+          "#ffead9"
+        ]
+      },
+      "page-good": {
+        "role": "tertiary",
+        "displayName": "Page Good (light theme)"
+      },
+      "page-bad": {
+        "role": "tertiary",
+        "displayName": "Page Bad (light theme)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The promise on the landing cover sheet; condensed to wdth 78%, balanced, max 14ch."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The preset name on the title card; width axis fitted per name to set on one line."
+      },
+      "nameplate": {
+        "displayName": "Nameplate",
+        "purpose": "The Stims wordmark, printed like a maker's name at wdth 75%."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text at full width."
+      },
+      "body-lead": {
+        "displayName": "Body Lead",
+        "purpose": "The cover tagline and single lead paragraphs, max 30rem."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Every tab and button label, bold at wdth 88%."
+      },
+      "legend": {
+        "displayName": "Legend",
+        "purpose": "Graph band names, the Driven by row header and spec lines; uppercase at wdth 78%."
+      },
+      "catalog-number": {
+        "displayName": "Catalog Number",
+        "purpose": "Preset catalog digits, bold at wdth 75% in tabular figures, after a spec-grey No. prefix."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Atkinson Hyperlegible Mono for preset code and engine readouts."
+      }
+    },
+    "shadows": [
+      {
+        "name": "on-stage-strip",
+        "value": "box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.45)",
+        "purpose": "Every punched .stims-stock card on the stage; filter, because the rivet mask clips box-shadow."
+      },
+      {
+        "name": "shadow-strong",
+        "value": "0 18px 44px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4)",
+        "purpose": "Sheets and dialogs over the stage."
+      },
+      {
+        "name": "shadow-panel",
+        "value": "0 14px 34px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3)",
+        "purpose": "Side panels."
+      },
+      {
+        "name": "shadow-soft",
+        "value": "0 8px 22px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.35)",
+        "purpose": "Popovers and small floating controls."
+      },
+      {
+        "name": "shadow-panel-light",
+        "value": "0 10px 24px rgba(22,22,21,0.12), 0 2px 6px rgba(22,22,21,0.08)",
+        "purpose": "Panels in the light theme."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-fast",
+        "value": "0.08s cubic-bezier(0.05, 0.9, 0.1, 1)",
+        "purpose": "Border and colour changes on hover."
+      },
+      {
+        "name": "transition-base",
+        "value": "0.12s cubic-bezier(0.05, 0.9, 0.1, 1)",
+        "purpose": "Default state change on controls."
+      },
+      {
+        "name": "transition-slow",
+        "value": "0.18s cubic-bezier(0.05, 0.9, 0.1, 1)",
+        "purpose": "Larger state changes."
+      },
+      {
+        "name": "motion-enter",
+        "value": "0.2s cubic-bezier(0.05, 0.9, 0.1, 1)",
+        "purpose": "The strip pull: translateY up 4-6px on hover or focus."
+      },
+      {
+        "name": "motion-exit",
+        "value": "0.15s cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Exits."
+      },
+      {
+        "name": "title-card-swing",
+        "value": "0.48s cubic-bezier(0.16, 1, 0.3, 1), rotate(-3deg) to 0 about the rivet",
+        "purpose": "Title card arriving on a preset change; leaves with 0.32s cubic-bezier(0.7, 0, 0.84, 0). Fade only under reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "All transition tokens collapse under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "xs", "value": "480px" },
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "1024px" },
+      { "name": "launch-collapse", "value": "1280px" },
+      { "name": "lg", "value": "1440px" }
+    ],
+    "focus": {
+      "outline": "2px solid var(--stims-accent)",
+      "offset": "2-3px",
+      "purpose": "Amber in both themes (#ffb21a dark, #8a4e00 light)."
+    },
+    "rivet": {
+      "mask": "radial-gradient(circle at var(--rivet-x) var(--rivet-y), transparent var(--rivet-r), #000 calc(var(--rivet-r) + 0.5px))",
+      "eyelet": "1px solid var(--stims-line), circle of radius rivet-r + 1px",
+      "sizes": {
+        "cover": "6px at 20px/20px",
+        "title-card": "6px at 18px/18px",
+        "dock": "5px at 15px/50%",
+        "starter-strip": "3.5px at 50%/11px"
+      }
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Page Tab",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per view: the white page tab (black in the light theme).",
+      "html": "<button class=\"ds-tab-primary\">Start visualizer</button>",
+      "css": ".ds-tab-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 16px; border: 1px solid transparent; border-radius: 4px; background: #f6f6f2; color: #0f0f0e; font-family: 'Pathway Extreme', system-ui, sans-serif; font-size: 1rem; font-weight: 700; font-stretch: 88%; letter-spacing: 0.01em; line-height: 1; cursor: pointer; transition: background-color 0.12s cubic-bezier(0.05, 0.9, 0.1, 1), transform 0.12s cubic-bezier(0.05, 0.9, 0.1, 1); } .ds-tab-primary:hover { background: #ffffff; transform: translateY(-2px); } .ds-tab-primary:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-tab-primary:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Outline Tab",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions beside the page tab: Browse, Edit, audio sources.",
+      "html": "<button class=\"ds-tab-outline\">Browse presets</button>",
+      "css": ".ds-tab-outline { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 46px; padding: 0.8rem 1.1rem; border: 1px solid rgba(236, 236, 231, 0.3); border-radius: 4px; background: transparent; color: #f6f6f2; font-family: 'Pathway Extreme', system-ui, sans-serif; font-size: 1rem; font-weight: 700; font-stretch: 88%; letter-spacing: 0.01em; cursor: pointer; transition: transform 0.2s cubic-bezier(0.05, 0.9, 0.1, 1), border-color 0.08s cubic-bezier(0.05, 0.9, 0.1, 1); } .ds-tab-outline:hover { transform: translateY(-2px); border-color: #ecece7; } .ds-tab-outline:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Ghost Tab",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis actions in panels.",
+      "html": "<button class=\"ds-tab-ghost\">Reset</button>",
+      "css": ".ds-tab-ghost { min-height: 40px; padding: 0.6rem 0.9rem; border: 1px solid rgba(236, 236, 231, 0.12); border-radius: 4px; background: transparent; color: #a3a29c; font-family: 'Pathway Extreme', system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; font-stretch: 88%; cursor: pointer; transition: background 0.08s cubic-bezier(0.05, 0.9, 0.1, 1), color 0.08s; } .ds-tab-ghost:hover { color: #f6f6f2; background: #1b1b19; border-color: rgba(236, 236, 231, 0.3); } .ds-tab-ghost:focus-visible { outline: 2px solid #ffb21a; outline-offset: 2px; }"
+    },
+    {
+      "name": "Switch",
+      "kind": "input",
+      "refersTo": "switch-on",
+      "description": "Die-cut toggle; amber only when on.",
+      "html": "<label class=\"ds-row\"><input type=\"checkbox\" class=\"ds-switch\" checked> Reduce flashing</label>",
+      "css": ".ds-row { display: inline-flex; gap: 10px; align-items: center; color: #ecece7; font-family: 'Pathway Extreme', system-ui, sans-serif; font-size: 0.875rem; cursor: pointer; } .ds-switch { appearance: none; position: relative; width: 40px; height: 24px; margin: 0; border: 1px solid rgba(236, 236, 231, 0.24); border-radius: 4px; background: rgba(0, 0, 0, 0.3); cursor: pointer; transition: background 0.12s cubic-bezier(0.05, 0.9, 0.1, 1), border-color 0.12s; } .ds-switch::after { content: ''; position: absolute; top: 50%; left: 3px; width: 16px; height: 16px; border-radius: 3px; background: #a3a29c; transform: translateY(-50%); transition: transform 0.12s cubic-bezier(0.05, 0.9, 0.1, 1), background 0.12s; } .ds-switch:checked { border-color: #ffb21a; background: #ffb21a; } .ds-switch:checked::after { background: #141210; transform: translate(16px, -50%); } .ds-switch:focus-visible { outline: 2px solid #ffb21a; outline-offset: 2px; }"
+    },
+    {
+      "name": "Cover Sheet",
+      "kind": "card",
+      "refersTo": "cover-sheet",
+      "description": "The landing's one opaque sheet of black card, riveted at its top-left corner, with the transmission graph under the promise.",
+      "html": "<div class=\"ds-stage\"><section class=\"ds-cover\"><p class=\"ds-nameplate\">Stims</p><h1 class=\"ds-display\">A music visualizer you can open up</h1><div class=\"ds-graph\"><span class=\"ds-legend\">Driven by</span><span class=\"ds-band\" data-lit=\"true\"><i style=\"--l:.8\"></i><b>Bass</b></span><span class=\"ds-band\"><i style=\"--l:.4\"></i><b>Mid</b></span><span class=\"ds-band\" data-lit=\"true\"><i style=\"--l:.6\"></i><b>Treble</b></span></div><p class=\"ds-lead\">Thousands of presets, reacting to whatever you play.</p></section></div>",
+      "css": ".ds-stage { padding: 24px; background: linear-gradient(135deg, #3a2a60, #c04d7a); } .ds-cover { position: relative; isolation: isolate; display: grid; gap: 10px; max-width: 34rem; padding: 36px 32px 24px; border-radius: 6px; color: #f6f6f2; font-family: 'Pathway Extreme', system-ui, sans-serif; box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.45); } .ds-cover::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: #0f0f0e; -webkit-mask: radial-gradient(circle at 20px 20px, transparent 6px, #000 6.5px); mask: radial-gradient(circle at 20px 20px, transparent 6px, #000 6.5px); } .ds-cover::after { content: ''; position: absolute; z-index: -1; left: 13px; top: 13px; width: 14px; height: 14px; border: 1px solid rgba(236,236,231,0.12); border-radius: 50%; } .ds-nameplate { margin: 0 0 10px; font-size: 1.25rem; font-weight: 820; font-stretch: 75%; line-height: 1; } .ds-display { margin: 0; max-width: 14ch; font-size: clamp(2.25rem, 4vw, 3.5rem); font-weight: 760; font-stretch: 78%; line-height: 0.96; letter-spacing: -0.01em; text-wrap: balance; } .ds-lead { margin: 0; color: #ecece7; font-size: 1.125rem; line-height: 1.45; } .ds-graph { display: grid; grid-template-columns: auto repeat(3, 1fr); column-gap: 3px; align-items: end; max-width: 22rem; } .ds-legend, .ds-band b { font-size: 0.6875rem; font-weight: 600; font-stretch: 78%; letter-spacing: 0.06em; text-transform: uppercase; color: #8f8e88; line-height: 1; } .ds-legend { margin-right: 8px; } .ds-band { display: grid; gap: 4px; } .ds-band i { position: relative; display: block; height: 22px; border-bottom: 1px solid rgba(236,236,231,0.3); overflow: hidden; } .ds-band i::before { content: ''; position: absolute; inset: 0; background: rgba(236,236,231,0.3); transform-origin: 50% 100%; transform: scaleY(var(--l)); } .ds-band[data-lit='true'] i { border-color: #ffb21a; } .ds-band[data-lit='true'] i::before { background: #ffb21a; } .ds-band[data-lit='true'] b { color: #ecece7; }"
+    },
+    {
+      "name": "Starter Strip",
+      "kind": "card",
+      "refersTo": "preset-card",
+      "description": "A swatch strip riveted at the top: catalog number and look, the preview window, name and maker. Hover pulls it out of the book.",
+      "html": "<button class=\"ds-strip\"><span class=\"ds-spec\"><span class=\"ds-no\"><small>No.</small> 0009</span><span class=\"ds-look\">Cosmic swirl</span></span><span class=\"ds-window\"></span><span class=\"ds-name\">Curlique</span><span class=\"ds-maker\">shifter</span></button>",
+      "css": ".ds-strip { position: relative; isolation: isolate; display: grid; grid-template-rows: auto 92px auto auto; gap: 6px; width: 180px; padding: 24px 10px 12px; border: 0; border-radius: 6px; background: none; color: #ecece7; font-family: 'Pathway Extreme', system-ui, sans-serif; text-align: left; cursor: pointer; transition: transform 0.2s cubic-bezier(0.05, 0.9, 0.1, 1); } .ds-strip::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: #0f0f0e; -webkit-mask: radial-gradient(circle at 50% 11px, transparent 3.5px, #000 4px); mask: radial-gradient(circle at 50% 11px, transparent 3.5px, #000 4px); } .ds-strip:hover, .ds-strip:focus-visible { transform: translateY(-6px); } .ds-strip:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-spec { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.875rem; color: #f6f6f2; } .ds-no { font-weight: 700; font-stretch: 75%; font-variant-numeric: tabular-nums; } .ds-no small { font-size: 0.62em; font-weight: 600; font-stretch: 78%; letter-spacing: 0.04em; text-transform: uppercase; color: #8f8e88; } .ds-look { font-size: 0.6875rem; font-weight: 600; font-stretch: 78%; letter-spacing: 0.06em; text-transform: uppercase; color: #8f8e88; } .ds-window { border-radius: 2px; background: #000; } .ds-name { font-weight: 600; font-size: 0.875rem; } .ds-maker { font-size: 0.75rem; color: #a3a29c; }"
+    },
+    {
+      "name": "Dock Strip",
+      "kind": "nav",
+      "refersTo": "dock-strip",
+      "description": "The player's transport: one strip riveted at its left end, catalog number before the title, the edge graph along its top rule.",
+      "html": "<nav class=\"ds-dock\"><span class=\"ds-edge\"><i data-lit=\"true\" style=\"--l:.7\"></i><i style=\"--l:.3\"></i><i data-lit=\"true\" style=\"--l:.5\"></i></span><button class=\"ds-dock-btn\">Edit</button><span class=\"ds-dock-title\"><small>No.</small> 2293 <b>Dark One - Clouds</b></span></nav>",
+      "css": ".ds-dock { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 4px 32px; border-radius: 6px; color: #ecece7; font-family: 'Pathway Extreme', system-ui, sans-serif; box-shadow: 0 12px 28px rgba(0,0,0,0.5); } .ds-dock::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: #0f0f0e; -webkit-mask: radial-gradient(circle at 15px 50%, transparent 5px, #000 5.5px); mask: radial-gradient(circle at 15px 50%, transparent 5px, #000 5.5px); } .ds-edge { position: absolute; top: 0; left: 32px; right: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; } .ds-edge i { position: relative; display: block; height: 2px; background: rgba(236,236,231,0.12); overflow: hidden; } .ds-edge i::before { content: ''; position: absolute; inset: 0; background: rgba(236,236,231,0.3); transform-origin: 0 50%; transform: scaleX(var(--l)); } .ds-edge i[data-lit='true']::before { background: #ffb21a; } .ds-dock-btn { height: 36px; padding: 0 12px; border: 1px solid rgba(236,236,231,0.12); border-radius: 4px; background: transparent; color: #ecece7; font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; } .ds-dock-btn:hover { background: rgba(236,236,231,0.09); } .ds-dock-btn:focus-visible { outline: 2px solid #ffb21a; outline-offset: 2px; } .ds-dock-title { font-variant-numeric: tabular-nums; font-weight: 700; font-stretch: 75%; } .ds-dock-title small { font-size: 0.62em; font-weight: 600; text-transform: uppercase; color: #8f8e88; } .ds-dock-title b { font-stretch: 88%; font-size: 1.125rem; margin-left: 6px; }"
+    },
+    {
+      "name": "Legend Tab",
+      "kind": "chip",
+      "refersTo": "legend-tab",
+      "description": "A section legend cut from the stock above the strips it names; top corners only.",
+      "html": "<span class=\"ds-legend-tab\">Connect your audio</span>",
+      "css": ".ds-legend-tab { display: inline-block; padding: 6px 10px 5px; border-radius: 4px 4px 0 0; background: #0f0f0e; color: #ecece7; font-family: 'Pathway Extreme', system-ui, sans-serif; font-size: 0.8125rem; font-weight: 700; font-stretch: 78%; letter-spacing: 0.12em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Browse Card",
+      "kind": "card",
+      "refersTo": "preset-card",
+      "description": "A page of the opened book: dark stock in every theme, full-bleed art, amber border only on the playing preset.",
+      "html": "<a class=\"ds-browse\" href=\"#\" data-active=\"true\"><span class=\"ds-art\"></span><span class=\"ds-cap\"><b>Glowsticks v2</b><small>Geiss</small></span></a>",
+      "css": ".ds-browse { display: flex; flex-direction: column; width: 160px; border: 1px solid rgba(236,236,231,0.12); border-radius: 6px; background: #151514; color: #ecece7; text-decoration: none; overflow: hidden; font-family: 'Pathway Extreme', system-ui, sans-serif; transition: border-color 0.08s cubic-bezier(0.05, 0.9, 0.1, 1), transform 0.2s cubic-bezier(0.05, 0.9, 0.1, 1); } .ds-browse:hover { border-color: rgba(236,236,231,0.3); transform: translateY(-4px); } .ds-browse:focus-visible { outline: 2px solid #ffb21a; outline-offset: 2px; } .ds-browse[data-active='true'] { border-color: #ffb21a; box-shadow: inset 0 0 0 1px #ffb21a; } .ds-art { aspect-ratio: 4 / 3; background: #0a0a09; } .ds-cap { display: grid; gap: 2px; padding: 8px 10px 10px; } .ds-cap b { font-size: 0.8125rem; font-weight: 600; } .ds-cap small { font-size: 0.75rem; color: #a3a29c; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Gel Swatchbook",
+    "overview": "Every preset is a numbered lighting-gel filter on a strip of matte black card, riveted at one end, and the stage is the light it colours. The chrome is the swatchbook held up in front of that light: opaque card, printed in one off-white and one spec grey, die-cut at small corners, with a hole punched through each strip that shows whatever is playing behind it. Nothing in the chrome emits light except one safelight amber, and amber means one thing: this is lit.\n\nThe stage is always the brightest thing on screen and stays dark in every theme. Chrome that sits on it is a card, not a frosted pill: the landing's cover sheet, the starter strips under it, the title card that swings in on a preset change, and the dock strip along the bottom. Off the stage (editor, settings, Browse page, Read pages) the same stock becomes the page; the light theme is the swatchbook's inner pages, white card printed in near-black with the amber darkened to ink.\n\nDensity is a printed spec sheet's: numbers, names and legends in a condensed technical grotesque, running text at full width, code in a mono drawn for low-vision readers, tabular figures wherever a number appears. The owner has rejected multi-hue gradients, glassmorphism and springy, overshooting motion; the system carries all three as hard prohibitions.",
+    "keyCharacteristics": [
+      "Matte black card stock for every chrome surface; the stage keeps the colour.",
+      "Safelight amber as the only emitted colour, reserved for lit state.",
+      "One white page tab per view for the primary action (black in the light theme).",
+      "A punched rivet hole with a 1px eyelet on every strip that prints a preset.",
+      "One typeface at several widths: Pathway Extreme from 75% to 100% wdth.",
+      "One 1px rule weight for every rule, outline and eyelet.",
+      "Corners die-cut on a short guarded ladder (6px strips, 4px controls).",
+      "Motion is a pull and a swing: strips slide up out of the book, the title card rotates into place about its rivet."
+    ],
+    "rules": [
+      {
+        "name": "The Safelight Rule",
+        "body": "Amber is spent only on lit state: bands a preset reads, on or selected controls, focus, live dots. Never on hints, warnings, decorative rules, badges or prose. If an amber element is not reporting that something is on, lit or focused, it is the wrong colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stage Pins Its Own Ink Rule",
+        "body": "Anything that sits on the stage pins the on-stage tokens for fill, ink, accent and lines (--stims-on-stage-*, or by overriding --stock-fill, --stims-accent, --stims-line, --stims-ink on the element). The stage is dark in the light theme, and a surface that follows the page palette there draws a light card under white ink. A surface and the ink on it come from the same palette.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Field Rule",
+        "body": "Gradients are single-hue neutrals or functional masks (the stage floor's lift, the ruled grid, the rivet punch). Never a gradient of three or more hues; the only colour on a page is the preset's.",
+        "section": "colors"
+      },
+      {
+        "name": "The Width Axis Rule",
+        "body": "Hierarchy comes from width and weight within one family, not from a second display face. Condense to fit a name; never shrink a name below the scale to fit it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Truth Rule",
+        "body": "Every number the chrome prints (catalog numbers, readouts, BPM, counts) sets in tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scale Floor Rule",
+        "body": "Sizes come from the --text-* ladder (0.6875rem floor) and weights from 400/500/600/700/760/820; bun run check:css-scale fails on anything else.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shadow Through the Hole Rule",
+        "body": "The rivet hole is a mask on the strip's ::before fill, never on the element, so the element keeps an ordinary box-shadow, drawn outside its border box and never inside the hole. Never filter: drop-shadow: a filter over the per-frame edge graph is recomputed every frame.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Opaque Card Rule",
+        "body": "Chrome is opaque card. Glass (backdrop-filter) is allowed only on a small control floating directly on the stage, and low and mid device tiers strip it.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Line Weight Rule",
+        "body": "Every rule, outline, eyelet, divider and graph baseline is 1px. Emphasis comes from colour (rule line to rule line strong to amber), never from a heavier stroke. Focus outlines (2px) are the only exception.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do spend amber only on lit state: read bands, on/selected controls, focus, live dots.",
+      "Do give each view exactly one white page tab (black in the light theme) for its primary action; everything else is an outline or ghost tab.",
+      "Do pin on-stage fill, ink, accent and line tokens on anything that sits on the stage and uses .stims-stock.",
+      "Do shadow punched strips with box-shadow on the element and keep the mask on its ::before; never filter: drop-shadow.",
+      "Do draw every rule, outline and eyelet at 1px.",
+      "Do take radii from the ladder (6px strips, 4px controls, 2px windows); bun run check:css-scale enforces it.",
+      "Do set every number in tabular figures and condense a long name with the width axis before wrapping it.",
+      "Do move strips with a pull (translateY up 4-6px) and settle with an exponential ease-out; give every motion a reduced-motion fade or nothing.",
+      "Do carry the lit/unlit meaning in words or accessible names as well as colour."
+    ],
+    "donts": [
+      "Don't use amber for hints, warnings, decorative rules, badges or prose.",
+      "Don't put two white page tabs in one view.",
+      "Don't use a gradient of three or more hues anywhere in the chrome.",
+      "Don't use glass (backdrop-filter) except on a small control floating directly on the stage.",
+      "Don't use overshoot or spring easing (any cubic-bezier control value above 1 or below 0), and don't use View Transitions.",
+      "Don't throw coloured glows or halos; shadows are neutral black.",
+      "Don't let a light-theme surface sit on the stage; the stage is dark in every theme.",
+      "Don't introduce a second display family or a radius, size or weight off the scale."
+    ]
+  }
+}

@@ -13,9 +13,9 @@
 body[data-page="workspace"] {
   margin: 0;
   color: var(--stims-ink);
-  /* Single-hue ramp only. The visuals are the content, so the page ground
-     recedes instead of competing with three accent washes of its own. */
-  background: linear-gradient(180deg, #05070d 0%, #03050a 100%);
+  /* Flat stock. The visuals are the content, so the page ground recedes
+     instead of competing with washes of its own. */
+  background: #0a0a09;
 }
 
 html:has(body[data-page="workspace"]) {
@@ -75,7 +75,7 @@ body[data-page="workspace"] {
 
   :scope[data-mode="live"] {
     padding: 0;
-    background: #03050b;
+    background: #0a0a09;
   }
 
   /* Home is full-bleed for the same reason live is: the landing copy promises
@@ -87,7 +87,7 @@ body[data-page="workspace"] {
      the scrollbar's width. */
   :scope[data-mode="home"] {
     padding: 0;
-    background: #03050b;
+    background: #0a0a09;
   }
 
   :scope [id] {
@@ -98,7 +98,7 @@ body[data-page="workspace"] {
     min-height: 100vh;
     min-height: 100dvh;
     padding: 0;
-    background: #05070d;
+    background: #0a0a09;
   }
 
   :scope[data-preview="true"] .stims-shell__workspace,
@@ -109,8 +109,6 @@ body[data-page="workspace"] {
     border-radius: 0;
   }
 
-  :scope[data-preview="true"] .stims-shell__frame-chrome,
-  :scope[data-preview="true"] .stims-shell__frame-header,
   :scope[data-preview="true"] .stims-shell__stage-hero,
   :scope[data-preview="true"] .stims-shell__toast {
     display: none;
@@ -134,11 +132,6 @@ body[data-page="workspace"] {
     pointer-events: none;
   }
 
-  :scope[data-room="true"] .stims-shell__frame-chrome,
-  :scope[data-room="true"] .stims-shell__frame-header {
-    display: none;
-  }
-
   .stims-shell__embed-brand {
     position: fixed;
     right: max(0.75rem, env(safe-area-inset-right));
@@ -150,7 +143,7 @@ body[data-page="workspace"] {
     padding: 0.35rem 0.65rem;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: var(--radius-pill);
-    background: rgba(3, 5, 11, 0.76);
+    background: rgba(10, 10, 9, 0.76);
     color: rgba(255, 255, 255, 0.9);
     font-size: 0.75rem;
     font-weight: var(--font-weight-semibold);
@@ -161,13 +154,12 @@ body[data-page="workspace"] {
 
   .stims-shell__embed-brand:hover,
   .stims-shell__embed-brand:focus-visible {
-    border-color: rgba(100, 220, 255, 0.72);
+    border-color: var(--stims-on-stage-line-strong);
     color: #fff;
   }
   :scope {
     min-height: 100svh;
   }
-  .stims-shell__eyebrow,
   .stims-shell__meta-copy {
     color: var(--stims-muted);
   }
@@ -175,10 +167,6 @@ body[data-page="workspace"] {
     transform: translateY(-2px);
     border-color: var(--stims-line-strong);
     background: var(--stims-control-fill-hover);
-    box-shadow:
-      0 12px 24px rgba(0, 0, 0, 0.3),
-      0 0 1px rgba(119, 201, 255, 0.4),
-      inset 0 1px 0 var(--stims-white-08);
   }
   .stims-shell__text-button:active {
     transform: translateY(0) scale(0.96);
@@ -192,9 +180,9 @@ body[data-page="workspace"] {
   .stims-shell__text-button:focus-visible,
   .stims-shell__starter-card:focus-visible,
   .cta-button:focus-visible {
-    outline: 2px solid var(--stims-cool);
+    outline: 2px solid var(--stims-accent);
     outline-offset: 3px;
-    box-shadow: 0 0 0 1px var(--stims-cool);
+    box-shadow: none;
   }
 
   /* Skeleton loading states */
@@ -253,7 +241,7 @@ body[data-page="workspace"] {
     .stims-shell__skeleton--chip {
     height: 26px;
     width: 84px;
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
   }
 
   .stims-shell__skeleton-grid {
@@ -394,16 +382,8 @@ body[data-page="workspace"] {
     min-height: calc(100dvh - 40px);
     border: 1px solid var(--stims-line);
     border-radius: var(--stims-radius-panel);
-    background:
-      linear-gradient(180deg, rgba(8, 12, 20, 0.84), rgba(5, 8, 14, 0.92)),
-      radial-gradient(
-        circle at top right,
-        rgba(119, 201, 255, 0.1),
-        transparent 28%
-      );
-    box-shadow:
-      var(--stims-shadow),
-      inset 0 1px 0 var(--stims-white-06);
+    background: var(--stims-panel);
+    box-shadow: var(--stims-shadow);
     position: relative;
     overflow: hidden;
   }
@@ -451,12 +431,13 @@ body[data-page="workspace"] {
     --card-bg: var(--stims-on-stage-card);
     --bg-color-secondary: var(--stims-on-stage-panel);
     --panel-solid: var(--stims-on-stage-panel-strong);
-    --panel-subtle: var(--stims-on-stage-panel);
-    --panel-glass: var(--stims-on-stage-panel);
     --stims-panel: var(--stims-on-stage-panel);
     --stims-panel-strong: var(--stims-on-stage-panel-strong);
-    --interactive-bg: var(--stims-on-stage-panel);
-    --interactive-bg-hover: var(--stims-on-stage-control-fill-hover);
+    /* The swatchbook's parts read these too: the card stock behind the cover
+       and the starter strips, and the spec grey. Dark-theme values, whatever
+       the visitor's theme. */
+    --bg-color: var(--stims-on-stage-panel);
+    --stims-ink-dim: #8f8e88;
     --text-color: var(--stims-on-stage-ink);
     --text-muted: var(--stims-on-stage-muted);
     --stims-accent: var(--stims-on-stage-accent);
@@ -516,17 +497,6 @@ body[data-page="workspace"] {
     display: none;
   }
 
-  .stims-shell__eyebrow {
-    margin: 0;
-    text-transform: uppercase;
-    font-stretch: var(--font-stretch-legend);
-    letter-spacing: 0.22em;
-    font-size: 0.75rem;
-    font-weight: var(--font-weight-bold);
-    color: var(--stims-cool, #77c9ff);
-    text-shadow: 0 0 10px rgba(119, 201, 255, 0.25);
-  }
-
   .stims-shell__stage-section {
     min-width: 0;
     display: flex;
@@ -541,17 +511,12 @@ body[data-page="workspace"] {
 
   .stims-shell__input {
     width: 100%;
-    border: 1px solid rgba(119, 201, 255, 0.15);
+    border: 1px solid rgba(236, 236, 231, 0.15);
     border-radius: var(--radius-md);
     padding: 12px 14px;
-    background:
-      linear-gradient(135deg, rgba(119, 201, 255, 0.03), transparent 50%),
-      linear-gradient(180deg, rgba(10, 14, 22, 0.8), rgba(10, 14, 22, 0.9));
+    background: var(--stims-on-stage-panel);
     color: inherit;
     font: inherit;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      0 2px 6px rgba(0, 0, 0, 0.2);
     transition:
       border-color var(--transition-base),
       box-shadow var(--transition-base),
@@ -559,21 +524,11 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__input:focus {
-    border-color: rgba(119, 201, 255, 0.6);
-    background:
-      linear-gradient(135deg, rgba(119, 201, 255, 0.08), transparent 50%),
-      linear-gradient(180deg, rgba(10, 14, 22, 0.9), rgba(10, 14, 22, 1));
-  }
-
-  .stims-shell__input:focus:not(:focus-visible) {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 0 8px rgba(119, 201, 255, 0.2),
-      0 2px 6px rgba(0, 0, 0, 0.2);
+    border-color: var(--stims-ink);
   }
 
   .stims-shell__input:focus-visible {
-    outline: 2px solid var(--stims-cool);
+    outline: 2px solid var(--stims-accent);
     outline-offset: 2px;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -622,17 +577,12 @@ body[data-page="workspace"] {
     width: 100%;
     height: 100%;
     padding: 11px 12px;
-    border: 1px solid rgba(119, 201, 255, 0.12);
+    border: 1px solid rgba(236, 236, 231, 0.12);
     border-radius: var(--radius-lg);
-    background:
-      linear-gradient(135deg, rgba(119, 201, 255, 0.02), transparent 50%),
-      rgba(10, 14, 22, 0.6);
+    background: var(--stims-on-stage-panel);
     color: inherit;
     font: inherit;
     text-align: left;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.03),
-      0 1px 2px rgba(0, 0, 0, 0.2);
     transition:
       transform var(--transition-slow),
       border-color var(--transition-base),
@@ -642,14 +592,7 @@ body[data-page="workspace"] {
 
   .stims-shell__starter-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(119, 201, 255, 0.35);
-    background:
-      linear-gradient(135deg, rgba(119, 201, 255, 0.06), transparent 50%),
-      rgba(10, 14, 22, 0.7);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      0 4px 10px rgba(119, 201, 255, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.25);
+    border-color: var(--stims-ink);
   }
 
   .stims-shell__starter-card:active {
@@ -679,7 +622,7 @@ body[data-page="workspace"] {
     min-height: calc(100vh - 40px);
     min-height: calc(100dvh - 40px);
     overflow: hidden;
-    background: #03050b;
+    background: #0a0a09;
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
@@ -691,56 +634,9 @@ body[data-page="workspace"] {
     box-shadow: none;
   }
 
-  /* Scrim between the live attract-mode render and the launch copy.
-     The landing page runs a real preset behind this text, and presets go
-     bright and light without warning, so the copy needs a floor it can rely on
-     rather than whatever frame happens to be on screen. Flat ink rather than a
-     blur: it keeps body text at full contrast against any preset.
-
-     Steered rather than flat. The copy occupies the left of the frame, so the
-     ink is spent there and released across the rest — the old full-bleed
-     0.82-0.9 wash bought contrast for a column of text by dimming the whole
-     stage to 10-18% of whatever was behind it, which is most of why a working
-     attract render still read as a black rectangle. The vertical pass keeps
-     the top edge (wordmark, and the frame chrome above it) covered.
-
-     Spent even more tightly now: the ink is an ellipse hugging the copy
-     column and reaches zero well before the right edge, so the right half of
-     the landing page is the preset at full brightness — the product, shown
-     rather than described. The copy still sits on 0.8-0.92 ink everywhere it
-     runs (the core of the ellipse covers the paragraph's right edge at ~46%
-     of the frame width). */
-  .stims-shell__stage-frame[data-mode="home"]::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: calc(var(--z-stage-hero) - 1);
-    pointer-events: none;
-    background:
-      radial-gradient(
-        ellipse 54% 64% at 22% 50%,
-        rgba(3, 5, 11, 0.92) 0%,
-        rgba(3, 5, 11, 0.82) 48%,
-        rgba(3, 5, 11, 0.34) 76%,
-        rgba(3, 5, 11, 0) 100%
-      ),
-      linear-gradient(180deg, rgba(3, 5, 11, 0.36) 0%, rgba(3, 5, 11, 0) 18%);
-  }
-
-  /* One column wide, the copy needs its floor everywhere; the steered scrim
-     above assumes the copy is off to one side. */
-  @media (max-width: 900px) {
-    .stims-shell__stage-frame[data-mode="home"]::after {
-      /* Held under the copy, then released: the bottom quarter of a phone
-         screen is the preset, not a darker shade of the page. */
-      background: linear-gradient(
-        180deg,
-        rgba(3, 5, 11, 0.86) 0%,
-        rgba(3, 5, 11, 0.76) 70%,
-        rgba(3, 5, 11, 0.08) 100%
-      );
-    }
-  }
+  /* No scrim over the attract preview: the landing's copy sits on its own
+     opaque cover sheet and strips (shell/swatch.css), so the stage behind it
+     runs at full brightness everywhere the cover is not. */
 
   /* ── Stage signal field ────────────────────────────────────────────
      The landing page's floor, under the canvas. See SignalField.tsx for why
@@ -751,35 +647,35 @@ body[data-page="workspace"] {
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
-    /* One hue lifted off the base, placed where the copy is not. A flat fill
-       gave the frame no depth at all: the old landing page measured a
-       luminance range of 1.0 across its entire right half, which is what a
-       screenshot renders as a dead rectangle. */
+    /* The base lifted a step where the copy is not. A flat fill gave the
+       frame no depth at all: the old landing page measured a luminance range
+       of 1.0 across its entire right half, which is what a screenshot renders
+       as a dead rectangle. Neutral, like the card stock: the only colour on
+       this page should be the preset's. */
     background:
       radial-gradient(
         128% 118% at 88% 96%,
-        rgba(24, 42, 66, 0.85) 0%,
-        rgba(12, 20, 34, 0.5) 42%,
+        #1c1c1a 0%,
+        #131312 42%,
         transparent 74%
       ),
-      #04060c;
+      #0a0a09;
   }
 
-  /* Oscilloscope graticule. Two single-hue repeating gradients, so this stays
-     a ruled surface rather than the decorative multi-stop wash the chrome
-     direction rules out. */
+  /* The swatch graph's ruling, printed in spec grey. Two single-hue repeating
+     gradients, so this stays a ruled surface rather than a decorative wash. */
   .stims-shell__stage-field-grid {
     position: absolute;
     inset: -1px;
     background-image:
       repeating-linear-gradient(
         90deg,
-        rgba(160, 200, 240, 0.09) 0 1px,
+        rgba(236, 236, 231, 0.07) 0 1px,
         transparent 1px 88px
       ),
       repeating-linear-gradient(
         180deg,
-        rgba(160, 200, 240, 0.09) 0 1px,
+        rgba(236, 236, 231, 0.07) 0 1px,
         transparent 1px 88px
       );
     /* Denser toward the lower right, which is the half of a 16:9 frame the
@@ -845,7 +741,7 @@ body[data-page="workspace"] {
     min-height: 100dvh;
     border: 0;
     border-radius: 0;
-    background: #03050b;
+    background: #0a0a09;
     box-shadow: none;
   }
 
@@ -908,25 +804,6 @@ body[data-page="workspace"] {
       inset: 64px 44px 40px;
     }
   }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__rail-actions {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-    top: auto;
-    right: auto;
-    bottom: 24px;
-    left: 24px;
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__frame-header {
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
   .stims-shell__stage-root > canvas {
     display: block;
     width: 100%;
@@ -996,8 +873,8 @@ body[data-page="workspace"] {
        video, so it cannot inherit the page's light/dark surface. */
     border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
     border-radius: var(--radius-sm);
-    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
-    color: #e5f1ff;
+    background: var(--ctl-panel-bg, rgba(15, 15, 14, 0.97));
+    color: var(--ctl-ink, #ecece7);
     font-family: var(--font-family-mono);
     font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
@@ -1008,9 +885,23 @@ body[data-page="workspace"] {
 
   /* Driven by the preset's own equations: the marker is reporting the
      literal in the draft, not where the warp is actually centred. */
+  /* Starts (or ends) just inside the handle's centre rather than centring
+     on it. The handle is held inside the stage (StageWarpGizmo.tsx), so a
+     handle on the stage's edge keeps its whole plate on the stage. */
+  .stims-stage-gizmo__handle[data-edge="start"] .stims-stage-gizmo__readout {
+    left: calc(50% + 6px);
+    transform: none;
+  }
+
+  .stims-stage-gizmo__handle[data-edge="end"] .stims-stage-gizmo__readout {
+    left: auto;
+    right: calc(50% + 6px);
+    transform: none;
+  }
+
   .stims-stage-gizmo__handle[data-driven="true"] .stims-stage-gizmo__readout {
-    border-color: var(--stims-warn);
-    color: var(--stims-warn);
+    border-color: var(--stims-accent);
+    color: var(--stims-accent);
   }
 
   .stims-stage-gizmo__handle:focus-visible {
@@ -1047,20 +938,36 @@ body[data-page="workspace"] {
     width: min(52rem, 100%);
   }
 
-  /* The wordmark is set like a nameplate: heavy and condensed on Archivo's
-     width axis, the same axis the panel legends and the title card use.
-     Nameplate-sized, not display-sized: at 6.5rem it was the loudest thing
-     on the page and said nothing to anyone who had not heard of Stims.
+  /* The swatchbook's cover: one opaque sheet of black card, riveted at its
+     top-left corner, holding the promise and the way in. The rivet hole is
+     punched through to the stage (shell/swatch.css). Everything after the
+     cover sits on the stage as its own strip or tab, so the preset behind
+     the page keeps the right of the frame. */
+  .stims-shell__launch-cover {
+    --rivet-x: 20px;
+    --rivet-y: 20px;
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    width: min(34rem, 100%);
+    padding: 36px clamp(20px, 3vw, 32px) 24px;
+  }
+
+  /* The wordmark is printed on the cover like a maker's name: heavy and at
+     the narrow end of the width axis, the same axis the legends and the
+     title card use. Nameplate-sized, not display-sized: at 6.5rem it was the
+     loudest thing on the page and said nothing to anyone who had not heard
+     of Stims.
      index.html's boot cover repeats these metrics so the hand-off from the
      cover to this page does not jump. */
   .stims-shell__launch-nameplate {
-    margin: 0 0 6px;
+    margin: 0 0 10px;
     font-family: var(--stims-display);
-    font-size: clamp(1.75rem, 2.6vw, 2.25rem);
+    font-size: var(--text-xl);
     font-weight: var(--font-weight-heavy);
-    font-stretch: 72%;
-    line-height: 0.88;
-    letter-spacing: -0.012em;
+    font-stretch: 75%;
+    line-height: 1;
+    letter-spacing: 0.01em;
     color: var(--stims-ink-strong);
   }
 
@@ -1069,67 +976,39 @@ body[data-page="workspace"] {
      on its own line. */
   .stims-shell__launch-title {
     margin: 0;
-    max-width: 16ch;
+    max-width: 14ch;
     font-family: var(--stims-display);
-    font-size: clamp(2.25rem, 4.4vw, 3.75rem);
+    font-size: clamp(2.25rem, 4vw, 3.5rem);
     font-weight: var(--font-weight-display);
-    font-stretch: 86%;
-    line-height: 0.98;
-    letter-spacing: -0.016em;
+    font-stretch: 78%;
+    line-height: 0.96;
+    letter-spacing: -0.01em;
     text-wrap: balance;
     color: var(--stims-ink-strong);
   }
 
+  /* The cover's transmission graph, under the promise: the three bands of
+     whatever is playing, lit where the preset behind the page reads them. */
+  .stims-shell__launch-graph {
+    --graph-height: 22px;
+    max-width: 22rem;
+    margin: 6px 0 4px;
+  }
+
   .stims-shell__launch-tagline {
     margin: 0;
-    max-width: 34rem;
-    color: var(--stims-ink-strong);
-    font-size: clamp(1.0625rem, 1.3vw, 1.25rem);
-    line-height: 1.42;
-    letter-spacing: -0.008em;
+    max-width: 30rem;
+    color: var(--stims-ink);
+    font-size: var(--text-lg);
+    line-height: 1.45;
     text-wrap: pretty;
   }
 
-  /* Signal trace under the wordmark: the doubled 600-unit strip drifts one
-     150-unit period (-25% of its own width) and loops seamlessly. */
-  .stims-shell__launch-trace {
-    width: min(21rem, 72vw);
-    height: 34px;
-    overflow: hidden;
-    margin-top: -4px;
-  }
-
-  .stims-shell__launch-trace svg {
-    display: block;
-    width: 200%;
-    height: 100%;
-    animation: stims-launch-trace-drift 8s linear infinite;
-  }
-
+  /* The stage field's rows drift one 150-unit period (-25% of the doubled
+     600-unit strip) and loop seamlessly. */
   @keyframes stims-launch-trace-drift {
     to {
       transform: translateX(-25%);
-    }
-  }
-
-  /* Amplitude follows live audio energy (set on the container by
-     LaunchSignalTrace, already eased — no transition here, since one that
-     restarts every frame is what a weak CPU spends its frame budget on).
-     Quiet idle trace at rest; up to ~1.7x with music, so the page starts
-     moving to the sound before the stage takes over. */
-  .stims-shell__launch-trace-amp {
-    transform-box: view-box;
-    transform-origin: 50% 50%;
-    transform: scaleY(calc(0.65 + var(--stims-energy, 0) * 1.05));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .stims-shell__launch-trace svg {
-      animation: none;
-    }
-
-    .stims-shell__launch-trace-amp {
-      transform: none;
     }
   }
 
@@ -1155,28 +1034,25 @@ body[data-page="workspace"] {
     margin-top: 10px;
   }
 
+  /* Printed on the cover, not a card on a card: the preview is the die-cut
+     window and the number, name and maker are the spec lines under it. */
   .stims-shell__launch-resume-card {
     /* Clears the display headline, which sets its own optical space. */
     margin-top: 4px;
     width: min(24rem, 100%);
-    overflow: hidden;
-    border: 1px solid var(--stims-line-soft);
-    border-radius: var(--radius-xl);
-    background: var(--stims-white-04);
-    box-shadow: var(--stims-shadow-control);
   }
 
   .stims-shell__launch-resume-card .stims-shell__preset-art {
     height: 140px;
     min-height: 140px;
     border: 0;
-    border-radius: 0;
+    border-radius: var(--radius-xs);
   }
 
   .stims-shell__launch-resume-card-copy {
     display: grid;
     gap: 2px;
-    padding: 10px 14px 12px;
+    padding: 10px 0 0;
   }
 
   .stims-shell__launch-resume-card-title {
@@ -1264,13 +1140,17 @@ body[data-page="workspace"] {
 
   /* The sources legend sits on the stage like everything else here, so it
      takes the dark theme's legend colour in both themes. Without this the
-     light theme's cool-legend rule (shell-theme.css) won, and the same
-     landing page labelled its sources coral or blue depending on the OS
-     setting. Three classes deep to outrank that html.light rule. */
-  .stims-shell__launch
-    .stims-shell__source-heading
-    .stims-shell__section-label {
-    color: color-mix(in srgb, var(--stims-accent) 72%, var(--stims-ink));
+     light theme's legend rule (shell-theme.css) won, and the same landing
+     page printed its source labels in two different inks depending on the
+     OS setting. Three classes deep to outrank that html.light rule. */
+  .stims-shell__launch .stims-shell__source-heading .stims-shell__section-label,
+  .stims-shell__launch-showcase > .stims-shell__section-label {
+    justify-self: start;
+    width: fit-content;
+    padding: 6px 10px 5px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--stims-on-stage-panel);
+    color: var(--stims-on-stage-ink);
   }
 
   /* ── Curated Starter Presets Showcase ─────────────────────────── */
@@ -1282,7 +1162,6 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__launch-showcase .stims-shell__section-label {
-    color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
     font-size: var(--text-xs-plus);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
@@ -1298,52 +1177,60 @@ body[data-page="workspace"] {
     width: 100%;
   }
 
+  /* Each starter is a swatch strip: riveted at the top, its catalog number
+     and look on the spec line, the preview as the die-cut window, then the
+     name and the maker. Hover pulls the strip up out of the book; there is no
+     glow, because nothing in the chrome emits light but the preset. */
   .stims-shell__launch-starter-card {
+    --rivet-x: 50%;
+    --rivet-y: 11px;
+    --rivet-r: 3.5px;
     position: relative;
     display: grid;
-    grid-template-rows: 92px auto;
+    grid-template-rows: auto 92px auto;
     gap: 8px;
-    padding: 8px;
-    border: 1px solid var(--stims-on-stage-line);
-    border-radius: var(--radius-lg);
-    background: var(--stims-on-stage-card);
+    padding: 24px 10px 12px;
+    border: 0;
+    background: none;
     color: var(--stims-on-stage-ink);
+    font: inherit;
     text-align: left;
     cursor: pointer;
-    box-shadow: var(--stims-shadow-control);
-    transition:
-      border-color var(--transition-base),
-      transform var(--transition-base),
-      box-shadow var(--transition-base),
-      background-color var(--transition-base);
+    transition: transform var(--motion-enter);
     -webkit-tap-highlight-color: transparent;
   }
 
   .stims-shell__launch-starter-card:hover {
-    border-color: var(--stims-cool);
-    background: var(--stims-on-stage-control-fill-hover);
-    transform: translateY(-2px);
-    box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.4),
-      0 0 12px var(--stims-audio-glow);
+    transform: translateY(-6px);
   }
 
   .stims-shell__launch-starter-card:active {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(-2px);
   }
 
   .stims-shell__launch-starter-card:focus-visible {
     outline: 2px solid var(--stims-accent);
-    outline-offset: 2px;
+    outline-offset: 3px;
+    transform: translateY(-6px);
+  }
+
+  .stims-shell__launch-starter-spec {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    font-size: var(--text-sm);
+    color: var(--stims-on-stage-ink-strong);
   }
 
   .stims-shell__launch-starter-thumb {
     width: 100%;
     height: 92px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xs);
     overflow: hidden;
     position: relative;
-    background: #020408;
+    background: #000000;
   }
 
   .stims-shell__launch-starter-thumb .stims-shell__preset-art {
@@ -1359,27 +1246,22 @@ body[data-page="workspace"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(3, 5, 11, 0.4);
+    background: rgba(15, 15, 14, 0.45);
     color: var(--stims-on-stage-ink-strong);
     opacity: 0;
-    transition:
-      opacity var(--transition-fast),
-      transform var(--transition-fast);
-    transform: scale(0.85);
+    transition: opacity var(--transition-fast);
     pointer-events: none;
   }
 
   .stims-shell__launch-starter-play svg {
     width: 20px;
     height: 20px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
   }
 
   .stims-shell__launch-starter-card:hover .stims-shell__launch-starter-play,
   .stims-shell__launch-starter-card:focus-visible
     .stims-shell__launch-starter-play {
     opacity: 1;
-    transform: scale(1);
   }
 
   .stims-shell__launch-starter-info {
@@ -1394,17 +1276,32 @@ body[data-page="workspace"] {
     -webkit-line-clamp: 1;
     line-clamp: 1;
     overflow: hidden;
-    font-size: var(--text-sm);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.25;
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-bold);
+    font-stretch: var(--font-stretch-compact);
+    line-height: 1.2;
     color: var(--stims-on-stage-ink-strong);
   }
 
+  .stims-shell__launch-starter-byline {
+    overflow: hidden;
+    font-size: var(--text-xs);
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--stims-on-stage-muted);
+  }
+
   .stims-shell__launch-starter-vibe {
+    overflow: hidden;
     font-size: var(--text-2xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--stims-cool);
-    letter-spacing: 0.02em;
+    font-weight: var(--font-weight-semibold);
+    font-stretch: var(--font-stretch-legend);
+    letter-spacing: 0.06em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--stims-ink-dim);
   }
 
   /* ── Live Soundflow & Equations Preview ───────────────────────── */
@@ -1429,7 +1326,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__launch-soundflow-header .stims-shell__section-label {
-    color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
+    color: var(--stims-on-stage-ink);
     font-size: var(--text-xs-plus);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
@@ -1444,7 +1341,7 @@ body[data-page="workspace"] {
     gap: 6px;
     padding: 6px 12px;
     border: 1px solid var(--stims-on-stage-line-strong);
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
     background: var(--stims-on-stage-control-fill);
     color: var(--stims-on-stage-ink-strong);
     font-size: var(--text-xs-plus);
@@ -1549,58 +1446,6 @@ body[data-page="workspace"] {
     line-height: 1.5;
   }
 
-  /* Labels the preset running behind the first-visit hero, in the corner
-     the copy leaves empty. The legend style matches the panel legends:
-     uppercase, condensed on the width axis, cool for "this is what is
-     playing". Desktop only — one column wide there is no empty corner, and
-     it would sit on top of the copy. */
-  .stims-shell__attract-caption {
-    position: absolute;
-    right: 28px;
-    bottom: 28px;
-    display: grid;
-    justify-items: end;
-    gap: 2px;
-    max-width: min(26rem, 40%);
-    margin: 0;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    background: rgba(3, 5, 11, 0.72);
-    text-align: right;
-    pointer-events: none;
-  }
-
-  .stims-shell__attract-caption-label {
-    color: var(--stims-cool);
-    font-size: 0.6875rem;
-    font-weight: var(--font-weight-bold);
-    font-stretch: var(--font-stretch-legend);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .stims-shell__attract-caption-title {
-    max-width: 100%;
-    overflow: hidden;
-    color: var(--stims-ink-strong);
-    font-size: 0.9375rem;
-    font-weight: var(--font-weight-semibold);
-    font-stretch: var(--font-stretch-compact);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .stims-shell__attract-caption-byline {
-    color: var(--stims-muted);
-    font-size: 0.8125rem;
-  }
-
-  @media (max-width: 900px) {
-    .stims-shell__attract-caption {
-      display: none;
-    }
-  }
-
   /* While Reduce flashing dims the stage. Drawn on the stage's own dark
      surface whatever the theme, beside the canvas rather than inside it so
      the filter that dims the picture does not dim the notice too. */
@@ -1608,9 +1453,10 @@ body[data-page="workspace"] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    /* The two buttons are a ranked pair, not a segmented control: 12px read as
-       one object on mobile, where both go full width. */
-    gap: 16px;
+    /* A ranked row of tabs, not a segmented control: a 10px joint keeps
+       them separate objects on mobile, where each goes full width, and lets
+       Start, Browse and Edit share one row on the cover at desktop widths. */
+    gap: 10px;
     margin-top: 18px;
   }
 
@@ -1649,12 +1495,13 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-cta,
   .stims-shell__launch-secondary {
-    padding: 12px 22px;
+    padding: 12px 16px;
     border-radius: var(--stims-radius-control);
     font-family: var(--font-family-base);
-    font-size: 0.9375rem;
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.02em;
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-bold);
+    font-stretch: var(--font-stretch-compact);
+    letter-spacing: 0.01em;
     line-height: 1;
     cursor: pointer;
     min-height: 48px;
@@ -1676,15 +1523,17 @@ body[data-page="workspace"] {
     }
   }
 
+  /* The one white page tab in view: the brightest thing the chrome prints,
+     so it is the only primary action on the cover. */
   .stims-shell__launch-cta {
     border: 1px solid transparent;
-    background: var(--stims-accent);
-    color: #14100c;
+    background: var(--stims-on-stage-ink-strong);
+    color: var(--stims-on-stage-panel);
   }
 
   .stims-shell__launch-cta:hover:not(:disabled):not([aria-disabled="true"]) {
-    background: color-mix(in srgb, var(--stims-accent) 88%, #ffffff);
-    transform: translateY(-1px);
+    background: #ffffff;
+    transform: translateY(-2px);
   }
 
   .stims-shell__launch-cta:disabled,
@@ -1694,15 +1543,13 @@ body[data-page="workspace"] {
   }
 
   /* The launch CTA takes focus on its own once the engine is ready (see
-     Actions in NewHomePage.tsx), so the global cool-accent ring lands on the
-     one warm-filled control in the app and is in every screenshot of the
-     landing page. Left touching the coral it read as a stray focus state
-     rather than an indicator; a dark separating ring gives it its own edge and
-     raises the indicator's contrast against the fill. The outline itself, and
-     the app-wide convention that focus is cool, are untouched. */
+     Actions in NewHomePage.tsx), so its ring is in every screenshot of the
+     landing page. It is the app's amber focus outline, set 3px off the white
+     tab so it reads as an indicator, not as part of the button. */
   .stims-shell__launch-cta:focus-visible {
+    outline: 2px solid var(--stims-accent);
     outline-offset: 3px;
-    box-shadow: 0 0 0 3px rgba(3, 5, 11, 0.9);
+    box-shadow: none;
   }
 
   /* Until the visitor presses a key, focus the page placed itself shows no
@@ -1715,24 +1562,23 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-secondary {
     border: 1px solid var(--stims-line-strong);
-    background: var(--stims-control-fill);
+    background: transparent;
     color: var(--stims-ink-strong);
   }
 
   .stims-shell__launch-secondary:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--stims-cool) 55%,
-      var(--stims-line-strong)
-    );
-    background: var(--stims-control-fill-hover);
+    border-color: var(--stims-ink);
+    background: var(--stims-control-fill);
   }
 
+  /* Printed on its own strip: copy laid straight on the stage fails
+     contrast the moment a bright preset runs behind it. */
   .stims-shell__launch-footer {
     width: 100%;
     margin-top: 18px;
-    padding-top: 14px;
-    border-top: 1px solid var(--stims-on-stage-line-soft);
+    padding: 10px 14px;
+    border-radius: var(--radius-lg);
+    background: var(--stims-on-stage-panel);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1768,7 +1614,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__launch-meta-link:focus-visible {
-    outline: 2px solid var(--stims-cool);
+    outline: 2px solid var(--stims-accent);
     outline-offset: 3px;
   }
 
@@ -1844,19 +1690,9 @@ body[data-page="workspace"] {
 
   .stims-shell__youtube-primary {
     padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--stims-line);
     border-radius: var(--radius-lg);
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.055),
-        rgba(255, 255, 255, 0.02)
-      ),
-      radial-gradient(
-        circle at 88% 0%,
-        rgba(244, 122, 84, 0.12),
-        transparent 36%
-      );
+    background: var(--stims-control-fill);
   }
 
   .stims-shell__source-panel {
@@ -1889,17 +1725,13 @@ body[data-page="workspace"] {
     min-width: 0;
     min-height: 74px;
     padding: 12px 13px;
-    border: 1px solid rgba(119, 201, 255, 0.15);
+    border: 1px solid var(--stims-line);
     border-radius: var(--radius-lg);
-    background:
-      linear-gradient(135deg, rgba(119, 201, 255, 0.03), transparent 50%),
-      rgba(10, 14, 22, 0.6);
+    background: var(--stims-on-stage-panel);
     color: inherit;
     font: inherit;
     text-align: left;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--stims-shadow-control);
     cursor: pointer;
     transition:
       border-color var(--transition-base),
@@ -1909,22 +1741,13 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__source-card:hover:not(:disabled) {
-    border-color: rgba(119, 201, 255, 0.5);
-    background:
-      linear-gradient(135deg, rgba(119, 201, 255, 0.08), transparent 50%),
-      rgba(10, 14, 22, 0.7);
+    border-color: var(--stims-ink);
+    background: var(--stims-on-stage-control-fill);
     transform: translateY(-2px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 4px 12px rgba(119, 201, 255, 0.12),
-      0 2px 6px rgba(0, 0, 0, 0.3);
   }
 
   .stims-shell__source-card:active:not(:disabled) {
-    transform: translateY(0) scale(0.97);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      0 1px 3px rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
   }
 
   .stims-shell__source-card strong,
@@ -1975,7 +1798,7 @@ body[data-page="workspace"] {
     gap: 8px;
     min-height: max(40px, var(--ctl-size-md));
     padding: 8px 14px;
-    border-radius: 999px;
+    border-radius: var(--radius-md);
   }
 
   .stims-shell__source-card--chip:hover:not(:disabled) {
@@ -1983,7 +1806,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__source-card--chip[aria-expanded="true"] {
-    border-color: rgba(119, 201, 255, 0.5);
+    border-color: var(--stims-accent);
   }
 
   .stims-shell__source-card--chip .stims-shell__source-card-icon {
@@ -2020,6 +1843,17 @@ body[data-page="workspace"] {
 
   .stims-shell__source-feedback[data-state="error"] {
     color: var(--stims-danger);
+  }
+
+  /* On the landing these notes sit on the stage, under the source tabs, so
+     they get the strip's backing for the same reason as the footer. */
+  .stims-shell__launch .stims-shell__source-note:not(:empty),
+  .stims-shell__launch .stims-shell__source-feedback:not(:empty) {
+    width: fit-content;
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    background: var(--stims-on-stage-panel);
   }
 
   .stims-shell__source-card:disabled {
@@ -2216,7 +2050,7 @@ body[data-page="workspace"] {
     min-height: 30px;
     padding: 4px 10px;
     border: 1px solid var(--stims-line);
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--stims-ink);
     font: inherit;
@@ -2234,7 +2068,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__playlist-btn:focus-visible {
-    outline: 2px solid var(--stims-cool);
+    outline: 2px solid var(--stims-accent);
     outline-offset: 2px;
   }
 
@@ -2268,16 +2102,7 @@ body[data-page="workspace"] {
     min-height: 164px;
     border-radius: var(--radius-xl);
     border: 1px solid var(--stims-white-12);
-    background:
-      radial-gradient(
-        circle at 50% 50%,
-        rgba(255, 255, 255, 0.18),
-        transparent 24%
-      ),
-      linear-gradient(145deg, rgba(11, 22, 42, 0.96), rgba(5, 9, 18, 0.96));
-    box-shadow:
-      inset 0 1px 0 var(--stims-white-08),
-      0 18px 28px var(--stims-shadow-22);
+    background: #000000;
   }
 
   .stims-shell__preset-preview-image {
@@ -2358,75 +2183,70 @@ body[data-page="workspace"] {
     color: var(--stims-muted-35);
   }
 
-  /* Preset title card (PresetTitleCard.tsx): the playing preset's name set as
-     display type over the stage for a few seconds after each switch. Sits on
-     the stage in every theme, so it uses the on-stage inks, and carries its
-     own soft ink pool rather than a panel — a slab would read as a dialog.
-     Top-left: the bottom of the stage belongs to the dock, the first-run hint
-     toast above it and the status toasts beside it, and a card down there
-     collided with the hint on the very first play. */
+  /* Preset title card (PresetTitleCard.tsx): the playing preset's swatch
+     page, swung into place about its rivet for a few seconds after each
+     switch. Opaque card in every theme, so the name reads on a white frame
+     without a scrim. Top-left: the bottom of the stage belongs to the dock,
+     the first-run hint toast above it and the status toasts beside it, and a
+     card down there collided with the hint on the very first play. */
   .stims-shell__title-card {
     /* The card's widest outer size. PresetTitleCard.tsx reads the line this
        leaves for the name through the measure probe below, and fits the
        name's width axis to it. */
-    --title-card-measure: min(72vw, 52rem);
-    /* Named so the phone scrim below can reach back up to the stage edge. */
-    --title-card-top: calc(
-      clamp(16px, 5vh, 56px) +
-      env(safe-area-inset-top, 0px)
-    );
+    --title-card-measure: min(72vw, 46rem);
+    --title-card-pad: clamp(18px, 2.4vw, 28px);
+    /* On the stage in every theme, so the card is the dark stock and its
+       print, graph and eyelet use the stage's inks. */
+    --stock-fill: var(--stims-on-stage-panel);
+    --stims-accent: var(--stims-on-stage-accent);
+    --stims-line: var(--stims-on-stage-line);
+    --stims-line-strong: var(--stims-on-stage-line-strong);
+    --stims-ink: var(--stims-on-stage-ink);
+    --stims-ink-dim: #8f8e88;
+    --rivet-x: 18px;
+    --rivet-y: 18px;
     position: absolute;
     left: clamp(16px, 4vw, 56px);
-    top: var(--title-card-top);
+    top: calc(clamp(16px, 5vh, 56px) + env(safe-area-inset-top, 0px));
     z-index: var(--z-overlay);
-    isolation: isolate;
     display: grid;
-    gap: var(--space-xs);
+    justify-items: start;
+    gap: 6px;
     max-width: var(--title-card-measure);
-    padding: var(--space-md) var(--space-lg) var(--space-md) 0;
+    padding: 34px var(--title-card-pad) 18px;
     pointer-events: none;
     color: var(--stims-on-stage-ink-strong);
-    text-shadow:
-      0 2px 24px rgba(3, 5, 11, 0.7),
-      0 1px 3px rgba(3, 5, 11, 0.8);
-    animation: title-card-enter 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transform-origin: var(--rivet-x) var(--rivet-y);
+    animation: title-card-swing 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
     transition:
-      opacity 0.45s ease,
-      transform 0.45s ease;
+      opacity 0.32s ease,
+      transform 0.32s cubic-bezier(0.7, 0, 0.84, 0);
   }
 
-  /* The ink pool: presets go white without warning, and text-shadow alone
-     left the byline at well under AA on a bright frame. Feathered on every
-     side so it reads as shade, not a box. */
-  .stims-shell__title-card::before {
-    content: "";
-    position: absolute;
-    inset: -40% -24% -48% -32%;
-    z-index: -1;
-    background: radial-gradient(
-      closest-side,
-      rgba(3, 5, 11, 0.78),
-      rgba(3, 5, 11, 0.58) 60%,
-      rgba(3, 5, 11, 0)
-    );
-    pointer-events: none;
-  }
-
+  /* Pulled back out of view the way it came: a small swing up on the rivet. */
   .stims-shell__title-card[data-leaving="true"] {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: rotate(-3deg);
   }
 
-  /* The title's longest line: the measure less the card's right padding
-     (the card is border-box). Absolutely positioned so it cannot widen the
-     card, which shrinks to its title and sizes the ink pool from that. */
+  /* The title's longest line: the measure less the card's side padding (the
+     card is border-box). Absolutely positioned so it cannot widen the card,
+     which shrinks to its title. */
   .stims-shell__title-card-measure {
     position: absolute;
     top: 0;
     left: 0;
-    width: calc(var(--title-card-measure) - var(--space-lg));
+    width: calc(var(--title-card-measure) - 2 * var(--title-card-pad));
     height: 0;
     visibility: hidden;
+  }
+
+  .stims-shell__title-card-number {
+    position: absolute;
+    top: 13px;
+    left: 34px;
+    font-size: var(--text-sm);
+    color: var(--stims-on-stage-ink);
   }
 
   .stims-shell__title-card-title {
@@ -2435,17 +2255,11 @@ body[data-page="workspace"] {
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
-    font-size: clamp(var(--text-3xl), 5.2vw, 4.5rem);
+    max-width: 100%;
+    font-size: clamp(var(--text-3xl), 4.6vw, 4rem);
     font-weight: var(--font-weight-display);
     line-height: 0.98;
-    letter-spacing: -0.02em;
-    /* The line clamp needs overflow: hidden, and that clipped the card's
-       inherited 24px text-shadow to the title's tight line boxes: every line
-       sat in a hard-edged dark slab. A filter shadow is drawn from the
-       clipped result, so it can spread past the box. */
-    text-shadow: none;
-    filter: drop-shadow(0 1px 2px rgba(3, 5, 11, 0.8))
-      drop-shadow(0 2px 14px rgba(3, 5, 11, 0.6));
+    letter-spacing: -0.01em;
   }
 
   /* Fitted to one line: the width axis has absorbed the name's length, so
@@ -2462,7 +2276,7 @@ body[data-page="workspace"] {
      "Sunflower Passion (Simple Mix) phat+Eo.S. werid angle mix" lost its
      end to the ellipsis. */
   .stims-shell__title-card-title[data-fit="wrap"] {
-    font-size: clamp(var(--text-2xl), 4.2vw, 3.5rem);
+    font-size: clamp(var(--text-2xl), 3.8vw, 3.25rem);
     line-height: 1.02;
     text-wrap: balance;
   }
@@ -2470,18 +2284,23 @@ body[data-page="workspace"] {
   .stims-shell__title-card-byline {
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
-    letter-spacing: 0.01em;
     color: var(--stims-on-stage-muted);
   }
 
-  @keyframes title-card-enter {
+  .stims-shell__title-card-graph {
+    --graph-height: 20px;
+    width: min(15rem, 100%);
+    margin-top: 8px;
+  }
+
+  @keyframes title-card-swing {
     from {
       opacity: 0;
-      transform: translateY(-14px);
+      transform: rotate(-3deg);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: rotate(0deg);
     }
   }
 
@@ -2493,28 +2312,13 @@ body[data-page="workspace"] {
       max-width: none;
     }
 
-    /* Spanning the width, the feathered pool became a dark oval floating
-       across the top of the picture. Here the card is a full-width band, so
-       its shade is one too: a scrim from the stage's top edge, the way video
-       players shade a title. Still about 0.65 behind the byline, which is
-       what keeps it legible on a white frame. */
-    .stims-shell__title-card::before {
-      inset: calc(-1 * var(--title-card-top)) -16px -60% -16px;
-      background: linear-gradient(
-        to bottom,
-        rgba(3, 5, 11, 0.74),
-        rgba(3, 5, 11, 0.62) 70%,
-        rgba(3, 5, 11, 0)
-      );
-    }
-
     .stims-shell__title-card-byline {
       font-size: var(--text-sm);
     }
   }
 
   /* Reduced motion: the card still arrives and leaves — it is information —
-     but as a fade with no travel. */
+     but as a fade with no swing. */
   @media (prefers-reduced-motion: reduce) {
     .stims-shell__title-card {
       animation-name: title-card-fade;
@@ -2545,7 +2349,6 @@ body[data-page="workspace"] {
 
   .stims-parametric-identicon--interactive:hover {
     transform: scale(1.15) rotate(8deg);
-    filter: drop-shadow(0 0 12px rgba(124, 137, 255, 0.6));
   }
 
   .stims-shell__preset-art[data-compact="true"] {
@@ -2566,7 +2369,7 @@ body[data-page="workspace"] {
     background:
       radial-gradient(
         circle at 68% 32%,
-        rgba(119, 201, 255, 0.34),
+        rgba(236, 236, 231, 0.34),
         transparent 24%
       ),
       linear-gradient(145deg, rgba(11, 18, 46, 0.96), rgba(4, 8, 18, 0.98));
@@ -2582,7 +2385,7 @@ body[data-page="workspace"] {
     background:
       radial-gradient(
         circle at 50% 30%,
-        rgba(244, 122, 84, 0.2),
+        rgba(255, 178, 26, 0.2),
         transparent 24%
       ),
       linear-gradient(145deg, rgba(22, 10, 20, 0.96), rgba(6, 9, 16, 0.98));
@@ -2592,12 +2395,12 @@ body[data-page="workspace"] {
     background:
       radial-gradient(
         circle at 38% 34%,
-        rgba(244, 122, 84, 0.24),
+        rgba(255, 178, 26, 0.24),
         transparent 22%
       ),
       radial-gradient(
         circle at 70% 64%,
-        rgba(119, 201, 255, 0.24),
+        rgba(236, 236, 231, 0.24),
         transparent 20%
       ),
       linear-gradient(145deg, rgba(25, 15, 45, 0.96), rgba(7, 11, 22, 0.98));
@@ -2686,14 +2489,7 @@ body[data-page="workspace"] {
     padding: 16px 18px;
     border: 1px solid var(--stims-line);
     border-radius: var(--stims-radius-card);
-    background: linear-gradient(
-      180deg,
-      var(--stims-white-06),
-      rgba(255, 255, 255, 0.025)
-    );
-    box-shadow:
-      inset 0 1px 0 var(--stims-white-05),
-      0 16px 30px rgba(0, 0, 0, 0.18);
+    background: var(--stims-control-fill);
   }
 
   .stims-shell__sheet-callout h3 {
@@ -2715,14 +2511,8 @@ body[data-page="workspace"] {
     padding: 14px 16px;
     border: 1px solid var(--stims-line);
     border-radius: var(--stims-radius-card);
-    background: linear-gradient(
-      180deg,
-      rgba(16, 20, 29, 0.98),
-      rgba(9, 13, 21, 0.96)
-    );
-    box-shadow:
-      0 24px 54px rgba(0, 0, 0, 0.34),
-      inset 0 1px 0 var(--stims-white-06);
+    background: var(--stims-on-stage-panel);
+    box-shadow: var(--shadow-strong);
     pointer-events: none;
   }
 
@@ -2752,13 +2542,13 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__toast[data-tone="warn"] {
-    border-color: rgba(255, 209, 102, 0.36);
-    color: #ffe0a2;
+    border-color: var(--stims-line-strong);
+    color: var(--stims-ink-strong);
   }
 
   .stims-shell__toast[data-tone="error"] {
-    border-color: rgba(255, 123, 114, 0.36);
-    color: #ffd6d1;
+    border-color: color-mix(in srgb, var(--stims-bad) 50%, transparent);
+    color: var(--stims-ink-strong);
   }
 
   /* A sheet no longer hides toasts; it moves them.
@@ -2785,9 +2575,9 @@ body[data-page="workspace"] {
   }
 
   /* The one definition of the button. index.css used to stack ten more on
-     top of this (lime primary, four radii, Martian Mono uppercase), and since
-     it loads deferred, a dialog's buttons painted in Archivo and then jumped
-     to mono caps once it arrived. Same face and case as the launch CTA. */
+     top of this (lime primary, four radii, mono uppercase), and since it
+     loads deferred, a dialog's buttons painted in the text face and then
+     jumped to mono caps once it arrived. Same face and case as the launch CTA. */
   .cta-button {
     position: relative;
     display: inline-flex;
@@ -2797,93 +2587,60 @@ body[data-page="workspace"] {
     min-width: var(--touch-target-min);
     max-width: 100%;
     min-height: 46px;
-    border-radius: var(--radius-lg);
-    padding: 0.82rem 1.05rem;
-    color: var(--text-color);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    border-radius: var(--stims-radius-control);
+    padding: 0.8rem 1.1rem;
+    color: var(--stims-ink-strong);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-bold);
+    font-stretch: var(--font-stretch-compact);
+    letter-spacing: 0.01em;
     text-decoration: none;
     overflow-wrap: anywhere;
     touch-action: manipulation;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: linear-gradient(
-      180deg,
-      var(--stims-white-08),
-      rgba(255, 255, 255, 0.03)
-    );
-    box-shadow:
-      0 8px 24px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 var(--stims-white-06);
+    border: 1px solid var(--stims-line-strong);
+    background: transparent;
     transition:
-      transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
-      box-shadow 0.2s ease,
-      border-color 0.2s ease,
-      background 0.2s ease;
+      transform var(--motion-enter),
+      border-color var(--transition-fast),
+      background var(--transition-fast);
   }
 
-  /* The product has one primary action colour, and it is the warm accent that
-     "Play demo" is painted in. This rule used to hardcode a lime-green
-     gradient found nowhere else in the palette, so the two most prominent
-     buttons on the landing page — "Play demo" and, one disclosure below it,
-     "Load" — were different colours making the same promise, and the second
-     one belonged to no theme this app has. Tokens now, so it tracks the light
-     palette too. */
+  /* The product's one primary action, painted like the launch CTA: the white
+     page tab, the brightest thing the chrome prints. In the light theme the
+     ink flips, so it is the black tab there. */
   .cta-button.primary {
-    background: var(--stims-accent);
-    border-color: color-mix(in srgb, #ffffff 24%, var(--stims-accent));
-    color: var(--stims-on-accent);
-    box-shadow:
-      0 10px 24px var(--stims-accent-glow),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    background: var(--stims-ink-strong);
+    border-color: transparent;
+    color: var(--bg-color);
   }
 
   .cta-button:hover:not(:disabled) {
-    transform: translateY(-2px) scale(1.02);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow:
-      0 12px 28px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 var(--stims-white-12);
+    transform: translateY(-2px);
+    border-color: var(--stims-ink);
   }
 
   .cta-button:active:not(:disabled) {
-    transform: translateY(0px) scale(0.98);
-    box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 var(--stims-white-06);
+    transform: translateY(0);
   }
 
   .cta-button.primary:hover:not(:disabled) {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow:
-      0 14px 32px var(--stims-accent-soft),
-      0 0 24px var(--stims-accent-glow),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: transparent;
   }
 
   .cta-button.ghost {
     min-height: 40px;
     padding: 0.6rem 0.9rem;
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(148, 163, 184, 0.18);
-    box-shadow: none;
-    font-size: 0.875rem;
-    color: rgba(226, 232, 240, 0.7);
-    transition:
-      color 0.15s ease,
-      background 0.15s ease,
-      border-color 0.15s ease;
+    border-color: var(--stims-line);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--stims-muted);
   }
 
   .cta-button.ghost:hover {
-    color: rgba(255, 255, 255, 0.95);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-    box-shadow:
-      0 4px 14px rgba(0, 0, 0, 0.3),
-      0 0 10px rgba(119, 201, 255, 0.14);
+    color: var(--stims-ink-strong);
+    background: var(--stims-control-fill);
+    border-color: var(--stims-line-strong);
   }
 
   .cta-button:disabled,
@@ -2921,12 +2678,6 @@ body[data-page="workspace"] {
       min-height: calc(100dvh - 40px);
     }
 
-    .stims-shell__frame-header {
-      flex-direction: column;
-      justify-content: flex-start;
-      top: var(--stims-header-top);
-    }
-
     .stims-shell__stage-hero {
       width: min(46rem, calc(100% - 64px));
     }
@@ -2940,10 +2691,6 @@ body[data-page="workspace"] {
     .stims-shell__stage-frame[data-mode="home"] {
       min-height: calc(100vh - 28px);
       min-height: calc(100dvh - 28px);
-    }
-
-    .stims-shell__frame-chrome {
-      top: 14px;
     }
 
     .stims-shell__stage-hero {
@@ -2961,15 +2708,6 @@ body[data-page="workspace"] {
     .stims-shell__stage-frame[data-mode="home"] {
       min-height: calc(100vh - 20px);
       min-height: calc(100dvh - 20px);
-    }
-
-    .stims-shell__frame-chrome {
-      top: 10px;
-    }
-
-    .stims-shell__corner-brand {
-      grid-template-columns: auto 1fr;
-      align-items: center;
     }
 
     .stims-shell__stage-hero {
@@ -3006,7 +2744,6 @@ body[data-page="workspace"] {
       border-radius: 0;
     }
 
-    .stims-shell__eyebrow,
     .stims-shell__meta-copy,
     .stims-shell__field-label {
       font-size: 0.8125rem;
@@ -3061,43 +2798,6 @@ body[data-page="workspace"] {
       .stims-shell__stage-frame[data-mode="home"] {
         min-height: auto;
       }
-    }
-
-    .stims-shell__frame-chrome,
-    .stims-shell__frame-header {
-      left: 10px;
-      right: 10px;
-      gap: 10px;
-    }
-
-    .stims-shell__frame-chrome {
-      top: var(--stims-chrome-top);
-      align-items: flex-start;
-    }
-
-    .stims-shell__frame-header {
-      top: var(--stims-header-top);
-      flex-direction: column;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      bottom: 64px;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      align-content: start;
-      padding-bottom: 8px;
-      scrollbar-width: thin;
-    }
-
-    .stims-shell__rail-actions {
-      justify-items: start;
-    }
-
-    .stims-shell__rail-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      width: auto;
     }
 
     .stims-shell__stage-hero {
@@ -3183,11 +2883,6 @@ body[data-page="workspace"] {
       --mobile-bar-height: calc(64px + env(safe-area-inset-bottom, 0px));
     }
   }
-  @media (width < 768px) {
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      display: none;
-    }
-  }
   /* High contrast mode support — applies at every viewport width, not
      just mobile: the outline is the only non-color cue selected chips,
      preset rows, and radio options get in this mode. */
@@ -3222,12 +2917,6 @@ body[data-page="workspace"] {
     }
   }
   @media (max-width: 480px) {
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      bottom: 56px;
-      top: 344px;
-      gap: 6px;
-    }
-
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
       padding-bottom: 92px;
     }
@@ -3300,7 +2989,7 @@ body[data-page="workspace"] {
   padding: 4px 10px;
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
-  background: rgba(3, 5, 11, 0.86);
+  background: rgba(10, 10, 9, 0.86);
   font-size: 0.6875rem;
   pointer-events: auto;
 }
@@ -3314,8 +3003,7 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__midi-hud-dot--live {
-  background: #4ade80;
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+  background: var(--stims-accent);
 }
 
 .stims-shell__midi-hud-dot--shadowed {
@@ -3840,17 +3528,13 @@ body[data-page="workspace"] {
   letter-spacing: 0.05em;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(
-    180deg,
-    rgba(119, 201, 255, 0.14),
-    rgba(255, 255, 255, 0.04)
-  );
-  border: 1px solid rgba(119, 201, 255, 0.38);
+  background: var(--stims-control-fill);
+  border: 1px solid var(--stims-line-strong);
   box-shadow:
     0 3px 0 rgba(0, 0, 0, 0.5),
     0 4px 8px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  color: #77c9ff;
+  color: #ecece7;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3934,7 +3618,6 @@ body[data-page="workspace"] {
   color: var(--stims-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-shadow: 0 0 8px rgba(244, 122, 84, 0.25);
 }
 
 .stims-credits-disclaimer {
@@ -3980,8 +3663,6 @@ body[data-page="workspace"] {
       color: black;
     }
 
-    .stims-shell__frame-chrome,
-    .stims-shell__frame-header,
     .stims-shell__toast {
       display: none;
     }
@@ -4129,10 +3810,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   display: grid;
   place-items: center;
   height: 100dvh;
-  background:
-    radial-gradient(circle at 30% 20%, var(--glow-color), transparent 50%),
-    radial-gradient(circle at 70% 80%, var(--highlight-glow), transparent 50%),
-    var(--bg-color);
+  background: var(--bg-color);
   color: var(--text-color);
   font-family: var(--font-family-base);
   text-align: center;
@@ -4245,13 +3923,13 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 }
 
 .stims-shell__error-btn--primary {
-  background: var(--accent-color);
+  background: var(--stims-ink-strong);
   color: var(--bg-color);
   border: none;
 }
 
 .stims-shell__error-btn--primary:hover {
-  box-shadow: 0 0 16px var(--glow-color);
+  transform: translateY(-2px);
 }
 
 .stims-shell__skeleton--preset-art {
@@ -4300,26 +3978,20 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 
 .stims-shell__refine-textarea {
   width: 100%;
-  border: 1px solid rgba(119, 201, 255, 0.15);
+  border: 1px solid rgba(236, 236, 231, 0.15);
   border-radius: var(--stims-radius-control);
   padding: 12px 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(10, 14, 22, 0.8),
-    rgba(10, 14, 22, 0.9)
-  );
+  background: var(--stims-on-stage-panel);
   color: inherit;
   font: inherit;
   resize: vertical;
   min-height: 80px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: border-color var(--transition-base);
 }
 
 .stims-shell__refine-textarea:focus {
-  border-color: rgba(119, 201, 255, 0.6);
+  border-color: var(--stims-ink);
   outline: none;
-  box-shadow: 0 0 8px rgba(119, 201, 255, 0.2);
 }
 
 .stims-shell__refine-textarea:focus-visible {

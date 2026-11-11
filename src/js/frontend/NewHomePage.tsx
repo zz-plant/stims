@@ -31,13 +31,13 @@ import {
 import type { PresetCatalogEntry } from './contracts.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
-import { LaunchSignalTrace } from './SignalField.tsx';
+import { SwatchGraph, SwatchNumber, useStageBandReads } from './Swatch.tsx';
 import {
   resolveRendererFallbackArrival,
   resolveSharedArrival,
 } from './shared-arrival.ts';
 import { UiIcon } from './UiIcon.tsx';
-import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
+import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
@@ -362,29 +362,37 @@ export function NewHomePage({
         className="stims-shell__launch-center"
         data-variant={resume ? 'resume' : deepLink ? 'deep-link' : 'launch'}
       >
-        <Header
-          resume={resume}
-          deepLink={deepLink}
-          discovery={ui.routeState.discovery ?? null}
-          live={engine.audioActive}
-        />
-        <Actions
-          resume={resume}
-          onPlayDemo={handlePlayDemo}
-          onResume={handleResume}
-          isEngineReady={engine.engineReady}
-          isStarting={audioStarting}
-          onBrowsePresets={handleBrowsePresets}
-          onEditVisual={handleEditVisual}
-          showEditVisual={engine.attractPreviewLive}
-          editTitle={attractTitle}
-        />
-        {/* Sits under the button it describes. As the last sentence of a
+        {/* The cover of the swatchbook: one sheet of black card, riveted at
+            its corner, holding the promise and the way in. Everything after
+            it sits on the stage as its own strip or tab. */}
+        <div
+          className="stims-shell__launch-cover stims-stock"
+          data-on-stage="true"
+        >
+          <Header
+            resume={resume}
+            deepLink={deepLink}
+            discovery={ui.routeState.discovery ?? null}
+            live={engine.audioActive}
+          />
+          <Actions
+            resume={resume}
+            onPlayDemo={handlePlayDemo}
+            onResume={handleResume}
+            isEngineReady={engine.engineReady}
+            isStarting={audioStarting}
+            onBrowsePresets={handleBrowsePresets}
+            onEditVisual={handleEditVisual}
+            showEditVisual={engine.attractPreviewLive}
+            editTitle={attractTitle}
+          />
+          {/* Sits under the button it describes. As the last sentence of a
             paragraph below both buttons it arrived after the choice it was
             meant to inform. */}
-        <p className="stims-shell__launch-note">
-          {RESUME_SOURCE_NOTE[resume?.session.source ?? 'demo']}
-        </p>
+          <p className="stims-shell__launch-note">
+            {RESUME_SOURCE_NOTE[resume?.session.source ?? 'demo']}
+          </p>
+        </div>
         <AudioSources resume={resume} />
         {resume || deepLink ? null : (
           <>
@@ -410,45 +418,7 @@ export function NewHomePage({
         )}
         <ProjectMeta />
       </div>
-      {resume || deepLink ? null : <AttractCaption />}
     </section>
-  );
-}
-
-/**
- * Names the preset running behind the first-visit hero. Without it the
- * backdrop read as an unexplained texture, when it is the product running
- * live. The returning and deep-link variants already name their preset in
- * the column, so they do not get a second label.
- *
- * Hidden from assistive tech: the stage's own status region already
- * announces "Now playing: …" for the same preset.
- */
-function AttractCaption() {
-  const { engine } = useWorkspace();
-  const { engineSnapshot } = useEngineSnapshot();
-  const title = engine.selectedPreset?.title;
-  if (
-    !engine.attractPreviewLive ||
-    !engineSnapshot?.runtimeReady ||
-    !engineSnapshot.activePresetId ||
-    !title
-  ) {
-    return null;
-  }
-  const display = splitPresetDisplay(title, engine.selectedPreset?.author);
-  return (
-    <p className="stims-shell__attract-caption" aria-hidden="true">
-      <span className="stims-shell__attract-caption-label">Running now</span>
-      <span className="stims-shell__attract-caption-title">
-        {display.title}
-      </span>
-      {display.byline ? (
-        <span className="stims-shell__attract-caption-byline">
-          {display.byline}
-        </span>
-      ) : null}
-    </p>
   );
 }
 
@@ -484,6 +454,16 @@ function prettifyPresetSlug(slug: string) {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+/**
+ * The cover's transmission graph: bass, mid and treble live, lit where the
+ * preset running behind the page reads them. At rest before any sound, it
+ * prints as three empty columns, which is what a graph of silence is.
+ */
+function LaunchGraph() {
+  const reads = useStageBandReads();
+  return <SwatchGraph reads={reads} className="stims-shell__launch-graph" />;
 }
 
 function Header({
@@ -552,6 +532,7 @@ function Header({
         <div className="stims-shell__launch-resume-card">
           {entry ? <PresetArtwork entry={entry} compact /> : null}
           <div className="stims-shell__launch-resume-card-copy">
+            <SwatchNumber value={entry?.catalogNumber} />
             <p className="stims-shell__launch-resume-card-title">
               {resume.title}
             </p>
@@ -583,7 +564,7 @@ function Header({
           ? semanticRouteHeading(discovery)
           : 'A music visualizer you can open up'}
       </Title>
-      <LaunchSignalTrace />
+      <LaunchGraph />
       <p className="stims-shell__launch-tagline">
         {discovery
           ? discovery.description
@@ -857,10 +838,17 @@ function LaunchStarterShowcase({
             <button
               key={item.id}
               type="button"
-              className="stims-shell__launch-starter-card"
+              className="stims-shell__launch-starter-card stims-stock"
+              data-on-stage="true"
               aria-label={`Play ${display.title} (${item.vibe})`}
               onClick={() => onSelectPreset(item.id)}
             >
+              <span className="stims-shell__launch-starter-spec">
+                <SwatchNumber value={entry?.catalogNumber} />
+                <span className="stims-shell__launch-starter-vibe">
+                  {item.vibe}
+                </span>
+              </span>
               <div className="stims-shell__launch-starter-thumb">
                 {entry ? (
                   <PresetArtwork entry={entry} compact />
@@ -885,9 +873,11 @@ function LaunchStarterShowcase({
                 <span className="stims-shell__launch-starter-title">
                   {display.title}
                 </span>
-                <span className="stims-shell__launch-starter-vibe">
-                  {item.vibe}
-                </span>
+                {display.byline ? (
+                  <span className="stims-shell__launch-starter-byline">
+                    {display.byline}
+                  </span>
+                ) : null}
               </div>
             </button>
           );

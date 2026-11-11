@@ -46,6 +46,10 @@ export type MilkdropBundledCatalogEntry = MilkdropPresetMeasurements & {
   tags?: string[];
   searchTerms?: string[];
   curatedRank?: number;
+  /** The catalog's own number for the preset (catalog.json `order`), printed
+   * on its swatch. Stable across catalog updates; absent for presets that did
+   * not come from the bundled catalog. */
+  catalogNumber?: number;
   /** Near-duplicate cluster annotation from scripts/dedup-catalog.ts. */
   similarity?: { clusterId: string; duplicateOf?: string };
   corpusTier?: 'bundled' | 'certified' | 'exploratory';
@@ -73,6 +77,10 @@ export type MilkdropCatalogEntry = MilkdropPresetMeasurements & {
    * scripts/build-visual-embeddings.ts. */
   searchTerms?: string[];
   curatedRank?: number;
+  /** The catalog's own number for the preset (catalog.json `order`), printed
+   * on its swatch. Stable across catalog updates; absent for presets that did
+   * not come from the bundled catalog. */
+  catalogNumber?: number;
   similarity?: { clusterId: string; duplicateOf?: string };
   isFavorite: boolean;
   rating: number;

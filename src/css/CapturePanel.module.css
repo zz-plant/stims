@@ -52,7 +52,6 @@
 .format:has(input:checked) {
   border-color: var(--stims-accent);
   background: color-mix(in srgb, var(--stims-accent) 14%, transparent);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--stims-accent) 25%, transparent);
 }
 
 .format input {
@@ -86,7 +85,7 @@
 }
 
 .unsupported {
-  color: var(--stims-danger, #ff8f8f);
+  color: var(--stims-danger);
 }
 
 .startButton,
@@ -105,28 +104,22 @@
 }
 
 .startButton {
-  background: var(--stims-accent);
-  color: var(--stims-on-accent, #071019);
-  box-shadow: 0 4px 14px
-    color-mix(in srgb, var(--stims-accent) 35%, transparent);
+  background: var(--stims-ink-strong);
+  color: var(--bg-color);
 }
 
 .startButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px
-    color-mix(in srgb, var(--stims-accent) 50%, transparent);
+  transform: translateY(-2px);
 }
 
 .stopButton {
-  border-color: var(--stims-danger, #ff8f8f);
-  background: color-mix(in srgb, var(--stims-danger, #ff8f8f) 12%, transparent);
-  color: var(--stims-danger, #ff8f8f);
-  box-shadow: 0 0 12px
-    color-mix(in srgb, var(--stims-danger, #ff8f8f) 20%, transparent);
+  border-color: var(--stims-danger);
+  background: color-mix(in srgb, var(--stims-danger) 12%, transparent);
+  color: var(--stims-danger);
 }
 
 .stopButton:hover {
-  background: color-mix(in srgb, var(--stims-danger, #ff8f8f) 20%, transparent);
+  background: color-mix(in srgb, var(--stims-danger) 20%, transparent);
 }
 
 .startButton:disabled {
