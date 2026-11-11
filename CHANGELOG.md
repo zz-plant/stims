@@ -57,6 +57,7 @@ _Latest release: **v1.5.0**._
 
 - The `@codemirror/theme-one-dark` dependency, which the editor no longer uses (#1587).
 - The `stims:shortcuts:open` and `stims:credits:open` window listeners, which nothing dispatched (#1580).
+- The `stims:wide-gamut` storage flag and `core/wide-gamut.ts`. No screen set it, and on WebGPU it narrowed colours instead of widening them (pure red 241 came out 178), so the two backends disagreed. Output is sRGB on both backends, as it was by default.
 
 ### Fixed
 

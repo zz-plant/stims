@@ -70,7 +70,7 @@ details ul{margin:.2em 0 .8em;padding-left:1.3em}
 <div class="wn-stats">
 <p class="wn-stat">6 releases since 2024</p>
 <p class="wn-stat">latest v1.5.0 on Oct 21, 2026</p>
-<p class="wn-stat">66 changes in progress</p>
+<p class="wn-stat">67 changes in progress</p>
 </div>
 <figure class="wn-chart">
 <figcaption>Releases per quarter</figcaption>
@@ -182,7 +182,8 @@ details ul{margin:.2em 0 .8em;padding-left:1.3em}
 <li>Biome 2.6.2 formats Markdown, so tables across the docs and skills were reformatted (157 files, whitespace only) and `biome format` now touches `.md` files. `noInvalidGridAreas` is off because it rejects valid multiline `grid-template-areas`, and the one production hit of the new rules is fixed: the dock's `MenuHint` was defined inside its component and remounted every render (#1559, #1569, `8fbd9b7d5`).</li></ul>
 <h4>Removed</h4>
 <ul><li>The `@codemirror/theme-one-dark` dependency, which the editor no longer uses (#1587).</li>
-<li>The `stims:shortcuts:open` and `stims:credits:open` window listeners, which nothing dispatched (#1580).</li></ul>
+<li>The `stims:shortcuts:open` and `stims:credits:open` window listeners, which nothing dispatched (#1580).</li>
+<li>The `stims:wide-gamut` storage flag and `core/wide-gamut.ts`. No screen set it, and on WebGPU it narrowed colours instead of widening them (pure red 241 came out 178), so the two backends disagreed. Output is sRGB on both backends, as it was by default.</li></ul>
 <h4>Fixed</h4>
 <ul><li>A returning visitor who followed a preset link saw a &quot;Welcome back&quot; card for their last session while the linked preset started behind it, and Resume played the linked preset. The page now names the linked preset.</li>
 <li>The `/learn/` pages, `/presets/` and `/performance/` no longer load a Google Fonts stylesheet for two typefaces they do not use.</li>
