@@ -317,10 +317,13 @@
           const loading = document.getElementById('stims-loading');
           if (!loading || document.getElementById('stims-main')) return;
           clearTimeout(slowTimer);
+          // An empty href is this page's own address, query included. "."
+          // was the folder above it: /discover/<slug> and /author/<slug>
+          // went to a 404, and /?preset=… lost the preset and its code.
           loading.innerHTML =
             '<div class="stims-loading__fallback">' +
             '<p>Stims is taking longer than expected to load.</p>' +
-            '<p><a href="." class="stims-loading__retry">Reload page</a></p>' +
+            '<p><a href="" class="stims-loading__retry">Reload page</a></p>' +
             '</div>';
         }, TIMEOUT_MS);
       })();
