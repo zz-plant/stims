@@ -21,6 +21,11 @@
  * Full usage guide: docs/agents/browser-automation.md.
  */
 
+import {
+  printMilkdropPresetSegments,
+  splitMilkdropPresetSegments,
+} from 'milkdrop-toolchain/src/preset-segments.ts';
+import { parsePresetSyntax } from 'milkdrop-toolchain/src/preset-syntax.ts';
 import type { MilkdropShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import { isHiddenTabSuspendingFrames } from '../core/hidden-tab-policy.ts';
 import {
@@ -476,7 +481,7 @@ export const AGENT_VERBS: readonly AgentActionInfo[] = [
       source:
         'string: the whole new preset source. Give this or append. Requires engineReady.',
       append:
-        'string: text added on a new line at the end of the current source. The edit marks the session dirty and is saved as a draft like a typed one; the result carries editor {dirty, errorCount, …}.',
+        "string: text added on a new line after the current source's equations: before its first [warp_shader]/[comp_shader] section when it has one, since the parser reads every line after that header as shader text. Text that opens a section of its own goes at the very end. The edit marks the session dirty and is saved as a draft like a typed one; the result carries editor {dirty, errorCount, …}.",
     },
   },
   {
@@ -505,6 +510,32 @@ export const AGENT_VERBS: readonly AgentActionInfo[] = [
     },
   },
 ];
+
+/**
+ * `current` with `append` added on a new line after its equations. The
+ * formatter writes `[warp_shader]`/`[comp_shader]` sections last and the
+ * parser reads every line after such a header as shader text, so a
+ * `per_frame_N=` line added at the very end of a preset with a shader
+ * compiled with no errors and did nothing. Text that opens a section of its
+ * own (an agent adding a shader) still goes at the very end.
+ */
+function appendAfterEquations(current: string, append: string): string {
+  const segments = splitMilkdropPresetSegments(current);
+  const firstShader = segments.findIndex(
+    (segment) => segment.kind === 'shader',
+  );
+  const opensSection = parsePresetSyntax(append).lines.some(
+    (line) => line.kind === 'section',
+  );
+  if (firstShader < 0 || opensSection) {
+    return `${current}${current.endsWith('\n') ? '' : '\n'}${append}`;
+  }
+  // The shader header follows, so the equations already end in a newline.
+  const equations = printMilkdropPresetSegments(segments.slice(0, firstShader));
+  const shaders = printMilkdropPresetSegments(segments.slice(firstShader));
+  const eol = current.includes('\r\n') ? '\r\n' : '\n';
+  return `${equations}${append.replace(/\r?\n$/u, '')}${eol}${shaders}`;
+}
 
 function editDistance(a: string, b: string): number {
   let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
@@ -730,7 +761,7 @@ export function installAgentStateGlobal(
     const next =
       typeof source === 'string'
         ? source
-        : `${current}${current.endsWith('\n') ? '' : '\n'}${append}`;
+        : appendAfterEquations(current, append as string);
     try {
       const editor = await providers.applyEditorSource(next);
       if (editor) return { editor };

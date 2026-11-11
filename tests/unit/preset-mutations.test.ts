@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   buildScenarioInputs,
@@ -85,6 +87,31 @@ per_pixel_1=zoom = zoom + 0.001 * rad;
       expect(after.ir.programs.perFrame.statements[0]?.source).toBe(
         'rot = 0.01',
       );
+    });
+  }
+
+  // Most bundled presets end in [warp_shader]/[comp_shader] sections, and the
+  // parser reads every line after such a header as shader text: appended at
+  // the end of the file, a restyle's equations compiled cleanly and did
+  // nothing.
+  const shaded = readFileSync(
+    path.join(
+      process.cwd(),
+      'public/milkdrop-presets/butterchurn/royal-mashup-160.milk',
+    ),
+    'utf8',
+  );
+  for (const { id } of PRESET_MUTATION_STYLES) {
+    it(`${id}: its equations join a preset that ends in shader sections`, () => {
+      const before = compile(shaded).ir;
+      const after = compile(mutatePresetStyle(shaded, id)).ir;
+      const added =
+        after.programs.perFrame.statements.length +
+        after.programs.perPixel.statements.length -
+        before.programs.perFrame.statements.length -
+        before.programs.perPixel.statements.length;
+      expect(added).toBeGreaterThan(0);
+      expect(after.shaderText).toEqual(before.shaderText);
     });
   }
 

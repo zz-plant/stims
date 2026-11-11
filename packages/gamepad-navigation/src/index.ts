@@ -123,8 +123,35 @@ const isRendered = (element: HTMLElement) =>
     ? element.checkVisibility()
     : element.getClientRects().length > 0;
 
+/**
+ * Whether a `<fieldset disabled>` disables the control, which its own
+ * `disabled` attribute does not show. A control in the fieldset's first
+ * `<legend>` is exempt, unless an outer disabled fieldset covers it too.
+ * Chromium reports this through `:disabled`; happy-dom does not.
+ */
+const isDisabledByFieldset = (element: HTMLElement) => {
+  if (!element.matches('button, input, select, textarea')) return false;
+  let fieldset = element.parentElement?.closest('fieldset[disabled]');
+  while (fieldset) {
+    const legend = Array.from(fieldset.children).find(
+      (child) => child.localName === 'legend',
+    );
+    if (!legend?.contains(element)) return true;
+    fieldset = fieldset.parentElement?.closest('fieldset[disabled]');
+  }
+  return false;
+};
+
+/**
+ * An inert subtree and a disabled fieldset keep the box and pass
+ * `checkVisibility()`, but `focus()` on their controls does nothing, so they
+ * are tested apart. Setting the `inert` property from script sets the
+ * attribute, which `closest` sees.
+ */
 const isFocusable = (element: HTMLElement) => {
   if (element.hasAttribute('disabled')) return false;
+  if (element.closest('[inert]')) return false;
+  if (isDisabledByFieldset(element)) return false;
   if (element.getAttribute('aria-hidden') === 'true') return false;
   if (element.hasAttribute('hidden')) return false;
   if (
@@ -312,9 +339,11 @@ const adjustRangeInput = (
   input.dispatchEvent(new Event('input', { bubbles: true }));
 };
 
+const TEXT_INPUT_TYPES = ['text', 'search', 'email', 'url', 'tel', 'password'];
+
 const isTextInput = (element: HTMLElement) =>
   isInstanceOf<HTMLInputElement>(element, 'HTMLInputElement') &&
-  ['text', 'search', 'email', 'url', 'tel', 'password'].includes(element.type);
+  TEXT_INPUT_TYPES.includes(element.type);
 
 const activateElement = (element: HTMLElement | null) => {
   if (!element) return;
@@ -451,6 +480,56 @@ const restoreLastFocusedElement = (
 
 export const shouldDispatchEscapeFallback = (originKey: string) =>
   originKey !== 'Escape';
+
+/** Backspace deletes in a field; the remote's own back keys do not. */
+const isDeleteKey = (event: KeyboardEvent) =>
+  event.key === 'Backspace' || (event.keyCode || event.which || 0) === 8;
+
+/**
+ * Whether the caret can still move that way, so the arrow belongs to the
+ * field. A selection collapses first. Where the browser exposes no caret
+ * (`email`), the field keeps it.
+ */
+const caretCanMove = (
+  field: HTMLInputElement | HTMLTextAreaElement,
+  towardStart: boolean,
+) => {
+  const { selectionStart: start, selectionEnd: end } = field;
+  if (start === null || end === null) return true;
+  if (start !== end) return true;
+  return towardStart ? start > 0 : end < field.value.length;
+};
+
+/**
+ * The keys a focused text field, textarea or number input keeps for
+ * editing, leaving the rest to the layer. Backspace deletes, and Enter and
+ * typing stay with the field; the other back keys still go back, which is
+ * how a remote leaves a field inside a panel or dialog. Arrows move the
+ * caret until it reaches the end of the text that way, then move focus. A
+ * single-line field has no lines, so Up and Down move focus at once; a
+ * number input keeps Up and Down to step its value, and Left and Right move
+ * focus.
+ */
+const fieldKeepsKey = (element: HTMLElement, event: KeyboardEvent) => {
+  const isTextArea = isInstanceOf<HTMLTextAreaElement>(
+    element,
+    'HTMLTextAreaElement',
+  );
+  const isNumber =
+    isInstanceOf<HTMLInputElement>(element, 'HTMLInputElement') &&
+    element.type === 'number';
+  if (!isTextArea && !isNumber && !isTextInput(element)) return false;
+  if (isBackKey(event)) return isDeleteKey(event);
+  if (!isDirectionalKey(event.key)) return true;
+  const direction = getDirectionFromKey(event.key);
+  const vertical = direction === 'up' || direction === 'down';
+  if (isNumber) return vertical;
+  if (vertical && !isTextArea) return false;
+  return caretCanMove(
+    element as HTMLInputElement | HTMLTextAreaElement,
+    direction === 'up' || direction === 'left',
+  );
+};
 
 export const initGamepadNavigation = (
   options: GamepadNavigationOptions = {},
@@ -635,9 +714,7 @@ export const initGamepadNavigation = (
 
   const handleKeydown = (event: KeyboardEvent) => {
     const active = doc.activeElement as HTMLElement | null;
-    if (active && isTextInput(active)) {
-      if (event.key !== 'Escape') return;
-    }
+    if (active && fieldKeepsKey(active, event)) return;
 
     if (isDirectionalKey(event.key)) {
       setActive();

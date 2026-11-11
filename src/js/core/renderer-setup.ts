@@ -1,7 +1,7 @@
 /* global GPUAdapter, GPUDevice */
 import {
   ACESFilmicToneMapping,
-  type SRGBColorSpace,
+  SRGBColorSpace,
   type WebGLRenderer,
 } from 'three';
 import {
@@ -32,7 +32,6 @@ import { isAgentMode } from './url-params.ts';
 import { ensureWebGL } from './webgl-check';
 import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
-import { resolveOutputColorSpace } from './wide-gamut.ts';
 
 export type RendererInitResult = {
   renderer: WebGLRenderer | WebGPURenderer;
@@ -160,10 +159,7 @@ export async function initRenderer(
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    // sRGB unless the user opted into wide gamut AND the display can show it
-    // (see core/wide-gamut.ts — default off, and it changes every colour).
-    renderer.outputColorSpace =
-      resolveOutputColorSpace() as typeof SRGBColorSpace;
+    renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = exposure;
     return {

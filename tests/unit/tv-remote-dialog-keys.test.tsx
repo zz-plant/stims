@@ -171,7 +171,7 @@ describe('TV remote keys inside a modal dialog', () => {
     });
   }
 
-  test('Shortcuts: Backspace and arrows typed into a binding field stay in the field', () => {
+  test('Shortcuts: keys typed into a binding field edit it and fire no shell shortcut', () => {
     const container = mount(dialogs[0]?.render());
     const edit = container.querySelector<HTMLButtonElement>(
       '[data-shortcut-edit]',
@@ -181,12 +181,19 @@ describe('TV remote keys inside a modal dialog', () => {
       container.querySelector<HTMLInputElement>('input[name="keys"]');
     expect(document.activeElement).toBe(input);
 
+    // Mid-text, the field keeps Backspace, the arrows and letters.
+    input?.setSelectionRange(2, 2);
     for (const key of ['Backspace', 'ArrowLeft', 'ArrowRight', 'b']) {
       const event = press(input, key);
       expect(event.defaultPrevented).toBe(false);
     }
-
     expect(document.activeElement).toBe(input);
+
+    // At the start of the text, ArrowLeft leaves the field for the layer.
+    input?.setSelectionRange(0, 0);
+    const leave = press(input, 'ArrowLeft');
+    expect(leave.defaultPrevented).toBe(true);
+
     expect(counts.closed).toBe(0);
     expect(counts.previous).toBe(0);
     expect(counts.shuffle).toBe(0);

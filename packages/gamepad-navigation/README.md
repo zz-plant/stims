@@ -122,9 +122,9 @@ Buttons follow the [standard gamepad layout](https://w3c.github.io/gamepad/#rema
 | A (button 0)                                  | Click the focused element. With focus on `body`, the click lands on `body`.                                                                          |
 | B (button 1)                                  | Dispatch a synthetic `Escape` keydown on `document`, then close an open native `<dialog>`. See [Closing a native dialog](#closing-a-native-dialog).  |
 | LB, RB (buttons 4, 5)                         | Previous and next in document order.                                                                                                                 |
-| Arrow keys, with `keyboardNavigation`         | Move focus as the D-pad does.                                                                                                                        |
+| Arrow keys, with `keyboardNavigation`         | Move focus as the D-pad does. In a text field they move the caret first. See [Keys in a text field](#keys-in-a-text-field).                          |
 | Enter, NumpadEnter, OK, Select, Return, Spacebar, with the same flag | Click the focused element. Key codes 13, 32 and 23 count when the key reads `Unidentified`.                                                          |
-| Backspace, Back, Exit, GoBack, BrowserBack, MediaBack, with the same flag | Dispatch `Escape` as B does. So do key codes 8, 27, 166, 461 (webOS) and 10009 (Tizen). A real `Escape` key is not re-dispatched, and on an open native `<dialog>` it is left for the browser. |
+| Backspace, Back, Exit, GoBack, BrowserBack, MediaBack, with the same flag | Dispatch `Escape` as B does. So do key codes 8, 27, 166, 461 (webOS) and 10009 (Tizen). A real `Escape` key is not re-dispatched, and on an open native `<dialog>` it is left for the browser. In a text field, Backspace deletes instead. |
 
 ## How it picks a target
 
@@ -132,6 +132,7 @@ Buttons follow the [standard gamepad layout](https://w3c.github.io/gamepad/#rema
 - **Inside the open modal.** While a `dialog[open]` or `[role="dialog"][aria-modal="true"]` exists, only elements inside it are candidates.
 - **From `DEFAULT_FOCUSABLE_SELECTOR`.** That is links, enabled form controls, `[tabindex]` other than -1, and `details > summary`, the only toggle of a disclosure.
 - **Only what is rendered.** An element is skipped when it or an ancestor is `display: none`, including `[hidden]`, or when it is hidden itself with `visibility: hidden`. Inside a closed `<details>`, it is skipped where the browser has `checkVisibility()`.
+- **Only what can take focus.** An element under an `inert` ancestor is skipped, whether the page set the attribute or the `inert` property. So is a form control in a `<fieldset disabled>`, unless it sits in the fieldset's first `<legend>`; links there stay candidates. Both keep their box, so `checkVisibility()` passes them, but their `focus()` does nothing.
 
 ## Closing a native dialog
 
@@ -143,13 +144,27 @@ A browser ignores a synthetic Escape, so B and the back keys close an open `<dia
 
 A `[role="dialog"]` element gets the Escape keydown only, so it needs a listener of its own, which it usually has already.
 
+## Keys in a text field
+
+With `keyboardNavigation` on, a focused text-type input, `textarea` or `number` input keeps the keys it needs for editing, and the layer acts on the rest:
+
+| Key                                   | Text-type input                    | `textarea`                         | `number` input           |
+| ------------------------------------- | ---------------------------------- | ---------------------------------- | ------------------------ |
+| Backspace, key code 8                 | Deletes                            | Deletes                            | Deletes                  |
+| Enter, typing                         | The field's own                    | The field's own                    | The field's own          |
+| Left, Right                           | Move the caret; move focus from the end of the text | Move the caret; move focus from the end of the text | Move focus |
+| Up, Down                              | Move focus                         | Move the caret; move focus from the end of the text | Step the value |
+| Escape and the remote's back keys     | Go back                            | Go back                            | Go back                  |
+
+"The end of the text" is the start for Left and Up and the end for Right and Down, with nothing selected. In an `email` input, which exposes no caret, Left and Right stay with the field. Going back from a field inside a panel or a native `<dialog>` closes it, which is how a remote leaves one.
+
 ## What to plan for
 
-These come from reading the code and running it in Chromium 156.
+These come from reading the code and running it in Chromium 156 and 158.
 
 - **Focus moves on init, pad or no pad.** With `restoreFocus` on, the default, and nothing focused, the call focuses the remembered element or the first focusable one. Pass `restoreFocus: false` to keep it from moving focus when it starts.
-- **`inert` and a disabled `<fieldset>` are not noticed.** A button under either stays a candidate and its `focus()` does nothing, so RB cannot get past it when it is next in document order. Keep those sections out of the DOM or narrow `focusableSelector`.
-- **Text fields keep their arrows, for some types.** Directions are left alone in `text`, `search`, `email`, `url`, `tel` and `password` inputs. A `textarea` or a `number` input loses focus on an arrow press, and with `keyboardNavigation` on, Backspace in one goes back instead of deleting, which closes a native `<dialog>` around it.
+- **A pad's directions stop at a text-type input.** The D-pad and stick do nothing while one has focus, since a pad cannot move its caret. Leave with LB, RB or B. A `textarea` or `number` input is left on any direction.
+- **Some editable elements are not treated as fields.** Date and time inputs and `contenteditable` elements get the plain mapping: with `keyboardNavigation` on, arrows move focus and Backspace goes back.
 
 ## The keyboard layer
 
@@ -205,7 +220,7 @@ Extracted from [zz-plant/stims](https://github.com/zz-plant/stims):
 | `src/index.ts`                                | `src/js/utils/browser/gamepad-navigation.ts`, with the default storage key renamed                |
 | `tests/keys.test.ts`, `tests/focus.test.ts`   | `tests/unit/utils/gamepad-navigation.test.ts`, `gamepad-navigation-focus.test.ts`, plus geometry and pad tests |
 
-`bun test` runs 26 tests across 2 files.
+`bun test` runs 43 tests across 2 files.
 
 ## License
 

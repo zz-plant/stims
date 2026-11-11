@@ -9,6 +9,7 @@ import {
   readMilkdropField,
   upsertMilkdropFields,
 } from 'milkdrop-toolchain/src/formatter.ts';
+import { applyRecipe } from './cookbook.ts';
 
 export type PresetMutationStyle =
   | 'cyberpunk'
@@ -35,29 +36,26 @@ export const PRESET_MUTATION_STYLES: ReadonlyArray<{
  * Program lines must be numbered (`per_frame_7=`) and continue after the
  * preset's own: the compiler reads a bare `per_frame=` as an unknown field
  * and drops it, which is how every restyle's equations used to vanish
- * while its plain settings still applied. A no-op when the first line is
- * already present, so applying a restyle twice adds its equations once.
+ * while its plain settings still applied. They go after the block's last
+ * line, never at the end of the file: there they landed inside a trailing
+ * `[warp_shader]`/`[comp_shader]` section and compiled as shader text. A
+ * no-op when the first line is already present, so applying a restyle twice
+ * adds its equations once.
  */
 export function appendProgramLines(
   source: string,
   block: 'per_frame' | 'per_pixel',
   lines: readonly string[],
 ): string {
-  const numbered = new RegExp(`^\\s*${block}_(\\d+)\\s*=`, 'gim');
-  let last = 0;
-  for (const match of source.matchAll(numbered)) {
-    last = Math.max(last, Number(match[1]));
-  }
   // Re-applying a restyle must not stack its equations: skip when its first
   // line is already there.
   const first = lines[0];
   if (first === undefined || source.includes(`=${first}`)) {
     return source;
   }
-  const appended = lines
-    .map((line, index) => `${block}_${last + index + 1}=${line}`)
-    .join('\n');
-  return `${source.replace(/\s*$/, '')}\n${appended}\n`;
+  return applyRecipe(source, {
+    code: { [block === 'per_frame' ? 'perFrame' : 'perPixel']: lines },
+  }).source;
 }
 
 export function mutatePresetStyle(

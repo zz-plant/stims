@@ -13,7 +13,7 @@
  * helper is what keeps the two backends showing the same picture.
  */
 
-import { resolveLinearOutputColorSpace } from '../core/wide-gamut.ts';
+import { LinearSRGBColorSpace } from 'three';
 
 export type OutputConversionRenderer = {
   toneMapping?: number;
@@ -40,16 +40,12 @@ export function renderWithoutOutputConversion<T>(
     renderer.toneMapping = NO_TONE_MAPPING;
   }
 
-  // The linear counterpart of whatever gamut is configured: pinning this to
-  // linear-sRGB unconditionally would quietly undo wide-gamut output, since
-  // this suspension is exactly where the present pass's encode is chosen.
-  const linearOutputColorSpace = resolveLinearOutputColorSpace();
   const savedOutputColorSpace = renderer.outputColorSpace;
   const colorSpaceSuspended =
     savedOutputColorSpace !== undefined &&
-    savedOutputColorSpace !== linearOutputColorSpace;
+    savedOutputColorSpace !== LinearSRGBColorSpace;
   if (colorSpaceSuspended) {
-    renderer.outputColorSpace = linearOutputColorSpace;
+    renderer.outputColorSpace = LinearSRGBColorSpace;
   }
 
   try {

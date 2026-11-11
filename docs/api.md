@@ -32,7 +32,7 @@ Apply field overrides without a model or rendering.
 
 **Response:** `{ milkSource: string }`
 
-Existing assignments are replaced and unmatched keys are appended. This is a deterministic text patch, not compilation; validate and render the returned source before relying on it.
+Existing assignments are replaced and unmatched keys are added after the equations, ahead of any `[warp_shader]`/`[comp_shader]` section (after such a header they would be read as shader text). This is a deterministic text patch, not compilation; validate and render the returned source before relying on it.
 
 ## Optional model-backed operations
 

@@ -40,6 +40,8 @@ export async function onRequest(context: {
   }
 }
 
+const SHADER_SECTION_HEADER = /^\s*\[\s*(?:warp_shader|comp_shader)\s*\]\s*$/iu;
+
 export function applyPresetPatch(
   source: string,
   patch: Record<string, number | string>,
@@ -75,11 +77,12 @@ export function applyPresetPatch(
     updatedLines.push(line);
   }
 
-  // Append remaining new patch keys
+  // New keys go after the equations, before any [warp_shader]/[comp_shader]
+  // section: the parser reads every line after such a header as shader
+  // text, so a key added at the end of the file there did nothing.
   const unappliedKeys = Object.keys(remainingPatch);
   if (unappliedKeys.length > 0) {
-    updatedLines.push('');
-    updatedLines.push('// Agent Parametric Patch');
+    const added = ['', '// Agent Parametric Patch'];
     for (const key of unappliedKeys) {
       const val = remainingPatch[key];
       const formattedVal =
@@ -88,8 +91,16 @@ export function applyPresetPatch(
             ? val.toString()
             : val.toFixed(6)
           : String(val);
-      updatedLines.push(`${key}=${formattedVal}`);
+      added.push(`${key}=${formattedVal}`);
     }
+    const shaderStart = updatedLines.findIndex((line) =>
+      SHADER_SECTION_HEADER.test(line),
+    );
+    updatedLines.splice(
+      shaderStart < 0 ? updatedLines.length : shaderStart,
+      0,
+      ...added,
+    );
   }
 
   return updatedLines.join('\n');

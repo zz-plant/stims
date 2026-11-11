@@ -99,7 +99,10 @@ read-immediately-after-write.
     to the editor session through the same commit a typed edit takes, so the
     session turns dirty, the edit is saved as this preset's draft, and the
     leave-page guard sees it. `set-field` does none of that: it writes the
-    running VM only. `append` adds a line to the current buffer. The result
+    running VM only. `append` adds a line after the buffer's equations:
+    ahead of its first `[warp_shader]`/`[comp_shader]` section when it has
+    one, because every line after that header compiles as shader text with
+    no error. Text that opens a section of its own goes at the end. The result
     carries `editor` (`{dirty, errorCount, warningCount, diagnostics,
     renderingFallback, …}`) once the source compiled; `ok: true` with
     `errorCount > 0` means the buffer holds the text but the stage kept the
