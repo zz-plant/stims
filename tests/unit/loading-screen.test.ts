@@ -193,3 +193,64 @@ test('the cover drops the scrollbar gutter only where the embed stage does', asy
   expect(dropsGutter('/?preset=geiss-casino')).toBe(false);
   expect(dropsGutter('/discover/fractal')).toBe(false);
 });
+
+/** The shipped script that swaps the cover for a reload link on a slow boot. */
+function slowBootScript(html: string): string {
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+    .map((match) => match[1] as string)
+    .find((body) => body.includes('stims-loading__retry'));
+  if (!script) throw new Error('slow-boot script not found in index.html');
+  return script;
+}
+
+/**
+ * Runs the real script on a page at `url` whose app never mounts, fires its
+ * timers, and returns where the cover's "Reload page" link goes.
+ */
+function reloadLinkAfterSlowBoot(script: string, url: string): string | null {
+  const happyDOM = (
+    window as unknown as {
+      happyDOM: { setURL(url: string): void };
+    }
+  ).happyDOM;
+  const previous = window.location.href;
+  happyDOM.setURL(url);
+  document.body.innerHTML =
+    '<div id="stims-loading"><p class="stims-loading__text">Loading</p></div>';
+  const timers: Array<() => void> = [];
+  try {
+    new Function('window', 'document', 'setTimeout', 'clearTimeout', script)(
+      { addEventListener: () => {} },
+      document,
+      (callback: () => void) => timers.push(callback),
+      () => {},
+    );
+    for (const fire of timers) fire();
+    const link = document.querySelector<HTMLAnchorElement>(
+      '.stims-loading__retry',
+    );
+    return link?.href ?? null;
+  } finally {
+    document.body.innerHTML = '';
+    happyDOM.setURL(previous);
+  }
+}
+
+test('the slow-boot Reload page link reloads the page the visitor is on', async () => {
+  const script = slowBootScript(await readFile('index.html', 'utf8'));
+
+  // Hub routes have no index one folder up: /discover/ and /author/ are 404s.
+  expect(
+    reloadLinkAfterSlowBoot(script, 'https://toil.fyi/discover/ambient'),
+  ).toBe('https://toil.fyi/discover/ambient');
+  expect(reloadLinkAfterSlowBoot(script, 'https://toil.fyi/author/geiss')).toBe(
+    'https://toil.fyi/author/geiss',
+  );
+  // A shared link keeps its preset and code across the reload.
+  expect(
+    reloadLinkAfterSlowBoot(
+      script,
+      'https://toil.fyi/?preset=shifter-curlique&code=abc',
+    ),
+  ).toBe('https://toil.fyi/?preset=shifter-curlique&code=abc');
+});
