@@ -120,7 +120,12 @@ requiredBrowserTest(
       const source = await Bun.file(
         'public/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-curlique.milk',
       ).text();
-      const draft = `${source}\nper_frame_99999=q32=0.314159;\n`;
+      // The upload refuses any clip that flashes, and curlique's beat-flipped
+      // swirl and time-cycled border flash in some four-second windows. This
+      // last per-frame line runs after the preset's own and holds the picture
+      // still: no swirl (q4 feeds per-pixel dx/dy), no audio-driven zoom, one
+      // border colour. q32 is the marker the recipient must restore.
+      const draft = `${source}\nper_frame_99999=q32=0.314159; q4=0; zoom=1; ob_r=0.5; ob_g=0.5; ob_b=0.5;\n`;
       await page.goto(
         `${SERVER_URL}/?preset=shifter-curlique&agent=true&renderer=webgl&lockQualityStep=6${buildPresetCodeHash(draft)}`,
         { waitUntil: 'domcontentloaded' },
@@ -141,6 +146,7 @@ requiredBrowserTest(
       await page.evaluate(() =>
         window.__stims_agent?.waitForVariables(
           (v) => Math.abs(v.q32 - 0.314159) < 0.00001,
+          60_000,
         ),
       );
       console.info('video-share: sender draft is running');
@@ -178,8 +184,17 @@ requiredBrowserTest(
         });
       }
       await create.click();
+      // While the capture runs the button reads "Creating…"; it reads "Create
+      // public link" again only when the capture or upload was refused.
+      await dialog
+        .getByRole('button', { name: 'Creating…', exact: true })
+        .waitFor();
       const link = dialog.locator('a[href*="/s/"]');
-      await link.waitFor({ timeout: 30_000 });
+      await link.or(create).waitFor({ timeout: 30_000 });
+      if (!(await link.isVisible()))
+        throw new Error(
+          `The dialog refused the capture: ${await dialog.getByRole('status').textContent()}`,
+        );
       console.info('video-share: preview published');
       const sharedUrl = await link.getAttribute('href');
       expect(sharedUrl).toBeString();
@@ -221,6 +236,7 @@ requiredBrowserTest(
       const variables = await receiver.evaluate(() =>
         window.__stims_agent?.waitForVariables(
           (v) => Math.abs(v.q32 - 0.314159) < 0.00001,
+          60_000,
         ),
       );
       expect(variables?.q32).toBeCloseTo(0.314159, 5);
@@ -229,13 +245,26 @@ requiredBrowserTest(
           .locator('meta[property="og:video:type"]')
           .getAttribute('content'),
       ).toBe('video/mp4');
-      await dialog
-        .getByRole('button', { name: 'Delete public link', exact: true })
-        .click();
+      const deleteLink = dialog.getByRole('button', {
+        name: 'Delete public link',
+        exact: true,
+      });
+      await deleteLink.click();
+      // The second press must land inside the confirm window (4 s). A
+      // .click() first waits for the button to hold still across animation
+      // frames, and with two software-rendered visualizers on a loaded
+      // machine that wait took 1.7-2.5 s, so one run missed the window.
+      // The armed button sits in a modal dialog with nothing over it, so
+      // the press goes straight to it (about 0.2 s after the first).
       await dialog
         .getByRole('button', { name: 'Delete it for everyone', exact: true })
-        .click();
-      await dialog.getByRole('status').filter({ hasText: 'deleted' }).waitFor();
+        .dispatchEvent('click');
+      const deleted = dialog.getByRole('status').filter({ hasText: 'deleted' });
+      await deleted.or(deleteLink).waitFor();
+      if (!(await deleted.isVisible()))
+        throw new Error(
+          `The link was not deleted: ${await dialog.getByRole('status').textContent()}`,
+        );
       expect(objects.size).toBe(0);
     } finally {
       await browser.close();
