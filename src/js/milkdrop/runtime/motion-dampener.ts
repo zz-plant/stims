@@ -57,23 +57,66 @@ const WARP_VARIABLE_IDENTITY: Readonly<Record<string, number>> = {
   sy: 1,
 };
 
+/**
+ * A read-only view of the frame's variable bag in which `read` decides what
+ * each name returns. Enumeration still lists the bag's own keys.
+ *
+ * The view's target is an empty object, never the bag. After a Proxy's get
+ * trap returns, the engine asks the target for its own descriptor of that
+ * key, to enforce the Proxy invariants. When the target is the VM's
+ * variables proxy, that question runs its `getOwnPropertyDescriptor` trap,
+ * which builds the whole frame snapshot (state, registers and every wave and
+ * shape local) once a frame and a descriptor object on every read. The
+ * predictability dial wraps every frame at its default setting, and the
+ * feedback pass reads q1–q32, zoom, rot, dx and dy through it, so that cost
+ * landed on every frame for every visitor.
+ */
+function overlayFrameVariables(
+  variables: Record<string, number>,
+  read: (prop: string) => unknown,
+): Record<string, number> {
+  return new Proxy({} as Record<string, number>, {
+    get(_target, prop) {
+      return typeof prop === 'string'
+        ? read(prop)
+        : Reflect.get(variables, prop);
+    },
+    has(_target, prop) {
+      return Reflect.has(variables, prop);
+    },
+    ownKeys() {
+      return Reflect.ownKeys(variables);
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(variables, prop);
+      if (!descriptor) {
+        return undefined;
+      }
+      if (typeof prop === 'string' && 'value' in descriptor) {
+        descriptor.value = read(prop);
+      }
+      // The empty target has no such key, and a Proxy may only report a
+      // configurable property the target lacks.
+      descriptor.configurable = true;
+      return descriptor;
+    },
+  });
+}
+
 function overlayWarpVariables(
   variables: Record<string, number>,
   scale: number,
 ): Record<string, number> {
-  return new Proxy(variables, {
-    get(target, prop, receiver) {
-      const value = Reflect.get(target, prop, receiver);
-      if (
-        typeof prop === 'string' &&
-        prop in WARP_VARIABLE_IDENTITY &&
-        typeof value === 'number' &&
-        Number.isFinite(value)
-      ) {
-        return toward(WARP_VARIABLE_IDENTITY[prop] ?? 0, value, scale);
-      }
-      return value;
-    },
+  return overlayFrameVariables(variables, (prop) => {
+    const value = variables[prop];
+    if (
+      prop in WARP_VARIABLE_IDENTITY &&
+      typeof value === 'number' &&
+      Number.isFinite(value)
+    ) {
+      return toward(WARP_VARIABLE_IDENTITY[prop] ?? 0, value, scale);
+    }
+    return value;
   });
 }
 
@@ -137,18 +180,16 @@ export function applyBreathingExpansion(
   if (controlsZoom === undefined || controlsZoom === 1) {
     const variables = frameState.variables as Record<string, number> | null;
     if (variables && typeof variables === 'object') {
-      frameState.variables = new Proxy(variables, {
-        get(target, prop, receiver) {
-          const value = Reflect.get(target, prop, receiver);
-          if (
-            prop === 'zoom' &&
-            typeof value === 'number' &&
-            Number.isFinite(value)
-          ) {
-            return value * factor;
-          }
-          return value;
-        },
+      frameState.variables = overlayFrameVariables(variables, (prop) => {
+        const value = variables[prop];
+        if (
+          prop === 'zoom' &&
+          typeof value === 'number' &&
+          Number.isFinite(value)
+        ) {
+          return value * factor;
+        }
+        return value;
       }) as typeof frameState.variables;
     }
   } else {
@@ -208,14 +249,9 @@ export function applyPredictabilitySmoothing(
     snapshot[key] = smoothed;
   }
 
-  frameState.variables = new Proxy(variables, {
-    get(target, prop, receiver) {
-      if (typeof prop === 'string' && prop in snapshot) {
-        return snapshot[prop];
-      }
-      return Reflect.get(target, prop, receiver);
-    },
-  }) as typeof frameState.variables;
+  frameState.variables = overlayFrameVariables(variables, (prop) =>
+    prop in snapshot ? snapshot[prop] : variables[prop],
+  ) as typeof frameState.variables;
 
   return frameState;
 }

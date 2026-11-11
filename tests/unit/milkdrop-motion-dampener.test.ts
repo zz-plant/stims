@@ -1,6 +1,15 @@
-import { describe, expect, test } from 'bun:test';
-import { applyMotionDampening } from '../../src/js/milkdrop/runtime/motion-dampener.ts';
-import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
+import { describe, expect, spyOn, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import {
+  applyBreathingExpansion,
+  applyMotionDampening,
+  applyPredictabilitySmoothing,
+} from '../../src/js/milkdrop/runtime/motion-dampener.ts';
+import type {
+  MilkdropFrameState,
+  MilkdropRuntimeSignals,
+} from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 /**
  * Only the seams the dampener touches, at values well away from identity so
@@ -161,5 +170,74 @@ describe('applyMotionDampening', () => {
       applyMotionDampening(buildFrameState(), Number.NaN).gpuGeometry.meshField
         ?.zoom,
     ).toBe(1.5);
+  });
+});
+
+describe('comfort overlays on the VM variables', () => {
+  const signals = {
+    time: 1,
+    deltaMs: 16.67,
+    frame: 60,
+    fps: 60,
+    aspect: 1,
+    bass: 0.5,
+    mid: 0.5,
+    treb: 0.5,
+    frequencyData: new Uint8Array(64).fill(128),
+    waveformData: new Float32Array(512),
+  } as unknown as MilkdropRuntimeSignals;
+
+  function steppedVm() {
+    const preset = compileMilkdropPresetSource(
+      [
+        '[preset00]',
+        'zoom=1.0',
+        'per_frame_1=zoom = 1.25; rot = 0.2; dx = 0.1; q1 = 3; q2 = 4;',
+        'wavecode_0_enabled=1',
+        'wave_0_per_frame1=t1 = 2;',
+      ].join('\n'),
+      { id: 'comfort-overlay-fixture' },
+    );
+    const vm = createMilkdropVM(preset);
+    return { vm, frame: vm.step(signals) };
+  }
+
+  // Each overlay is a view over the one before it, ending at the VM's
+  // read-only proxy. Reading a name through them must cost what reading the
+  // VM proxy costs: the proxy snapshots its whole state only to enumerate.
+  test('reads through every overlay without snapshotting the VM state', () => {
+    const { vm, frame } = steppedVm();
+    const snapshot = spyOn(vm, 'getStateSnapshot');
+    const overlaid = applyMotionDampening(
+      applyBreathingExpansion(applyPredictabilitySmoothing(frame, 0.5), 0.02),
+      0.5,
+    );
+    const { variables } = overlaid;
+
+    expect(variables.zoom).toBeCloseTo(1 + (1.25 * 1.02 - 1) * 0.5, 6);
+    expect(variables.rot).toBeCloseTo(0.1, 6);
+    expect(variables.dx).toBeCloseTo(0.05, 6);
+    // First frame of the smoothing filter: no history, so q passes through.
+    expect(variables.q1).toBe(3);
+    expect(variables.q2).toBe(4);
+    expect('q1' in variables).toBe(true);
+    expect(snapshot).not.toHaveBeenCalled();
+  });
+
+  test('enumerating through the overlays lists the VM keys with overlaid values', () => {
+    const { frame } = steppedVm();
+    const overlaid = applyMotionDampening(
+      applyPredictabilitySmoothing(frame, 0.5),
+      0,
+    );
+    const copy = { ...overlaid.variables };
+
+    expect(copy.zoom).toBe(1);
+    expect(copy.rot).toBe(0);
+    expect(copy.q1).toBe(3);
+    expect(copy.wave1_t1).toBe(2);
+    expect(Object.keys(overlaid.variables)).toEqual(
+      Object.keys({ ...frame.variables }),
+    );
   });
 });
