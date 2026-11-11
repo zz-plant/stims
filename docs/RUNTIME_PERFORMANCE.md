@@ -160,7 +160,8 @@ Each of these was measured or reasoned through and left as is. Re-open one only 
   transient colour targets stay out.** See
   [the 2026-11-04 decisions](#2026-11-04-webgpu-platform-features-1541). Re-open
   transient attachments for a depth-using pass only once removing depth has been
-  tried, and wide gamut only after an eye check on a P3 display.
+  tried. Re-add wide gamut (the old flag is gone) only after an eye check on a
+  P3 display.
 - **WebGPU render bundles stay off.** The 2026-10-11 hardware A/B below
   found no cadence effect. Re-evaluate only with a component-level profile
   showing CPU submission time that cadence sampling cannot see.
@@ -738,6 +739,10 @@ WebGL reinterprets, so a dull red gains saturation. The screenshot is sRGB, so
 colours outside it clip there and how they look on a P3 panel has not been checked
 by eye. WebGPU, the judged backend, loses saturation and shifts hue instead, so the
 flag makes the two backends disagree.
+
+The flag was removed on 2026-11-11 rather than fixed: no screen set it, and
+fixing WebGPU first needs the eye check below. Wide-gamut work starts from that
+check, not from the old module.
 
 **Before any wide-gamut work:** decide by eye on a P3 display whether the
 reinterpreted look is wanted, since the parity captures are sRGB and cannot judge
