@@ -162,7 +162,7 @@ With `keyboardNavigation` on, a focused text-type input, `textarea` or `number` 
 
 These come from reading the code and running it in Chromium 156 and 158.
 
-- **Focus moves on init, pad or no pad.** With `restoreFocus` on, the default, and nothing focused, the call focuses the remembered element or the first focusable one. Pass `restoreFocus: false` to keep it from moving focus when it starts.
+- **Focus moves on init, pad or no pad.** With `restoreFocus` on, the default, and nothing focused, the call focuses the remembered element or the first focusable one. That focus does not scroll the page to the element, which can be below the fold; focus a pad or a key moves scrolls as the browser does. Pass `restoreFocus: false` to keep it from moving focus when it starts.
 - **A pad's directions stop at a text-type input.** The D-pad and stick do nothing while one has focus, since a pad cannot move its caret. Leave with LB, RB or B. A `textarea` or `number` input is left on any direction.
 - **Some editable elements are not treated as fields.** Date and time inputs and `contenteditable` elements get the plain mapping: with `keyboardNavigation` on, arrows move focus and Backspace goes back.
 

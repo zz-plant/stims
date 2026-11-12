@@ -439,16 +439,30 @@ const getElementSelector = (element: HTMLElement) => {
   return null;
 };
 
-const focusFirstAvailable = (doc: Document, selector: string) => {
+/**
+ * Focus taken when the layer starts, before the visitor has pressed anything,
+ * must not move the page. The first focusable element can be below the fold:
+ * in the app this was extracted from, a load where the layer started before
+ * the launch controls had mounted found only the footer's links, focused the
+ * first and opened scrolled down to it. Focus a press asks for still scrolls
+ * to its target.
+ */
+const WITHOUT_SCROLLING: FocusOptions = { preventScroll: true };
+
+const focusFirstAvailable = (
+  doc: Document,
+  selector: string,
+  focusOptions?: FocusOptions,
+) => {
   const scope = getActiveScope(doc);
   const elements = getFocusableElements(scope, selector);
   const first = elements[0];
   if (first) {
-    first.focus();
+    first.focus(focusOptions);
     return first;
   }
   if (scope instanceof HTMLElement) {
-    scope.focus();
+    scope.focus(focusOptions);
   }
   return null;
 };
@@ -457,6 +471,7 @@ const restoreLastFocusedElement = (
   doc: Document,
   selector: string,
   focusStorageKey: string,
+  focusOptions?: FocusOptions,
 ) => {
   const stored = readStoredFocusState(focusStorageKey);
   if (!stored) return null;
@@ -465,7 +480,7 @@ const restoreLastFocusedElement = (
   if (stored.selector) {
     const bySelector = scope.querySelector<HTMLElement>(stored.selector);
     if (bySelector && isFocusable(bySelector)) {
-      bySelector.focus();
+      bySelector.focus(focusOptions);
       return bySelector;
     }
   }
@@ -474,7 +489,7 @@ const restoreLastFocusedElement = (
   if (elements.length === 0) return null;
   const clampedIndex = Math.max(0, Math.min(elements.length - 1, stored.index));
   const target = elements[clampedIndex] ?? elements[0] ?? null;
-  target?.focus();
+  target?.focus(focusOptions);
   return target;
 };
 
@@ -787,9 +802,10 @@ export const initGamepadNavigation = (
         doc,
         resolved.focusableSelector,
         resolved.focusStorageKey,
+        WITHOUT_SCROLLING,
       )
     ) {
-      focusFirstAvailable(doc, resolved.focusableSelector);
+      focusFirstAvailable(doc, resolved.focusableSelector, WITHOUT_SCROLLING);
     }
   }
 

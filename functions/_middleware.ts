@@ -345,6 +345,17 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
     }
   }
 
+  // `/milkdrop/` was the app's address before `/`, and old links still carry
+  // it. The build puts no file there: milkdrop/index.html redirects on the
+  // dev server but is not a build input, so the deployed alias answered 404
+  // with an empty body. The query holds the preset and audio choice; the
+  // browser carries a fragment (a shared draft) across the redirect itself.
+  if (url.pathname === '/milkdrop' || url.pathname === '/milkdrop/') {
+    const target = new URL('/', url.origin);
+    target.search = url.search;
+    return Response.redirect(target.toString(), 301);
+  }
+
   const retiredTarget = retiredDiscoverTarget(url.pathname);
   if (retiredTarget) {
     const target = new URL(retiredTarget, url.origin);

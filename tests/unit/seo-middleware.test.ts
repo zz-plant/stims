@@ -302,6 +302,40 @@ describe('curated routes on Worker static assets (no SPA fallback)', () => {
   );
 });
 
+describe('the /milkdrop/ alias on Worker static assets', () => {
+  // The app's old address. The build puts no file there, so on the deployed
+  // Worker `next()` answers 404 with an empty body, which is what old links
+  // got until the edge redirected them.
+  test.each([
+    ['https://toil.fyi/milkdrop/', 'https://toil.fyi/'],
+    ['https://toil.fyi/milkdrop', 'https://toil.fyi/'],
+    [
+      'https://toil.fyi/milkdrop/?preset=eos-glowsticks-v2-03-music&audio=demo',
+      'https://toil.fyi/?preset=eos-glowsticks-v2-03-music&audio=demo',
+    ],
+    ['https://toil.fyi/milkdrop?preset=x', 'https://toil.fyi/?preset=x'],
+  ])('%s redirects permanently to %s', async (from, to) => {
+    const { context, assetsFetched } = makeWorkerAssetsContext(from);
+    const response = await onRequest(context);
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get('location')).toBe(to);
+    expect(assetsFetched).toEqual([]);
+    expect(transformCalls).toBe(0);
+  });
+
+  test.each([
+    'https://toil.fyi/milkdrop/anything-else',
+    'https://toil.fyi/milkdropx',
+  ])('%s is not the alias and keeps its 404', async (url) => {
+    const { context } = makeWorkerAssetsContext(url);
+    const response = await onRequest(context);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('location')).toBeNull();
+  });
+});
+
 describe('/author/<slug> middleware', () => {
   test('rewrites a curated author page with person-backed metadata', async () => {
     await onRequest(makeContext('https://toil.fyi/author/geiss'));

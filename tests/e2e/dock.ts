@@ -6,52 +6,64 @@
  * query can wait out its whole timeout on a slow boot: the bar's 3-second
  * countdown starts at mount, long before the engine finishes booting. The
  * pointer goes over the stage first — the gesture that brings the bar back —
- * and the click targets a visible, non-inert button, since the dock is
+ * and the press targets a visible, non-inert button, since the dock is
  * rendered twice (desktop and phone).
  *
  * A slow, software-rendered runner can miss the first nudge or fold the bar
- * again while the click is waiting. Retrying the gesture is what a visitor
- * does, and it is not hiding a product assertion: the click still has to land
- * on a visible, non-inert button within the deadline.
+ * again before the press. Retrying the gesture is what a visitor does, and it
+ * is not hiding a product assertion: the press still has to land on a
+ * visible, non-inert button within the deadline.
  *
- * A click can also land and still run out its attempt: under load Playwright
- * spends the rest of the 3 seconds waiting out what follows the click. The
- * menu is open by then and its scrim covers the button, so every retry was
- * intercepted and the helper reported a button that never became clickable
- * with the menu already on screen (embed-snippet on CI, 2026-11-08 to 11-10).
  * Both buttons say when their menu is open (`aria-expanded`), and that is
- * what the caller wants, so it ends the wait.
+ * what the caller wants, so it ends the wait. A press that landed used to be
+ * counted as a miss when Playwright ran out of time after it; the retries
+ * then met the open menu's scrim (embed-snippet on CI, 2026-11-08 to 11-10).
  *
- * It still failed on CI after that, on a runner too slow to reproduce here
- * (CPU throttling to 20x, with four times the pixels, passed). A failure now
- * lists each attempt's last Playwright step and what sat on top of the
- * button, so the next one says which way the click was refused.
+ * The press is not Playwright's click. That click is several round trips to
+ * the page (wait for the button's box to hold still across two animation
+ * frames, scroll to it, move, press, release), and on a runner whose main
+ * thread is busy for seconds at a time each one waits its turn. It went
+ * wrong on CI twice more:
  *
- * The next one (2026-11-12) said: every attempt ended "waiting for element to
- * be visible, enabled and stable" with the button visible and on top. That
- * wait compares the button's box across two animation frames, and the runner
- * drew too few frames in 3 seconds to finish it. When an attempt runs out
- * and the button is visible, not inert and on top at its centre, the helper
- * presses it without the frame wait: what a visitor would hit is checked
- * here, and Playwright's stability check adds only the frames.
+ *  - The frame wait did not finish in a 3-second attempt, with the button
+ *    visible and on top throughout (2026-11-12).
+ *  - A forced click, which skips that wait, was sent after a separate check
+ *    that the button was on top. The helper returned with no menu open and
+ *    the caller's next step timed out (main, 2026-11-12). At 3x CPU throttle
+ *    here, a forced click sent with the button on top landed on the stage
+ *    canvas: the attempt before it lasts 3 seconds, as long as the bar waits
+ *    before it folds.
+ *
+ * So one evaluate checks that a copy of the button is visible, not inert and
+ * the element at its own centre, and clicks it in the same task: nothing can
+ * fold the bar or cover the button between the check and the press. The
+ * button toggles its menu, so after one press the helper never presses
+ * again; it waits for `aria-expanded`, which the same evaluate usually sees.
+ * A failure lists what each copy of the button looked like while no press
+ * was possible.
+ *
+ * Why that main thread is busy, measured here at the same throttle: once
+ * the flash guard drops its readback worker as stalled
+ * (packages/flash-guard/src/sampler.ts), it reads frames back on the main
+ * thread, from one to five seconds a read, until it tries the worker again
+ * 30 seconds later.
  */
 import type { Page } from 'playwright';
 
-const CLICK_DEADLINE_MS = 30_000;
-const ATTEMPT_MS = 3_000;
+/** How long the bar has to come back and take the press. */
+const PRESS_DEADLINE_MS = 30_000;
+/** How long the pressed button has to say its menu is open. */
+const OPEN_DEADLINE_MS = 30_000;
 
 async function clickDockButton(page: Page, label: string) {
   const stage = page.locator('.stims-shell__stage-frame');
   // `button`: the open menu panel carries the same aria-label.
-  const button = page
-    .locator(`button[aria-label="${label}"]:not([inert]):visible`)
-    .first();
-  const menuOpen = async () =>
-    (await page
-      .locator(`button[aria-label="${label}"][aria-expanded="true"]:visible`)
-      .count()) > 0;
-  const deadline = Date.now() + CLICK_DEADLINE_MS;
-  const attempts: string[] = [];
+  const expanded = page.locator(
+    `button[aria-label="${label}"][aria-expanded="true"]:visible`,
+  );
+  const menuOpen = async () => (await expanded.count()) > 0;
+  const deadline = Date.now() + PRESS_DEADLINE_MS;
+  const refusals: string[] = [];
 
   while (Date.now() < deadline) {
     if (await menuOpen()) return;
@@ -59,97 +71,79 @@ async function clickDockButton(page: Page, label: string) {
     if (!box) throw new Error('the stage has no box to point at');
     await page.mouse.move(box.x + box.width / 3, box.y + box.height / 3);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    try {
-      await button.click({ timeout: ATTEMPT_MS });
-      return;
-    } catch (error) {
-      // The bar was still folded, or folded again, or the click landed and
-      // the attempt ran out after it; the next pass tells which.
-      attempts.push(
-        `${lastPlaywrightStep(error)} | ${await whatCoversButton(page, label)}`,
+    const press = await page.evaluate(pressIfOnTop, label);
+    if (press.pressed) {
+      // Pressed once. A second press would close the menu this one opens.
+      if (press.open) return;
+      const opened = await expanded
+        .first()
+        .waitFor({ timeout: OPEN_DEADLINE_MS })
+        .then(
+          () => true,
+          () => false,
+        );
+      if (opened || (await menuOpen())) return;
+      throw new Error(
+        `the ${label} button was pressed and its menu did not open within 30s`,
       );
-      if (await menuOpen()) return;
-      if (await isOnTop(page, label)) {
-        try {
-          await button.click({ timeout: ATTEMPT_MS, force: true });
-          return;
-        } catch (forcedError) {
-          attempts.push(`forced: ${lastPlaywrightStep(forcedError)}`);
-        }
-      }
     }
+    // The bar was still folded, or folded again; nudge it and look again.
+    if (refusals.at(-1) !== press.copies) refusals.push(press.copies);
   }
   if (await menuOpen()) return;
   throw new Error(
-    `the ${label} button never became clickable within 30s:\n` +
-      attempts.map((line, index) => `  ${index + 1}. ${line}`).join('\n'),
+    `the ${label} button could not be pressed within 30s. Each copy of it, as it changed:\n` +
+      refusals.map((line, index) => `  ${index + 1}. ${line}`).join('\n'),
   );
 }
+
+type Press =
+  | { pressed: true; open: boolean }
+  | { pressed: false; copies: string };
 
 /**
- * Why Playwright held the click: the last reason in its call log (something
- * intercepting it, the button hidden or moving), else the last step reached.
+ * Runs in the page. Clicks the first copy of the button that a press at its
+ * centre would hit, and says whether the button already reports its menu
+ * open: React renders the click in a microtask, so one tick later the answer
+ * is usually there and the caller needs no further round trip. With no such
+ * copy it clicks nothing and returns each copy's visibility and the element
+ * at its centre.
  */
-function lastPlaywrightStep(error: unknown): string {
-  const lines = String(error instanceof Error ? error.message : error)
-    .split('\n')
-    .map((line) => line.trim().replace(/^-\s*/, ''))
-    .filter((line) => line && !line.startsWith('Call log'));
-  const reason = lines.findLast((line) =>
-    /intercepts|not visible|not stable|not enabled|outside of the viewport|detached/.test(
-      line,
-    ),
-  );
-  return reason ?? lines.at(-1) ?? 'no call log';
-}
-
-/** Whether a visible, non-inert copy of the button is what a press at its
- * centre would hit. */
-function isOnTop(page: Page, label: string): Promise<boolean> {
-  return page
-    .evaluate(
-      (name) =>
-        [...document.querySelectorAll(`button[aria-label="${name}"]`)].some(
-          (button) => {
-            if (button.closest('[inert]')) return false;
-            if (getComputedStyle(button).visibility !== 'visible') return false;
-            const box = button.getBoundingClientRect();
-            if (box.width === 0 || box.height === 0) return false;
-            const top = document.elementFromPoint(
-              box.x + box.width / 2,
-              box.y + box.height / 2,
-            );
-            return top === button || button.contains(top);
-          },
-        ),
-      label,
-    )
-    .catch(() => false);
-}
-
-/** Each copy of the button: its visibility, and the element at its centre. */
-function whatCoversButton(page: Page, label: string): Promise<string> {
-  return page
-    .evaluate((name) => {
-      const nameOf = (node: Element | null) =>
-        node
-          ? `${node.tagName.toLowerCase()}.${String(node.className).split(' ')[0]}`
-          : 'nothing';
-      return [...document.querySelectorAll(`button[aria-label="${name}"]`)]
-        .map((button) => {
-          const box = button.getBoundingClientRect();
-          const top = document.elementFromPoint(
-            box.x + box.width / 2,
-            box.y + box.height / 2,
-          );
-          const onTop = top === button || button.contains(top);
-          return `${getComputedStyle(button).visibility}${
-            button.closest('[inert]') ? ' inert' : ''
-          }, ${onTop ? 'on top' : `under ${nameOf(top)}`}`;
-        })
-        .join('; ');
-    }, label)
-    .catch(() => 'page unreadable');
+async function pressIfOnTop(name: string): Promise<Press> {
+  const nameOf = (node: Element | null) =>
+    node
+      ? `${node.tagName.toLowerCase()}.${String(node.className).split(' ')[0]}`
+      : 'nothing';
+  const copies: string[] = [];
+  for (const button of document.querySelectorAll<HTMLButtonElement>(
+    `button[aria-label="${name}"]`,
+  )) {
+    const inert = button.closest('[inert]') !== null;
+    const visibility = getComputedStyle(button).visibility;
+    const box = button.getBoundingClientRect();
+    const hasBox = box.width > 0 && box.height > 0;
+    const top = hasBox
+      ? document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+      : null;
+    const onTop = top !== null && (top === button || button.contains(top));
+    if (!inert && !button.disabled && visibility === 'visible' && onTop) {
+      button.click();
+      await Promise.resolve();
+      return {
+        pressed: true,
+        open: button.getAttribute('aria-expanded') === 'true',
+      };
+    }
+    copies.push(
+      `${visibility}${inert ? ' inert' : ''}${button.disabled ? ' disabled' : ''}, ${
+        !hasBox ? 'no box' : onTop ? 'on top' : `under ${nameOf(top)}`
+      }`,
+    );
+  }
+  return {
+    pressed: false,
+    copies: copies.join('; ') || 'no such button in the page',
+  };
 }
 
 export async function openDockMenu(page: Page) {

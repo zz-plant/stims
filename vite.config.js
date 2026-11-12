@@ -8,9 +8,11 @@ import { liveChannel } from './scripts/vite-live-channel.ts';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
-// milkdrop/index.html is a pure redirect (no JS imports) — exclude it from
-// Vite bundling to avoid an unnecessary chunk graph.  It is copied to dist/
-// as a static asset by Vite's default public-dir behaviour.
+// milkdrop/index.html is a pure redirect (no JS imports), so it is not a
+// build input and dist/ has no milkdrop/: the file is outside public/, and
+// nothing copies it. The dev server serves it at /milkdrop/. On the deployed
+// site the Worker redirects /milkdrop and /milkdrop/ to / with a 301
+// (functions/_middleware.ts).
 const rollupInputs = {
   index: path.resolve(rootDir, 'index.html'),
   certify: path.resolve(rootDir, 'certify/index.html'),
