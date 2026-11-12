@@ -101,9 +101,17 @@ requiredBrowserTest(
       expect(box?.width).toBe(HOST_COLUMN_PX);
       expect(box?.height).toBeCloseTo((HOST_COLUMN_PX * 9) / 16, 0);
 
+      // The address the pasted markup gives the frame. The frame's own
+      // address says `embed=true` only for a while: it is empty until the
+      // frame's navigation commits, which on a loaded host comes after the
+      // host page's DOMContentLoaded, and the app rewrites `embed` as
+      // `embedded` once it boots.
+      const src = await iframe.getAttribute('src');
+      if (!src) throw new Error('The pasted iframe has no src.');
+      expect(new URL(src, SERVER_URL).searchParams.get('embed')).toBe('true');
+
       const frame = await (await iframe.elementHandle())?.contentFrame();
       if (!frame) throw new Error('The pasted iframe has no content frame.');
-      expect(new URL(frame.url()).searchParams.get('embed')).toBe('true');
       await frame.waitForFunction(
         (id) => {
           const state = window.__stims_agent?.getState();
