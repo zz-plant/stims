@@ -142,8 +142,15 @@ html.light .stims-shell {
     border-bottom: none;
   }
 
+  /* Wraps rather than widening the panel: Performance's head holds the title
+     and "Reset detail, particles and resolution", 355px together, and a
+     no-wrap head is a grid item whose min-content sets the panel's column.
+     At 320px wide that pushed every section on the tab 67px past the edge,
+     so the tab scrolled sideways and its selects were cut off. The button
+     drops under the title only where the two cannot share a line. */
   .ctl-section__head {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
@@ -503,11 +510,16 @@ html.light .stims-shell {
     filter: grayscale(1) opacity(0.5);
   }
 
-  /* iOS Safari zooms the viewport on focus for any text input under
-     16px — below that threshold, tapping search yanks the whole page
-     in. Keep the dense desktop size everywhere above the breakpoint. */
-  @media (width < 768px) {
-    .ctl-field {
+  /* iOS Safari zooms the viewport on focus for any text input or select
+     under 16px — below that threshold, tapping search or the author and
+     sort selects yanks the whole page in. base.css raises bare inputs and
+     selects at this width, but these class rules outrank it, so the select
+     was still 13px on a phone. A touch screen gets it at any width too, the
+     way the 44px targets above do: a phone held sideways is up to 932px
+     wide and zooms all the same. A mouse keeps the dense size. */
+  @media (width < 768px), (pointer: coarse) {
+    .ctl-field,
+    .ctl-select {
       font-size: 16px;
     }
   }
@@ -1300,6 +1312,15 @@ html.light .stims-shell {
 
     .ctl-browse-refine {
       gap: 6px;
+    }
+
+    /* At the 16px a phone needs (see .ctl-select above) the default sort,
+       "Curated first", is 97px of text; the desktop padding left it 90px
+       at 320px wide and cut its last letter. Pulling the chevron in
+       gives the text that room back. */
+    .ctl-browse-refine .ctl-select {
+      padding-inline: 9px 22px;
+      background-position: right 7px center;
     }
   }
 

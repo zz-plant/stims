@@ -16,6 +16,11 @@
  *   - The launch hero took its ink from the page theme while the stage
  *     canvas behind it stayed dark, so light mode rendered a #0f172a
  *     wordmark on an attract frame at ~1.005:1.
+ *   - The browse selects stayed 13px on a phone, so iOS Safari zoomed the
+ *     page on every tap of the author or sort select.
+ *   - The what's-new chart labels were 9.9px and its "Try it" links 42x19.
+ *   - At 320px the Settings "Visuals and display" tab was 355px wide in a
+ *     288px panel, so it scrolled sideways and cut its selects off.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
@@ -607,6 +612,159 @@ chromeTest(
     expect(desktop.select?.h ?? 99).toBeLessThan(44);
   },
   90000,
+);
+
+chromeTest(
+  'browse search and selects are 16px on a touch screen, so iOS Safari does not zoom on focus',
+  async () => {
+    // iOS Safari zooms the page when a field or select under 16px takes
+    // focus. base.css raises bare inputs and selects on a phone, but the
+    // .ctl-select class rule outranks it, so the author and sort selects
+    // stayed 13px. A phone held sideways is wider than the 768px breakpoint
+    // and zooms all the same, so it is measured too.
+    const fontSizes = async (options: Parameters<Browser['newPage']>[0]) => {
+      const page = await (browser as Browser).newPage(options);
+      try {
+        await page.goto(`${server?.url}/?agent=true&panel=browse`, {
+          waitUntil: 'domcontentloaded',
+        });
+        await page.waitForSelector('.ctl-browse-filters .ctl-select', {
+          timeout: 30000,
+        });
+        return await page.$$eval(
+          '.ctl-browse-filters .ctl-select, .ctl-browse-filters .ctl-field',
+          (els) =>
+            els.map((el) => Number.parseFloat(getComputedStyle(el).fontSize)),
+        );
+      } finally {
+        await page.close();
+      }
+    };
+
+    const touch = { isMobile: true, hasTouch: true };
+    const portrait = await fontSizes({
+      viewport: { width: 390, height: 844 },
+      ...touch,
+    });
+    const landscape = await fontSizes({
+      viewport: { width: 844, height: 390 },
+      ...touch,
+    });
+    // Two selects and the search field.
+    expect(portrait.length).toBeGreaterThanOrEqual(3);
+    expect(Math.min(...portrait)).toBeGreaterThanOrEqual(16);
+    expect(landscape.length).toBeGreaterThanOrEqual(3);
+    expect(Math.min(...landscape)).toBeGreaterThanOrEqual(16);
+
+    const desktop = await fontSizes({ viewport: { width: 1280, height: 900 } });
+    expect(desktop.length).toBeGreaterThanOrEqual(3);
+    expect(Math.max(...desktop)).toBeLessThan(16);
+  },
+  90000,
+);
+
+chromeTest(
+  "what's new: chart labels sit on the type floor and Try it reaches 44px on a touch screen",
+  async () => {
+    // Static pages do not load tokens.css, and check:css-scale reads only
+    // src/css, so the quarter labels drifted to .62rem (9.9px), under the
+    // --text-2xs floor (11px), and each card's "Try it" was a 42x19 target.
+    const measure = async (options: Parameters<Browser['newPage']>[0]) => {
+      const page = await (browser as Browser).newPage(options);
+      try {
+        await page.goto(`${server?.url}/whats-new/index.html`, {
+          waitUntil: 'domcontentloaded',
+        });
+        return await page.evaluate(() => ({
+          labels: [...document.querySelectorAll('.wn-bar__label')].map((el) =>
+            Number.parseFloat(getComputedStyle(el).fontSize),
+          ),
+          links: [...document.querySelectorAll('.wn-card__link')].map((el) => {
+            const r = el.getBoundingClientRect();
+            return { w: Math.round(r.width), h: Math.round(r.height) };
+          }),
+        }));
+      } finally {
+        await page.close();
+      }
+    };
+
+    const phone = await measure({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    expect(phone.labels.length).toBeGreaterThan(0);
+    expect(Math.min(...phone.labels)).toBeGreaterThanOrEqual(11);
+    expect(phone.links.length).toBeGreaterThan(0);
+    for (const link of phone.links) {
+      expect(link.w).toBeGreaterThanOrEqual(44);
+      expect(link.h).toBeGreaterThanOrEqual(44);
+    }
+
+    // With a mouse the link stays the size of its text.
+    const desktop = await measure({ viewport: { width: 1280, height: 900 } });
+    expect(desktop.links.length).toBeGreaterThan(0);
+    for (const link of desktop.links) expect(link.h).toBeLessThan(44);
+  },
+  60000,
+);
+
+chromeTest(
+  'no settings tab scrolls sideways on a 320px phone',
+  async () => {
+    // The panel is a grid, so a no-wrap row inside a section sets the
+    // column's minimum width. Performance's head (its title beside "Reset
+    // detail, particles and resolution") needed 355px, so at 320px every
+    // section on "Visuals and display" ran 67px past the edge: the tab
+    // scrolled sideways and its selects were cut off. The tab strip
+    // scrolls inside itself by design and does not widen the panel.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 320, height: 700 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true&panel=settings`, {
+        waitUntil: 'domcontentloaded',
+      });
+      const tabs = page.locator(
+        '.stims-shell__sheet-panel--settings [role="tab"]',
+      );
+      await tabs.first().waitFor({ timeout: 30000 });
+      const count = await tabs.count();
+      expect(count).toBeGreaterThan(0);
+
+      const overflow: Record<string, number> = {};
+      for (let i = 0; i < count; i += 1) {
+        const tab = tabs.nth(i);
+        await tab.click();
+        await page.waitForFunction(
+          (index) =>
+            document
+              .querySelectorAll(
+                '.stims-shell__sheet-panel--settings [role="tab"]',
+              )
+              [index]?.getAttribute('aria-selected') === 'true',
+          i,
+        );
+        const name = (await tab.textContent())?.trim() || `tab ${i}`;
+        overflow[name] = await page.evaluate(() => {
+          const panel = document.querySelector(
+            '.stims-shell__sheet-panel--settings',
+          );
+          return panel ? panel.scrollWidth - panel.clientWidth : -1;
+        });
+      }
+      // Keyed by tab, so a failure names the tab that scrolls.
+      expect(overflow).toEqual(
+        Object.fromEntries(Object.keys(overflow).map((name) => [name, 0])),
+      );
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
 );
 
 chromeTest(
