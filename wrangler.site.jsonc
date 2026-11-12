@@ -42,7 +42,10 @@
       "!/preset-meta.json",
       "!/llms.txt",
       "!/llms-full.txt",
-      "!/openapi.json"
+      "!/openapi.json",
+      // The commit this deploy serves (scripts/write-deploy-manifest.ts),
+      // answered by the asset layer with its _headers rule.
+      "!/deploy-manifest.json"
     ]
   },
   "placement": { "mode": "smart" },

@@ -2,6 +2,9 @@
 /**
  * Builds the deployable site by compiling the Vite app and Cloudflare Worker
  * concurrently, then assembling their outputs under dist/.
+ *
+ * Last, it writes dist/deploy-manifest.json, the commit the deploy serves
+ * (scripts/write-deploy-manifest.ts).
  */
 
 import { spawn } from 'node:child_process';
@@ -78,6 +81,9 @@ try {
     recursive: true,
     force: true,
   });
+  // Last, once dist/ is complete: /deploy-manifest.json names the commit
+  // this build serves, and a bad commit fails the build here.
+  await run('bun', ['run', 'scripts/write-deploy-manifest.ts']);
 } finally {
   await rm(workerOutputDir, { recursive: true, force: true });
 }
