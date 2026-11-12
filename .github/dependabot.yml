@@ -37,7 +37,9 @@ updates:
           - "@types/react-dom"
       # The @codemirror packages share one @codemirror/state instance (two
       # copies break its instanceof checks), and package.json pins them in
-      # "overrides" as well as dependencies.
+      # "overrides" as well as dependencies. Dependabot moves only the
+      # dependencies, so check:dependency-overrides fails its pull request
+      # until the overrides are set to the same versions.
       codemirror:
         patterns:
           - "@codemirror/*"

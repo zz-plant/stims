@@ -44,6 +44,8 @@ bun run site:dev
 
 `bun run site:build` (which `site:build:gated` runs after the fast tests) runs the Vite app build and the Pages Functions compiler concurrently because neither consumes the other's output. The Worker compiler writes to an isolated temporary directory; after both builds succeed, the script moves that bundle into `dist/_worker.js` and writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and uses `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
 
+Last, [`scripts/write-deploy-manifest.ts`](../scripts/write-deploy-manifest.ts) writes `dist/deploy-manifest.json`, `{"commit":"<40-hex sha>"}`: the `WORKERS_CI_COMMIT_SHA` Workers Builds sets, or `git rev-parse HEAD` outside it, and a malformed commit fails the build. To see which commit a deploy serves, read `https://toil.fyi/deploy-manifest.json` (or the preview URL's). The asset layer answers it with `Cache-Control: public, max-age=0, must-revalidate` from `public/_headers`, so a cached copy is revalidated on every read.
+
 Keep the orchestration in `scripts/build-site.mjs`. Running both compilers as a shell chain makes deploy builds unnecessarily serial, while writing both into `dist/` concurrently creates a race because Vite clears that directory at startup.
 
 ### One-time Workers Builds setup

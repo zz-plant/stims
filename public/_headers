@@ -81,6 +81,13 @@
 /service-worker.js
   Cache-Control: public, max-age=0, must-revalidate
 
+# The commit this deploy serves, written by `site:build`. A check reads it to
+# see whether a merge is live, so a cached copy must not outlast the deploy
+# that replaces it. It is for checks, not search results.
+/deploy-manifest.json
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Robots-Tag: noindex
+
 /api/*
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, POST, OPTIONS

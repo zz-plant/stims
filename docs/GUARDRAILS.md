@@ -25,6 +25,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius`, `font-size` and `font-weight` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
+| [`check:dependency-overrides`](#checkdependency-overrides) | `check:quick` | Fails when `overrides` pins a package that `dependencies` or `devDependencies` also declares, at a different version. |
 | [`check:design`](#checkdesign) | `check:quick` | Fail on UI anti-patterns the token and scale checks don't model. |
 | [`check:dist-determinism`](#checkdist-determinism) | on demand | Builds a package twice from clean and fails if the two dists differ — the published tarball should be a function of the source, not of the machine that built it. Wired into publish-packages.yml ahead of npm pack, and not part of the quality gate because it pays for two full tsc runs per package. |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
@@ -282,6 +283,38 @@ so treat that section as a review aid rather than a gate.
   bun run check:dead-code -- --fix   # let knip delete unused exports/files
 
 Run it directly: `bun run check:dead-code`
+
+## check:dependency-overrides
+
+Fails when `overrides` pins a package that `dependencies` or `devDependencies` also declares, at a different version.
+
+The overrides hold every copy of a package in the tree at one version: the
+@codemirror packages share one @codemirror/state, whose instanceof checks
+break with two copies, and zod carries a security floor (#1549). For a
+package the root also declares, that version is the declared one. Overrides
+win over the declaration, and Dependabot edits only the declaration, so a
+bump that leaves the override behind installs the old version while
+package.json names the new one. #1426 and #1557 did that to three
+@codemirror packages, and the next Dependabot run failed with
+`NoChangeError: No files were updated!`: it read the stale lockfile as
+current and asked for the version package.json already named (#1732 raised
+the overrides). #1272 and #1276 drifted the same way before #1281, and the
+zod bump in #1604 needed its override moved by hand.
+
+The rule: an override of a declared package is the declared string exactly,
+or `$<name>`, npm's reference to the declared version, which bun resolves at
+install. A range the declared version satisfies is not enough: with 6.5.0
+locked, declaring 6.5.2 under an override of `^6.5.0` leaves bun 1.4 at
+6.5.0, because the lock still matches the override. `resolutions` is read
+too, since bun treats it as `overrides`. A package only the tree pulls in
+(undici, nanoid) has no declaration to agree with and is not checked.
+
+In the quality gate, so a Dependabot pull request that moves a declaration
+without its override fails CI and says which line to change.
+
+  bun run check:dependency-overrides [path/to/package.json]
+
+Run it directly: `bun run check:dependency-overrides`
 
 ## check:design
 
