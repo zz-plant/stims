@@ -142,8 +142,15 @@ html.light .stims-shell {
     border-bottom: none;
   }
 
+  /* Wraps rather than widening the panel: Performance's head holds the title
+     and "Reset detail, particles and resolution", 355px together, and a
+     no-wrap head is a grid item whose min-content sets the panel's column.
+     At 320px wide that pushed every section on the tab 67px past the edge,
+     so the tab scrolled sideways and its selects were cut off. The button
+     drops under the title only where the two cannot share a line. */
   .ctl-section__head {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;

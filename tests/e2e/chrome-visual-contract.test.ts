@@ -19,6 +19,8 @@
  *   - The browse selects stayed 13px on a phone, so iOS Safari zoomed the
  *     page on every tap of the author or sort select.
  *   - The what's-new chart labels were 9.9px and its "Try it" links 42x19.
+ *   - At 320px the Settings "Visuals and display" tab was 355px wide in a
+ *     288px panel, so it scrolled sideways and cut its selects off.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
@@ -704,6 +706,63 @@ chromeTest(
     const desktop = await measure({ viewport: { width: 1280, height: 900 } });
     expect(desktop.links.length).toBeGreaterThan(0);
     for (const link of desktop.links) expect(link.h).toBeLessThan(44);
+  },
+  60000,
+);
+
+chromeTest(
+  'no settings tab scrolls sideways on a 320px phone',
+  async () => {
+    // The panel is a grid, so a no-wrap row inside a section sets the
+    // column's minimum width. Performance's head (its title beside "Reset
+    // detail, particles and resolution") needed 355px, so at 320px every
+    // section on "Visuals and display" ran 67px past the edge: the tab
+    // scrolled sideways and its selects were cut off. The tab strip
+    // scrolls inside itself by design and does not widen the panel.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 320, height: 700 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true&panel=settings`, {
+        waitUntil: 'domcontentloaded',
+      });
+      const tabs = page.locator(
+        '.stims-shell__sheet-panel--settings [role="tab"]',
+      );
+      await tabs.first().waitFor({ timeout: 30000 });
+      const count = await tabs.count();
+      expect(count).toBeGreaterThan(0);
+
+      const overflow: Record<string, number> = {};
+      for (let i = 0; i < count; i += 1) {
+        const tab = tabs.nth(i);
+        await tab.click();
+        await page.waitForFunction(
+          (index) =>
+            document
+              .querySelectorAll(
+                '.stims-shell__sheet-panel--settings [role="tab"]',
+              )
+              [index]?.getAttribute('aria-selected') === 'true',
+          i,
+        );
+        const name = (await tab.textContent())?.trim() || `tab ${i}`;
+        overflow[name] = await page.evaluate(() => {
+          const panel = document.querySelector(
+            '.stims-shell__sheet-panel--settings',
+          );
+          return panel ? panel.scrollWidth - panel.clientWidth : -1;
+        });
+      }
+      // Keyed by tab, so a failure names the tab that scrolls.
+      expect(overflow).toEqual(
+        Object.fromEntries(Object.keys(overflow).map((name) => [name, 0])),
+      );
+    } finally {
+      await page.close();
+    }
   },
   60000,
 );
