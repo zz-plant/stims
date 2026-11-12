@@ -11,14 +11,12 @@ import {
   subscribeManualTempo,
 } from '../core/manual-tempo.ts';
 import { webMidiService } from '../core/services/webmidi-controller.ts';
-import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useBottomOverlaySignal } from './hooks/use-escape-handler.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
 import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import { buildPresetSetShareUrl } from './preset-sets.ts';
-import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { startQueuedCrossfade } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
@@ -80,12 +78,6 @@ export function CueMonitor() {
   // gap, taking the last queued preset emptied the queue and unmounted this
   // panel — taking the fader with it — before the fade ever began.
   const [arming, setArming] = useState(false);
-  // The empty-state affordance shows once and stays gone once dismissed, so
-  // the cue deck surfaces its existence to a returning visitor without
-  // permanently squatting on the stage the way a pinned (non-empty) deck
-  // must. It waits its turn behind the Perform card (stage-hint-cards).
-  const hintDismissed = useStageHintDismissed('cue');
-  const performHintPending = !useStageHintDismissed('perform');
   useEffect(() => {
     if (!arming) return;
     // Bounded: if the switch never lands (an already-active preset, a failed
@@ -127,16 +119,11 @@ export function CueMonitor() {
   const next = queue.entries[0] ?? null;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
 
-  // Whether anything below renders — the deck or its hint. Both sit in the
-  // bottom-right corner, where the status toast also lands: "Loaded <preset>."
-  // painted over the deck's header on every preset change. Toasts already
-  // dodge whatever announces it holds the bottom; this announces.
-  const showsHint =
-    !hintDismissed &&
-    !performHintPending &&
-    hadSessionBeforeBoot() &&
-    !window.matchMedia('(max-width: 719px)').matches;
-  useBottomOverlaySignal(Boolean(next) || fading || arming || showsHint);
+  // The deck sits in the bottom-right corner, where the status toast also
+  // lands: "Loaded <preset>." painted over the deck's header on every preset
+  // change. Toasts already dodge whatever announces it holds the bottom; this
+  // announces.
+  useBottomOverlaySignal(Boolean(next) || fading || arming);
 
   const take = useCallback(() => {
     const presetId = queue.popNext();
@@ -186,44 +173,7 @@ export function CueMonitor() {
   // Starting a fade pops the entry, so taking the last queued preset would
   // otherwise unmount this panel — and the fader with it — halfway through
   // the gesture. An in-flight fade keeps the panel alive on its own.
-  if (!next && !fading && !arming) {
-    // An armed queue is the only thing that makes this deck visible, so an
-    // empty queue renders nothing — except the one-time hint below, whose job
-    // is to tell a visitor the deck exists at all. Once dismissed (or once
-    // the user actually queues something) it stays gone.
-    //
-    // Not on the very first visit: someone who just clicked "Play demo" came
-    // for the visuals, and a cue-deck card covering them is chrome before
-    // content. The hint waits for the second session — the same signal the
-    // landing page's "Welcome back" uses — and never shows on narrow screens,
-    // where it collided with the swipe hint and there is no room for a deck.
-    // Nor while the Perform card is still up in the other corner.
-    if (!showsHint) return null;
-    return (
-      <aside
-        className={styles.cue}
-        aria-label="Up next"
-        data-telemetry-surface="cue"
-      >
-        <div className={styles.header}>
-          <span className={styles.label}>Up next</span>
-          {/* Words, not a ×: this hides the hint for good, where a × reads
-              as closing it for now. */}
-          <button
-            type="button"
-            className={styles.dismiss}
-            onClick={() => dismissStageHint('cue')}
-          >
-            Don’t show again
-          </button>
-        </div>
-        <p className={styles.emptyHint}>
-          Queue presets from Browse or the ☰ menu to see the next one here
-          before it plays.
-        </p>
-      </aside>
-    );
-  }
+  if (!next && !fading && !arming) return null;
 
   const { title, byline } = next
     ? splitPresetDisplay(next.title || next.id)

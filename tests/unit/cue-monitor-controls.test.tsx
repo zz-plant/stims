@@ -67,3 +67,8 @@ test('clearing the queue asks once before it empties it', () => {
   view.click(clearButton());
   expect(clear).toHaveBeenCalledTimes(1);
 });
+
+test('an empty queue puts nothing on the stage', () => {
+  view = renderWorkspace(createElement(CueMonitor));
+  expect(view.container.querySelector('aside')).toBeNull();
+});

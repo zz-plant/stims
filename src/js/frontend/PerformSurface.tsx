@@ -8,7 +8,6 @@ import {
 } from 'react';
 import styles from '../../css/PerformSurface.module.css';
 import { webMidiService } from '../core/services/webmidi-controller.ts';
-import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { listModulators } from './live-modulation.ts';
 import {
   describeParameterState,
@@ -23,7 +22,6 @@ import {
   subscribeToPinnedTargets,
   unpinTarget,
 } from './perform-pins.ts';
-import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -35,8 +33,8 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * nothing — which is the single most confusing thing a control on this
  * surface can do, and the reason the state vocabulary had to exist first.
  *
- * Empty by default: an unpinned visitor sees nothing — except a one-time
- * returning-visitor hint (see below) that introduces the surface.
+ * Empty by default: an unpinned visitor sees nothing. The dock menu and the
+ * palette open the picker for the first pin.
  */
 
 export function PerformSurface() {
@@ -52,13 +50,6 @@ export function PerformSurface() {
   const [picking, setPicking] = useState(false);
   const [values, setValues] = useState<Record<string, number>>({});
   const [modulated, setModulated] = useState<string[]>([]);
-  // The one-time empty-state hint shows once, then stays gone once dismissed
-  // — or once something is pinned, which answers the same question. Shared
-  // with the cue deck's hint so the two cards take turns (stage-hint-cards).
-  const hintDismissed = useStageHintDismissed('perform');
-  useEffect(() => {
-    if (pinned.length > 0) dismissStageHint('perform');
-  }, [pinned.length]);
 
   const activeSource = engineSnapshot?.currentSource ?? '';
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -135,45 +126,7 @@ export function PerformSurface() {
     setPicking(false);
   }, []);
 
-  if (pinned.length === 0 && !picking) {
-    // A performer with no pinned controls sees this surface as a hint, not as
-    // nothing — there is nothing on it yet, so it tells them what it is for
-    // and how to open it. Dismissed once, it stays hidden until they actually
-    // pin something.
-    if (hintDismissed) return null;
-    // Not on the very first visit, and not on phones — same reasoning as the
-    // cue deck's hint: a first session belongs to the visuals, and on a
-    // narrow screen this card ate half the stage.
-    if (!hadSessionBeforeBoot()) return null;
-    if (window.matchMedia('(max-width: 719px)').matches) return null;
-    return (
-      <aside className={styles.surface} aria-label="Live sliders">
-        <div className={styles.header}>
-          <span className={styles.label}>Live sliders</span>
-          <button
-            type="button"
-            className={styles.pick}
-            onClick={() => setPicking(true)}
-            data-action="perform-pin"
-          >
-            Add a slider…
-          </button>
-        </div>
-        <p className={styles.empty}>
-          Put the settings you change most here as sliders you can move while
-          the preset plays.
-          {/* Hides the card for good; "Dismiss" read as closing it for now. */}
-          <button
-            type="button"
-            className={styles.dismiss}
-            onClick={() => dismissStageHint('perform')}
-          >
-            Don’t show again
-          </button>
-        </p>
-      </aside>
-    );
-  }
+  if (pinned.length === 0 && !picking) return null;
 
   return (
     <aside className={styles.surface} aria-label="Live sliders">
@@ -283,12 +236,6 @@ export function PerformSurface() {
           </div>
         );
       })}
-
-      {pinned.length === 0 ? (
-        <p className={styles.empty}>
-          No sliders yet. Pick a setting above to add one.
-        </p>
-      ) : null}
     </aside>
   );
 }

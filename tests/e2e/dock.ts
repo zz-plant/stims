@@ -26,6 +26,14 @@
  * (CPU throttling to 20x, with four times the pixels, passed). A failure now
  * lists each attempt's last Playwright step and what sat on top of the
  * button, so the next one says which way the click was refused.
+ *
+ * The next one (2026-11-12) said: every attempt ended "waiting for element to
+ * be visible, enabled and stable" with the button visible and on top. That
+ * wait compares the button's box across two animation frames, and the runner
+ * drew too few frames in 3 seconds to finish it. When an attempt runs out
+ * and the button is visible, not inert and on top at its centre, the helper
+ * presses it without the frame wait: what a visitor would hit is checked
+ * here, and Playwright's stability check adds only the frames.
  */
 import type { Page } from 'playwright';
 
@@ -60,6 +68,15 @@ async function clickDockButton(page: Page, label: string) {
       attempts.push(
         `${lastPlaywrightStep(error)} | ${await whatCoversButton(page, label)}`,
       );
+      if (await menuOpen()) return;
+      if (await isOnTop(page, label)) {
+        try {
+          await button.click({ timeout: ATTEMPT_MS, force: true });
+          return;
+        } catch (forcedError) {
+          attempts.push(`forced: ${lastPlaywrightStep(forcedError)}`);
+        }
+      }
     }
   }
   if (await menuOpen()) return;
@@ -84,6 +101,30 @@ function lastPlaywrightStep(error: unknown): string {
     ),
   );
   return reason ?? lines.at(-1) ?? 'no call log';
+}
+
+/** Whether a visible, non-inert copy of the button is what a press at its
+ * centre would hit. */
+function isOnTop(page: Page, label: string): Promise<boolean> {
+  return page
+    .evaluate(
+      (name) =>
+        [...document.querySelectorAll(`button[aria-label="${name}"]`)].some(
+          (button) => {
+            if (button.closest('[inert]')) return false;
+            if (getComputedStyle(button).visibility !== 'visible') return false;
+            const box = button.getBoundingClientRect();
+            if (box.width === 0 || box.height === 0) return false;
+            const top = document.elementFromPoint(
+              box.x + box.width / 2,
+              box.y + box.height / 2,
+            );
+            return top === button || button.contains(top);
+          },
+        ),
+      label,
+    )
+    .catch(() => false);
 }
 
 /** Each copy of the button: its visibility, and the element at its centre. */
