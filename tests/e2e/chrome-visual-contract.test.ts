@@ -16,6 +16,8 @@
  *   - The launch hero took its ink from the page theme while the stage
  *     canvas behind it stayed dark, so light mode rendered a #0f172a
  *     wordmark on an attract frame at ~1.005:1.
+ *   - The browse selects stayed 13px on a phone, so iOS Safari zoomed the
+ *     page on every tap of the author or sort select.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
@@ -605,6 +607,55 @@ chromeTest(
     const desktop = await measure(false);
     expect(desktop.chip?.h ?? 99).toBeLessThan(44);
     expect(desktop.select?.h ?? 99).toBeLessThan(44);
+  },
+  90000,
+);
+
+chromeTest(
+  'browse search and selects are 16px on a touch screen, so iOS Safari does not zoom on focus',
+  async () => {
+    // iOS Safari zooms the page when a field or select under 16px takes
+    // focus. base.css raises bare inputs and selects on a phone, but the
+    // .ctl-select class rule outranks it, so the author and sort selects
+    // stayed 13px. A phone held sideways is wider than the 768px breakpoint
+    // and zooms all the same, so it is measured too.
+    const fontSizes = async (options: Parameters<Browser['newPage']>[0]) => {
+      const page = await (browser as Browser).newPage(options);
+      try {
+        await page.goto(`${server?.url}/?agent=true&panel=browse`, {
+          waitUntil: 'domcontentloaded',
+        });
+        await page.waitForSelector('.ctl-browse-filters .ctl-select', {
+          timeout: 30000,
+        });
+        return await page.$$eval(
+          '.ctl-browse-filters .ctl-select, .ctl-browse-filters .ctl-field',
+          (els) =>
+            els.map((el) => Number.parseFloat(getComputedStyle(el).fontSize)),
+        );
+      } finally {
+        await page.close();
+      }
+    };
+
+    const touch = { isMobile: true, hasTouch: true };
+    const portrait = await fontSizes({
+      viewport: { width: 390, height: 844 },
+      ...touch,
+    });
+    const landscape = await fontSizes({
+      viewport: { width: 844, height: 390 },
+      ...touch,
+    });
+    // Two selects and the search field.
+    expect(portrait.length).toBeGreaterThanOrEqual(3);
+    expect(Math.min(...portrait)).toBeGreaterThanOrEqual(16);
+    expect(landscape.length).toBeGreaterThanOrEqual(3);
+    expect(Math.min(...landscape)).toBeGreaterThanOrEqual(16);
+
+    const desktop = await fontSizes({ viewport: { width: 1280, height: 900 } });
+    expect(desktop.length).toBeGreaterThanOrEqual(3);
+    expect(Math.max(...desktop)).toBeLessThan(16);
   },
   90000,
 );
