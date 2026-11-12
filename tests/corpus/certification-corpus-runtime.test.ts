@@ -139,33 +139,47 @@ function makeSignals({
   };
 }
 
-test('certification corpus presets compile and step inside Stims without requiring projectM', () => {
-  const repoRoot = process.cwd();
-  const manifest = loadCertificationCorpusManifest(repoRoot);
-  const signals = makeSignals();
+// Compiling and stepping every certification preset is deterministic CPU
+// work: 1.3 s of CPU, under a second of wall time alone. Inside the full gate
+// on a loaded host it took 8.1 s (2026-11-12) and bun's 5 s default reported
+// a timeout; `bun run test:budget` puts the load it survives on that default
+// at 4 on four cores. The budget is a hang guard, not a performance
+// assertion.
+const CORPUS_STEP_TIMEOUT_MS = 30_000;
 
-  manifest.presets.forEach((entry) => {
-    const absolutePath = path.join(repoRoot, entry.fixtureRoot, entry.file);
-    const raw = readFileSync(absolutePath, 'utf8');
-    const compiled = compileMilkdropPresetSource(raw, {
-      id: entry.id,
-      title: entry.title,
-      fileName: entry.file,
-      path: absolutePath,
-      origin: entry.fixtureRoot.startsWith('public/') ? 'bundled' : 'imported',
+test(
+  'certification corpus presets compile and step inside Stims without requiring projectM',
+  () => {
+    const repoRoot = process.cwd();
+    const manifest = loadCertificationCorpusManifest(repoRoot);
+    const signals = makeSignals();
+
+    manifest.presets.forEach((entry) => {
+      const absolutePath = path.join(repoRoot, entry.fixtureRoot, entry.file);
+      const raw = readFileSync(absolutePath, 'utf8');
+      const compiled = compileMilkdropPresetSource(raw, {
+        id: entry.id,
+        title: entry.title,
+        fileName: entry.file,
+        path: absolutePath,
+        origin: entry.fixtureRoot.startsWith('public/')
+          ? 'bundled'
+          : 'imported',
+      });
+
+      const vm = createMilkdropVM(compiled);
+      vm.setRenderBackend(entry.requiredBackend);
+      const frameState = vm.step(signals);
+
+      expect(frameState.presetId).toBe(entry.id);
+      expect(frameState.title).toBe(entry.title);
+      expect(Number.isFinite(frameState.background.r)).toBe(true);
+      expect(Number.isFinite(frameState.post.gammaAdj)).toBe(true);
+      expect(frameState.mainWave).toBeDefined();
+      expect(
+        frameState.customWaves.every((wave) => wave.positions.length >= 0),
+      ).toBe(true);
     });
-
-    const vm = createMilkdropVM(compiled);
-    vm.setRenderBackend(entry.requiredBackend);
-    const frameState = vm.step(signals);
-
-    expect(frameState.presetId).toBe(entry.id);
-    expect(frameState.title).toBe(entry.title);
-    expect(Number.isFinite(frameState.background.r)).toBe(true);
-    expect(Number.isFinite(frameState.post.gammaAdj)).toBe(true);
-    expect(frameState.mainWave).toBeDefined();
-    expect(
-      frameState.customWaves.every((wave) => wave.positions.length >= 0),
-    ).toBe(true);
-  });
-});
+  },
+  { timeout: CORPUS_STEP_TIMEOUT_MS },
+);
