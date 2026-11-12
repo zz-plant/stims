@@ -126,6 +126,19 @@ type MenuView = 'all' | 'share';
 const SINGLE_COLUMN_MENU_QUERY =
   '(max-width: 639px), (horizontal-viewport-segments: 2)';
 
+/**
+ * Controls the bar shows from 640px up, next to the button that opens the
+ * menu. The two-column menu leaves them out; the one-column menu lists them,
+ * because the bar drops most of them at the same width.
+ */
+const ACTIONS_ON_THE_WIDE_BAR: readonly string[] = [
+  'nearby-preset',
+  'save-preset',
+  'toggle-playback',
+  'open-share',
+  'toggle-fullscreen',
+];
+
 const VideoShareDialog = lazy(() =>
   import('./VideoShareDialog.tsx').then((module) => ({
     default: module.VideoShareDialog,
@@ -690,7 +703,6 @@ export function StageControls({
       action: () => togglePanel(menuSurface, 'browse'),
       actionId: 'open-browse',
       active: panel === 'browse',
-      sectionLabel: 'Presets and setlist',
     },
     {
       icon: 'eye' as const,
@@ -730,9 +742,9 @@ export function StageControls({
           } satisfies MenuItem,
         ]
       : []),
-    // Listed here as well as on the bar: on phones the bar drops the star to
+    // Listed in the one-column menu: on phones the bar drops the star to
     // give the title room to be read, and press-and-hold on the stage is a
-    // gesture nobody can see. This row is the one place it is always named.
+    // gesture nobody can see.
     ...(currentPresetId
       ? [
           {
@@ -761,7 +773,6 @@ export function StageControls({
       actionId: 'open-share',
       action: () => setMenuView('share'),
       keepsMenuOpen: true,
-      sectionLabel: 'Create and share',
     },
     // Stopping a take stays one tap from ≡: it is the one share verb that
     // cannot wait for a second menu while the recording runs on.
@@ -827,7 +838,6 @@ export function StageControls({
       label: isFullscreen ? 'Exit full screen' : 'Full screen',
       actionId: 'toggle-fullscreen',
       action: () => onToggleFullscreen(),
-      sectionLabel: 'Display and streaming',
     },
     ...(pip.supported
       ? [
@@ -879,7 +889,6 @@ export function StageControls({
       actionId: 'open-settings',
       action: () => togglePanel(menuSurface, 'settings'),
       active: panel === 'settings',
-      sectionLabel: 'Workspace and system',
     },
     // A safety setting, so a tap from the stage rather than the last switch
     // on the fourth Settings tab, and near the top of the phone's scroll
@@ -924,6 +933,18 @@ export function StageControls({
         ]
       : []),
   ];
+
+  /** A group's rows for the open layout, headed by its section label. */
+  const menuSection = (label: string, items: MenuItem[]): MenuItem[] =>
+    (singleColumnMenu
+      ? items
+      : items.filter(
+          (item) =>
+            !item.actionId || !ACTIONS_ON_THE_WIDE_BAR.includes(item.actionId),
+        )
+    ).map((item, index) =>
+      index === 0 ? { ...item, sectionLabel: label } : item,
+    );
 
   // Every way to hand this preset to someone, one menu down. As separate rows
   // they filled the phone menu's fourth screen, where almost nobody reached
@@ -1516,11 +1537,15 @@ export function StageControls({
             // its own order rather than a CSS reorder, so Tab and the arrow
             // keys still walk the rows in the order they are drawn.
             <div className={styles.menuColumn}>
-              {presetItems.map(renderMenuItem)}
+              {menuSection('Presets and setlist', presetItems).map(
+                renderMenuItem,
+              )}
               <div className={styles.menuSep} />
-              {studioItems.map(renderMenuItem)}
+              {menuSection('Create and share', studioItems).map(renderMenuItem)}
               <div className={styles.menuSep} />
-              {workspaceItems.map(renderMenuItem)}
+              {menuSection('Workspace and system', workspaceItems).map(
+                renderMenuItem,
+              )}
               <div className={styles.menuSep} />
               <div className={styles.menuLabel} aria-hidden="true">
                 Audio
@@ -1528,7 +1553,9 @@ export function StageControls({
               {audioSourceGroup()}
               {playbackItems.map(renderMenuItem)}
               <div className={styles.menuSep} />
-              {displayItems.map(renderMenuItem)}
+              {menuSection('Display and streaming', displayItems).map(
+                renderMenuItem,
+              )}
               <div className={styles.menuSep} />
               <div className={styles.menuLabel} aria-hidden="true">
                 Live VJ
@@ -1543,7 +1570,9 @@ export function StageControls({
                   plays come first; the studio tools lead the second column,
                   as they carry the landing's promise (edit the code). */}
               <div className={styles.menuColumn}>
-                {presetItems.map(renderMenuItem)}
+                {menuSection('Presets and setlist', presetItems).map(
+                  renderMenuItem,
+                )}
                 <div className={styles.menuSep} />
                 <div className={styles.menuLabel} aria-hidden="true">
                   Live VJ and audio
@@ -1551,14 +1580,18 @@ export function StageControls({
                 {transitionGroup()}
                 {audioSourceGroup()}
                 {renderMenuItem(liveSliderItem)}
-                {playbackItems.map(renderMenuItem)}
+                {menuSection('', playbackItems).map(renderMenuItem)}
               </div>
               <div className={styles.menuColumn}>
-                {studioItems.map(renderMenuItem)}
+                {menuSection('Create', studioItems).map(renderMenuItem)}
                 <div className={styles.menuSep} />
-                {workspaceItems.map(renderMenuItem)}
+                {menuSection('Workspace and system', workspaceItems).map(
+                  renderMenuItem,
+                )}
                 <div className={styles.menuSep} />
-                {displayItems.map(renderMenuItem)}
+                {menuSection('Display and streaming', displayItems).map(
+                  renderMenuItem,
+                )}
               </div>
             </>
           )}

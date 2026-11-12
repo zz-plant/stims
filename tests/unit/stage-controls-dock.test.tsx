@@ -376,12 +376,6 @@ describe('stage dock transport', () => {
     expect(
       rendered.container.querySelector('[data-action="toggle-playback"]'),
     ).not.toBeNull();
-    // Save has a home in the menu now that phones drop it from the bar.
-    expect(
-      rendered.container.querySelector(
-        '[role="menu"] [data-action="save-preset"]',
-      ),
-    ).not.toBeNull();
 
     rendered.dispose();
   });
@@ -544,7 +538,7 @@ describe('stage dock says what each control will do', () => {
     expect(item('toggle-camera')?.getAttribute('aria-label')).toBe(
       'Use camera as video input (asks for camera access)',
     );
-    rendered.click(item('open-share'));
+    rendered.click(rendered.byLabel('Share'));
     const publish = [
       ...rendered.container.querySelectorAll<HTMLElement>(
         '[role="menu"] [role^="menuitem"]',
@@ -589,7 +583,7 @@ describe('stage dock says what each control will do', () => {
         'Stop recording and save',
       );
       act(() => setRecordingActive(false));
-      rendered.click(item('open-share'));
+      rendered.click(rendered.byLabel('Share'));
       expect(item('open-record')?.getAttribute('aria-label')).toBe(
         'Close the recording panel',
       );
@@ -615,8 +609,7 @@ describe('stage dock menu reaches what had no visible route', () => {
   test('the studio tools lead the second column, ahead of the workspace', () => {
     const rendered = mount();
     const [, second] = menuActions(rendered);
-    expect(second?.slice(0, 4)).toEqual([
-      'open-share',
+    expect(second?.slice(0, 3)).toEqual([
       'open-generate',
       'open-refine',
       'open-editor',
@@ -684,6 +677,11 @@ describe('stage dock Share sheet', () => {
   });
 
   test('≡ reaches the sheet without closing, and the sheet leads back', () => {
+    // One column: the bar has dropped Share there, so ≡ lists it.
+    const realMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('max-width: 639px'),
+    })) as unknown as typeof window.matchMedia;
     const rendered = mount();
     rendered.click(rendered.byLabel('More actions'));
     expect(actions(rendered)).not.toContain('share-link');
@@ -703,6 +701,7 @@ describe('stage dock Share sheet', () => {
     rendered.click(back);
     expect(actions(rendered)).toContain('open-settings');
     rendered.dispose();
+    window.matchMedia = realMatchMedia;
   });
 
   test('a real press on Share closes the open sheet rather than reopening it', () => {
@@ -780,6 +779,57 @@ describe('stage dock menu in one column', () => {
     rendered.click(rendered.byLabel('More actions'));
     const menu = rendered.container.querySelector('[role="menu"]');
     expect(menu?.children.length).toBe(2);
+    rendered.dispose();
+  });
+
+  // From 640px up the bar shows these beside ≡; below it the bar drops most
+  // of them, so only the one-column menu repeats them.
+  const ON_THE_WIDE_BAR = [
+    'nearby-preset',
+    'save-preset',
+    'toggle-playback',
+    'open-share',
+    'toggle-fullscreen',
+  ];
+
+  function menuAndBar(singleColumn: boolean) {
+    window.matchMedia = ((query: string) => ({
+      matches: singleColumn && query.includes('max-width: 639px'),
+    })) as unknown as typeof window.matchMedia;
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      {
+        snapshot: liveSnapshot(),
+        engine: { selectedPreset: makePresetEntry() },
+      },
+    );
+    rendered.click(rendered.byLabel('More actions'));
+    const has = (scope: string, action: string) =>
+      rendered.container.querySelector(`${scope}[data-action="${action}"]`) !==
+      null;
+    return { rendered, has };
+  }
+
+  test("two columns leave the bar's own controls to the bar", () => {
+    const { rendered, has } = menuAndBar(false);
+    for (const action of ON_THE_WIDE_BAR) {
+      expect([action, has('[role="menu"] ', action)]).toEqual([action, false]);
+      expect([action, has('', action)]).toEqual([action, true]);
+    }
+    // Rows with no bar button stay.
+    expect(has('[role="menu"] ', 'stop-audio')).toBe(true);
+    expect(has('[role="menu"] ', 'toggle-projector')).toBe(true);
+    rendered.dispose();
+  });
+
+  test('one column lists them, where the bar has dropped them', () => {
+    const { rendered, has } = menuAndBar(true);
+    for (const action of ON_THE_WIDE_BAR) {
+      expect([action, has('[role="menu"] ', action)]).toEqual([action, true]);
+    }
     rendered.dispose();
   });
 });
