@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The focus taken when `initGamepadNavigation` starts no longer scrolls the page. The first focusable element can be below the fold, and a page that loaded with nothing focused opened scrolled down to it. Focus taken when a pad connects, and focus a pad or a key moves, scroll to their target as before.
 - `shouldHandleDirectionalKey(event)` says whether the keyboard layer moves focus on a keydown. It and the other key predicates are also exported from `gamepad-navigation/keys`, which a page can import without the rest of the layer.
 - B and the back keys close an open native `<dialog>`, which ignores a synthetic Escape. They use `requestClose()`, or dispatch `cancel` and call `close()` where that is missing, so a `cancel` listener can refuse. `closedby="none"` is left open. A dialog your own Escape listener already closed is not closed twice, and one beneath it stays open.
 - The synthetic Escape is now cancelable. Calling `preventDefault()` on it keeps a native dialog open, as it does for a real Escape.

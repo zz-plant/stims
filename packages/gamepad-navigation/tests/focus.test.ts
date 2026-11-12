@@ -48,6 +48,90 @@ describe('gamepad navigation focus initialization and restoration', () => {
   });
 });
 
+describe('whether taking focus scrolls the page to it', () => {
+  // Stopped after each test, pass or fail: a layer left running would move
+  // focus in the tests that follow.
+  let stop = () => {};
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    stop();
+    stop = () => {};
+    document.body.innerHTML = '';
+    document.body.classList.remove('gamepad-active');
+    sessionStorage.clear();
+  });
+
+  /**
+   * What each `focus()` on the element asked of the browser. happy-dom lays
+   * nothing out, so the scroll cannot be measured here; whether the browser
+   * was told not to scroll can.
+   */
+  const focusRequests = (element: HTMLElement) => {
+    const requests: (FocusOptions | undefined)[] = [];
+    const focus = element.focus.bind(element);
+    element.focus = (options?: FocusOptions) => {
+      requests.push(options);
+      focus(options);
+    };
+    return requests;
+  };
+
+  /** The first focusable element of a page whose controls come later. */
+  const footerLink = () => {
+    const link = document.createElement('a');
+    link.href = '/';
+    link.textContent = 'Visualizer';
+    document.body.append(link);
+    return link;
+  };
+
+  test('focus taken at start leaves the page where it is', () => {
+    // In the app this came from, the first focusable element at start was a
+    // footer link below the fold, and focusing it scrolled the page down to
+    // it on load.
+    const link = footerLink();
+    const requests = focusRequests(link);
+
+    stop = initGamepadNavigation();
+
+    expect(document.activeElement).toBe(link);
+    expect(requests).toEqual([{ preventScroll: true }]);
+  });
+
+  test('focus restored at start leaves the page where it is', () => {
+    // The start above is remembered, so a reload restores the same link.
+    const link = footerLink();
+    const requests = focusRequests(link);
+    sessionStorage.setItem(
+      `stims:last-focus:${window.location.pathname}${window.location.search}`,
+      JSON.stringify({ selector: null, index: 0 }),
+    );
+
+    stop = initGamepadNavigation({ focusStorageKey: 'stims:last-focus' });
+
+    expect(document.activeElement).toBe(link);
+    expect(requests).toEqual([{ preventScroll: true }]);
+  });
+
+  test('focus taken when a pad connects scrolls to its target', async () => {
+    // Someone holding a controller needs to see what it is pointing at.
+    stop = initGamepadNavigation({ restoreFocus: false });
+    const link = footerLink();
+    const requests = focusRequests(link);
+
+    await pressOnPad(PAD_RB);
+
+    expect(document.activeElement).toBe(link);
+    expect(requests.length).toBeGreaterThan(0);
+    expect(requests.some((options) => options?.preventScroll)).toBeFalse();
+  });
+});
+
 describe('keyboard-as-remote gating', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
