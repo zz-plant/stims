@@ -385,6 +385,10 @@ export default defineConfig({
         cmd: ['bun', 'run', 'assets:check'],
       },
       {
+        label: 'Dependency overrides match declarations',
+        cmd: ['bun', 'run', 'check:dependency-overrides'],
+      },
+      {
         label: 'Bundled catalog fidelity',
         cmd: ['bun', 'run', 'check:catalog-fidelity'],
       },
