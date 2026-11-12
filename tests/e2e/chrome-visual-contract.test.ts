@@ -18,6 +18,7 @@
  *     wordmark on an attract frame at ~1.005:1.
  *   - The browse selects stayed 13px on a phone, so iOS Safari zoomed the
  *     page on every tap of the author or sort select.
+ *   - The what's-new chart labels were 9.9px and its "Try it" links 42x19.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
@@ -658,6 +659,53 @@ chromeTest(
     expect(Math.max(...desktop)).toBeLessThan(16);
   },
   90000,
+);
+
+chromeTest(
+  "what's new: chart labels sit on the type floor and Try it reaches 44px on a touch screen",
+  async () => {
+    // Static pages do not load tokens.css, and check:css-scale reads only
+    // src/css, so the quarter labels drifted to .62rem (9.9px), under the
+    // --text-2xs floor (11px), and each card's "Try it" was a 42x19 target.
+    const measure = async (options: Parameters<Browser['newPage']>[0]) => {
+      const page = await (browser as Browser).newPage(options);
+      try {
+        await page.goto(`${server?.url}/whats-new/index.html`, {
+          waitUntil: 'domcontentloaded',
+        });
+        return await page.evaluate(() => ({
+          labels: [...document.querySelectorAll('.wn-bar__label')].map((el) =>
+            Number.parseFloat(getComputedStyle(el).fontSize),
+          ),
+          links: [...document.querySelectorAll('.wn-card__link')].map((el) => {
+            const r = el.getBoundingClientRect();
+            return { w: Math.round(r.width), h: Math.round(r.height) };
+          }),
+        }));
+      } finally {
+        await page.close();
+      }
+    };
+
+    const phone = await measure({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    expect(phone.labels.length).toBeGreaterThan(0);
+    expect(Math.min(...phone.labels)).toBeGreaterThanOrEqual(11);
+    expect(phone.links.length).toBeGreaterThan(0);
+    for (const link of phone.links) {
+      expect(link.w).toBeGreaterThanOrEqual(44);
+      expect(link.h).toBeGreaterThanOrEqual(44);
+    }
+
+    // With a mouse the link stays the size of its text.
+    const desktop = await measure({ viewport: { width: 1280, height: 900 } });
+    expect(desktop.links.length).toBeGreaterThan(0);
+    for (const link of desktop.links) expect(link.h).toBeLessThan(44);
+  },
+  60000,
 );
 
 chromeTest(
