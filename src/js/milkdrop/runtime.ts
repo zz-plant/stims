@@ -1037,6 +1037,10 @@ export function createMilkdropExperience({
         emitChange();
       }
     },
+    onPresetStalled: () =>
+      setOverlayStatus(
+        'This preset kept failing, so Stims moved on. The error was logged to the console.',
+      ),
     getRuntime: () => runtime,
     getAdapter: () => adapter,
     getActiveBackend: () => activeBackend,

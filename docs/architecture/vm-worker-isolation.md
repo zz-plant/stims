@@ -157,3 +157,7 @@ state across a boundary.
 
 Phase 1 (init isolation) stays: it is off the hot path, runs once per load,
 and is already merged behind `?workerInit=true`.
+
+**Status (2026-11-13):** Phase 1 (#1743), Phase 1b (#1744), the Phase 2
+measurement (#1745) and the Phase 3 watchdog
+(`runtime/frame-failure-watchdog.ts`) have landed. Phase 2 is not planned.
