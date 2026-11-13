@@ -69,6 +69,15 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     about: [MILKDROP_ENTITY, BUTTERCHURN_ENTITY, PROJECTM_ENTITY],
   },
   {
+    slug: 'milkdrop-fidelity',
+    source: 'docs/learn/milkdrop-fidelity.md',
+    seoTitle: 'How Stims Measures Fidelity Against projectM',
+    description:
+      'How Stims compares frames against native projectM on a fixed clock, separates "compiles and runs" from "diffed against a reference," and refuses captures a blank frame would pass.',
+    kind: 'landing',
+    about: [MILKDROP_ENTITY, PROJECTM_ENTITY],
+  },
+  {
     slug: 'sensory-room',
     source: 'docs/guides/sensory-room.md',
     seoTitle: 'Run Audio-Reactive Visuals in a Sensory Room',

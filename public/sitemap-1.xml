@@ -13,7 +13,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/whats-new/</loc>
-    <lastmod>2026-11-12</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -75,6 +75,17 @@
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Stims vs Butterchurn vs projectM | Stims</image:title>
       <image:caption>How Stims, Butterchurn, and projectM differ (browser app, embeddable renderer, and native library) and which one fits what you want to do.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/learn/milkdrop-fidelity/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>How Stims Measures Fidelity Against projectM | Stims</image:title>
+      <image:caption>How Stims compares frames against native projectM on a fixed clock, separates &quot;compiles and runs&quot; from &quot;diffed against a reference,&quot; and refuses captures a blank frame would pass.</image:caption>
     </image:image>
   </url>
   <url>

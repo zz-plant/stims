@@ -6,13 +6,15 @@
 
 The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 more authors. Point them at any audio, change the equations while they play, and share what you see as a link.
 
-### [▶ Open toil.fyi](https://toil.fyi)
+### [▶ Open toil.fyi](https://toil.fyi) · [🔊 Watch 20s with sound](https://toil.fyi/clips/shifter-curlique-with-sound.mp4)
 
-<sub>Stims lives at toil.fyi. Any WebGL2 browser; no account, no install.</sub>
+MilkDrop presets are 20 years old and still look incredible. Butterchurn and projectM keep them alive, but nobody's been able to edit them while they played since MilkDrop 2. Stims brings that back — in a browser, with the fidelity measured against native projectM. Your presets stay `.milk` files: no conversion, no account, no cloud, no install.
+
+<sub>Stims lives at toil.fyi. Any WebGL2 browser. Calm by default: nothing plays until you start audio, one action stops everything, and motion follows your system's reduce-motion setting.</sub>
+
+**[🔊 Watch 20 seconds with sound](https://toil.fyi/clips/shifter-curlique-with-sound.mp4)** — Shifter's Curlique reacting to the built-in demo loop, recorded with the app's own Record panel.
 
 <a href="https://toil.fyi/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.webp" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
-
-**[🔊 Watch 20 seconds with sound](https://toil.fyi/clips/shifter-curlique-with-sound.mp4)**: Shifter's Curlique reacting to the built-in demo loop, recorded with the app's own Record panel.
 
 <sub>Above: play → edit → share, accelerated and silent. <a href="https://toil.fyi/clips/stims-workflow.mp4">Watch the 25-second workflow</a> at recorded speed.</sub>
 
@@ -42,6 +44,7 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 - **Point it at anything:** a browser tab, a YouTube link, your microphone, a local file, or the built-in demo loop.
 - **Send a link.** The address bar is the session, and whoever opens it needs nothing installed: every bundled preset's code fits in the link — edits and remix lineage included — and one click turns the sound on.
 - **Perform with it.** WebMIDI learn maps knobs and faders to controls (mappings persist per device), a cue monitor crossfades between two running presets, and a chromeless projector window mirrors the stage to a second display.
+- **Embed anywhere.** Drop a preset into any page with one iframe, or paste a Stims URL into Notion, Discord or Ghost and it embeds via oEmbed. Chromeless player, audio capture, full-screen. See [docs/EMBED.md](./docs/EMBED.md).
 - **Calm by default.** Nothing plays until you start audio, one action stops everything, and motion follows your system's reduce-motion setting.
 
 **Why "Stims"?** It's built for stimmers as much as for MilkDrop fans: the [sensory controls](./docs/guides/accessibility.md) let you decide how much happens on screen and when it stops. MilkDrop presets can flash. Presets measured as frequent flashers carry a warning, and Settings → Reduce flashing hides them; most presets haven't been measured yet.
