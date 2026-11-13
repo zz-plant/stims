@@ -101,3 +101,14 @@ export function getSharedVmInitHost(): VmInitWorkerHost {
   if (!sharedHost) sharedHost = new VmInitWorkerHost();
   return sharedHost;
 }
+
+/** Opt-in flag for the worker-init path. Default off; enable with
+ * `?workerInit=true` (or by setting the exported override in tests). */
+export function isWorkerInitEnabled(): boolean {
+  if (typeof location === 'undefined') return false;
+  try {
+    return new URLSearchParams(location.search).get('workerInit') === 'true';
+  } catch {
+    return false;
+  }
+}

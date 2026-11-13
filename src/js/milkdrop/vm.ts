@@ -237,6 +237,9 @@ export class MilkdropPresetVM implements MilkdropVM {
   private readonly frameDeadlineMs: number;
   private readonly initDeadlineMs: number;
   private readonly executionOptions: MilkdropVMExecutionOptions;
+  /** False while a deferred/worker init is in flight; the frame loop must
+   * not step an uninitialized VM. */
+  private ready = true;
   private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
   private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
@@ -423,6 +426,7 @@ export class MilkdropPresetVM implements MilkdropVM {
     this.executionOptions = { ...executionOptions };
     if (executionOptions.deferInit) {
       this._setupState();
+      this.ready = false;
     } else {
       this.reset();
     }
@@ -432,6 +436,24 @@ export class MilkdropPresetVM implements MilkdropVM {
     this.preset = preset;
     this.inspectableNames = null;
     this.reset();
+    this.ready = true;
+  }
+
+  /** Async counterpart to `setPreset`: runs init in a worker when the
+   * `useWorkerInit` option is set and a host is supplied, otherwise falls
+   * back to the synchronous in-process path. Returns true if the worker path
+   * was used. */
+  async setPresetAsync(
+    preset: MilkdropCompiledPreset,
+    host?: VmInitHost,
+  ): Promise<boolean> {
+    this.preset = preset;
+    this.inspectableNames = null;
+    this._setupState();
+    this.ready = false;
+    const usedWorker = await this.initAsync(host);
+    this.ready = true;
+    return usedWorker;
   }
 
   /**
@@ -599,15 +621,23 @@ export class MilkdropPresetVM implements MilkdropVM {
     const useWorker = this.executionOptions?.useWorkerInit ?? false;
     if (!useWorker || !host || !host.available()) {
       this.reset();
+      this.ready = true;
       return false;
     }
     const snapshot = await host.runInit(this.preset);
     if (!snapshot) {
       this.reset();
+      this.ready = true;
       return false;
     }
     this.applyPostInitState(snapshot);
+    this.ready = true;
     return true;
+  }
+
+  /** Whether the VM has completed init and can be stepped. */
+  isReady(): boolean {
+    return this.ready;
   }
 
   setDetailScale(scale: number) {
@@ -768,6 +798,7 @@ export class MilkdropPresetVM implements MilkdropVM {
 
   reset() {
     this._setupState();
+    this.ready = true;
     const zeroSignals = defaultSignalEnv();
     this.loopBudget.remaining = Number.POSITIVE_INFINITY;
     this.beginExecutionDeadline(this.initDeadlineMs);

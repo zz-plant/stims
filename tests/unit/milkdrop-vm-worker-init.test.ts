@@ -93,3 +93,36 @@ test('initAsync falls back to in-process when the flag is off', async () => {
   expect(vm.exportPostInitState().registersOwn.q1).toBe(2);
   host.dispose();
 });
+
+test('setPresetAsync uses the worker and marks the VM ready', async () => {
+  const first = compileMilkdropPresetSource('title=First\ninit_1=q1=1;\n', {
+    id: 'first',
+  });
+  const second = compileMilkdropPresetSource('title=Second\ninit_1=q1=9;\n', {
+    id: 'second',
+  });
+  const host = new VmInitWorkerHost();
+  const vm = createMilkdropVM(first, undefined, {
+    deferInit: true,
+    useWorkerInit: true,
+  });
+  expect(vm.isReady()).toBe(false);
+  const usedWorker = await vm.setPresetAsync(second, host);
+  expect(usedWorker).toBe(true);
+  expect(vm.isReady()).toBe(true);
+  expect(vm.exportPostInitState().registersOwn.q1).toBe(9);
+  host.dispose();
+});
+
+test('setPresetAsync falls back and stays ready when the flag is off', async () => {
+  const preset = compileMilkdropPresetSource('title=Sync\ninit_1=q1=4;\n', {
+    id: 'sync',
+  });
+  const host = new VmInitWorkerHost();
+  const vm = createMilkdropVM(preset, undefined, { useWorkerInit: false });
+  const usedWorker = await vm.setPresetAsync(preset, host);
+  expect(usedWorker).toBe(false);
+  expect(vm.isReady()).toBe(true);
+  expect(vm.exportPostInitState().registersOwn.q1).toBe(4);
+  host.dispose();
+});
