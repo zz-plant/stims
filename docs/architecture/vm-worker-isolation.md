@@ -113,9 +113,47 @@ Phase 3 -- worker lifecycle and fallback.
   directly. A worker host needs an adapter that preserves that test surface,
   or the tests move to integration level.
 
-## Decision requested
+## Measurement (2026-11-13)
 
-Approve Phase 1 (init isolation) as the first increment. It is the
-highest-value, lowest-risk step and validates the worker host + serialization
-plumbing before touching the per-frame hot path. Phase 2/3 follow only if
-Phase 1's measurements are favorable.
+Phase 1 shipped (PRs #1743/#1744). Before committing to Phase 2, the gating
+question was measured with `bun run bench:vm-worker-roundtrip` (a real
+`node:worker_threads` round trip; a browser `postMessage` uses the same
+structured clone):
+
+| Payload / path | median | p95 |
+| --- | --- | --- |
+| `structuredClone` full state | 1.11 ms | 1.77 ms |
+| worker round trip, full state | 2.71 ms | 3.26 ms |
+| worker round trip, megabuf only | 1.05 ms | 1.80 ms |
+| worker round trip, dirty 16 KiB | 1.37 ms | 2.94 ms |
+| worker round trip, SharedArrayBuffer | 0.06 ms | 0.72 ms |
+| in-process per-frame `step()` (trivial preset) | 0.13 ms | 0.25 ms |
+
+At 60 fps the frame budget is 16.67 ms. A full-state copy round trip is ~21×
+the cost of a trivial in-process step; even a megabuf-only copy is ~8×.
+**Copy-based per-frame isolation is a net loss for typical presets.**
+
+Two things make Phase 2 unattractive even beyond the copy cost:
+
+1. The per-frame program is the *light* part of a preset. The heavy work is
+   per-vertex/per-pixel, which runs in `buildFrame` (CPU) or on the GPU
+   (WebGPU). Offloading only `perFrame` does not remove the heavy stall.
+2. SharedArrayBuffer (0.06 ms) would make the transfer free, but requires
+   COOP/COEP headers, which break the `?embed=true` iframe story and add
+   cross-origin isolation constraints to the whole site.
+
+## Revised recommendation
+
+**Do not pursue Phase 2 (per-frame worker isolation) as specified.** The
+measurement shows it would add latency, not remove it, for the common case,
+and the heavy work is not in the per-frame block.
+
+Blast-radius containment is still worth having, but the cheaper lever is a
+**watchdog + recovery** (Phase 3 without Phase 2): catch a throw or a deadline
+breach in the existing main-thread step, drop to a blank frame, and advance or
+reload the preset — which the frame loop already half-does ("one crashing
+preset must not leave a frozen canvas"). That bounds the damage without moving
+state across a boundary.
+
+Phase 1 (init isolation) stays: it is off the hot path, runs once per load,
+and is already merged behind `?workerInit=true`.
