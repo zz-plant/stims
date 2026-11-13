@@ -45,6 +45,11 @@ export type MilkdropWebGpuOptimizationFlags = {
   proceduralMotionVectors: boolean;
   directFeedbackShaders: boolean;
   descriptorFallbackToWebgl: boolean;
+  /**
+   * Experimental, opt-in, and parked (see AGENTS.md "Optional surface").
+   * `preset-lab-vm-tier-bench` measured the per-frame upload/dispatch/readback
+   * as not worth it; kept for per-vertex work, not expanded.
+   */
   gpuComputeVM: boolean;
   renderBundles: boolean;
   shaderBranchDesugar: boolean;
