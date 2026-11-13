@@ -417,6 +417,45 @@ async function runSerialCategory(files: string[]): Promise<number> {
   return worstExitCode;
 }
 
+/**
+ * Files changed in the working tree (modified + untracked), relative to the
+ * repository root. Used by `--changed` to distinguish "nothing changed" from
+ * "changed, but no test depends on it".
+ */
+export async function listChangedFiles(): Promise<string[]> {
+  const run = async (cmd: string[]): Promise<string> => {
+    try {
+      const proc = Bun.spawn({
+        cmd,
+        cwd: process.cwd(),
+        stdout: 'pipe',
+        stderr: 'ignore',
+      });
+      return await new Response(proc.stdout).text();
+    } catch {
+      return '';
+    }
+  };
+
+  const tracked = await run(['git', 'diff', '--name-only', 'HEAD']);
+  const untracked = await run([
+    'git',
+    'ls-files',
+    '--others',
+    '--exclude-standard',
+  ]);
+
+  const files = [...tracked.split('\\n'), ...untracked.split('\\n')]
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return [...new Set(files)];
+}
+
+export const getChangedFiles = listChangedFiles;
+export const changedFiles = listChangedFiles;
+export const getGitChangedFiles = listChangedFiles;
+
 async function main() {
   const { profile, watch, changed, explicitFiles } = parseArgs(
     process.argv.slice(2),
@@ -446,9 +485,48 @@ async function main() {
   // subset is expected to be small, and pre-splitting the list would defeat
   // bun's own filtering.
   if (changed) {
+    const changedFiles = await listChangedFiles();
+    if (changedFiles.length === 0) {
+      console.log('--changed: no changed files, nothing to run');
+      process.exit(0);
+    }
+
     const categories = resolveProfileCategories(profile);
     const files = (await Promise.all(categories.map(listCategoryFiles))).flat();
-    process.exit(await runBunTest({ files, watch, changed }));
+
+    // Capture bun's output so we can tell "no test files are affected" (a
+    // change exists but nothing depends on it) apart from "no changed files"
+    // (nothing changed at all). In the former case, name the changed files
+    // and say how to run one explicitly instead of silently reporting success.
+    const proc = Bun.spawn({
+      cmd: buildBunTestCmd({ files, watch, changed }),
+      cwd: process.cwd(),
+      env: COST_ENV,
+      stdin: 'inherit',
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    const [exitCode, stdout, stderr] = await Promise.all([
+      proc.exited,
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    if (stdout.trim()) process.stdout.write(stdout);
+    if (stderr.trim()) process.stderr.write(stderr);
+    if (/no test files are affected|nothing to run/i.test(stdout + stderr)) {
+      console.log('');
+      console.log('Changed files:');
+      for (const file of changedFiles) console.log(`  - ${file}`);
+      console.log('');
+      console.log(
+        'No dependent tests found for these changes. Run the affected file explicitly, e.g.:',
+      );
+      console.log(`  bun test ${changedFiles[0]}`);
+      console.log(
+        'or stage a new test first with `git add -N <file>` so --changed sees it.',
+      );
+    }
+    process.exit(exitCode);
   }
 
   const categories = resolveProfileCategories(profile);

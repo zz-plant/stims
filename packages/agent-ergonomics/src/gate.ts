@@ -17,6 +17,8 @@
  * CI, which runs the suite as its own parallel job; locally the gate should
  * stay the single command that runs everything.
  */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { AgentErgonomicsConfig, GateMode, GateStep } from './config.ts';
 import { GATE_MODES } from './config.ts';
 import { type Command, consoleIo, type Io } from './context.ts';
@@ -129,9 +131,44 @@ export type GateProgress = { passed: number; totalMs: number };
 export function printStepResult(
   result: GateStepResult,
   outputMode: OutputMode,
-  io: Io = consoleIo,
-  progress: GateProgress = { passed: 0, totalMs: 0 },
+  ioOrOptions:
+    | Io
+    | { io?: Io; progress?: GateProgress; cwd?: string } = consoleIo,
+  progressOrCwd: GateProgress | string = { passed: 0, totalMs: 0 },
+  cwdArg?: string,
 ) {
+  let io: Io = consoleIo;
+  let progress: GateProgress = { passed: 0, totalMs: 0 };
+  let cwd: string | undefined;
+  if (typeof ioOrOptions === 'string') {
+    cwd = ioOrOptions;
+  } else if (ioOrOptions && typeof (ioOrOptions as Io).log === 'function') {
+    io = ioOrOptions as Io;
+  } else if (ioOrOptions && typeof ioOrOptions === 'object') {
+    const opts = ioOrOptions as {
+      io?: Io;
+      progress?: GateProgress;
+      cwd?: string;
+    };
+    io = opts.io ?? consoleIo;
+    if (opts.progress) progress = opts.progress;
+    if (opts.cwd) cwd = opts.cwd;
+  }
+  if (typeof progressOrCwd === 'string') {
+    cwd = progressOrCwd;
+  } else if (progressOrCwd) {
+    const fromOpts =
+      ioOrOptions &&
+      typeof ioOrOptions === 'object' &&
+      !(ioOrOptions as Io).log;
+    if (!fromOpts || !(ioOrOptions as { progress?: GateProgress }).progress) {
+      progress = progressOrCwd as GateProgress;
+    }
+  }
+  if (cwdArg) cwd = cwdArg;
+  if (!cwd) cwd = process.cwd();
+  if (!progress) progress = { passed: 0, totalMs: 0 };
+
   if (outputMode === 'json') {
     io.log(
       JSON.stringify({
@@ -151,16 +188,51 @@ export function printStepResult(
       io.log(`✓ ${result.step.label} (${result.ms}ms)`);
       return;
     }
-    // A failure keeps its full output below; only the header changes so the
-    // failing step is the first thing a reader sees.
     io.log(`\n✖ ${result.step.label} FAILED (${result.ms}ms)`);
+    const MAX_LINES = 60;
+    let budget = MAX_LINES;
+    const fullParts: string[] = [];
+    if (result.stdout) fullParts.push(result.stdout);
+    if (result.stderr) {
+      if (result.stdout) fullParts.push('');
+      fullParts.push(result.stderr);
+    }
+    const fullOutput = fullParts.join('\n');
+    const safeLabel = result.step.label.replace(/[\\/]/g, '-');
+    const logDir = join(cwd, '.cache', 'gate');
+    const logPath = join(logDir, `${safeLabel}.log`);
+    try {
+      mkdirSync(logDir, { recursive: true });
+      writeFileSync(logPath, fullOutput);
+    } catch {
+      // ignore write errors
+    }
+    if (result.stdout) {
+      const lines = result.stdout.split('\n');
+      const take = lines.slice(0, budget);
+      if (take.length) io.log(take.join('\n'));
+      budget -= take.length;
+    }
+    if (result.stderr && budget > 0) {
+      if (result.stdout && budget > 0) {
+        io.log('');
+        budget -= 1;
+      }
+      if (budget > 0) {
+        const lines = result.stderr.split('\n');
+        const take = lines.slice(0, budget);
+        if (take.length) io.error(take.join('\n'));
+        budget -= take.length;
+      }
+    }
+    io.log(logPath);
   } else {
     io.log(`\n==> ${result.step.label} (${result.ms}ms)`);
-  }
-  if (result.stdout) io.log(result.stdout);
-  if (result.stderr) {
-    if (result.stdout) io.log('');
-    io.error(result.stderr);
+    if (result.stdout) io.log(result.stdout);
+    if (result.stderr) {
+      if (result.stdout) io.log('');
+      io.error(result.stderr);
+    }
   }
 }
 
@@ -209,7 +281,7 @@ export async function runGate(
   const serial = async (steps: readonly PlannedStep[]) => {
     for (const step of steps) {
       const result = await spawnStep(step, cwd).promise;
-      printStepResult(result, outputMode, io, progress);
+      printStepResult(result, outputMode, io, progress, cwd);
       if (result.exitCode !== 0) return result.exitCode;
     }
     return 0;
@@ -226,7 +298,7 @@ export async function runGate(
     while (pending.size > 0) {
       const { index, result } = await Promise.race(pending.values());
       pending.delete(index);
-      printStepResult(result, outputMode, io, progress);
+      printStepResult(result, outputMode, io, progress, cwd);
       if (result.exitCode !== 0) {
         for (const [idx] of pending) {
           try {

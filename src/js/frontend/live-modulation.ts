@@ -21,7 +21,16 @@
 
 import { type BandName, readBands, SILENT_BANDS } from './live-signal.ts';
 
-export type LfoShape = 'sine' | 'triangle' | 'saw' | 'square' | 'random';
+export type LfoShape =
+  | 'sine'
+  | 'triangle'
+  | 'saw'
+  | 'square'
+  | 'random'
+  | 'asymmetric'
+  | 'longerOut'
+  | 'longer-out'
+  | 'breath';
 
 export type ModulationSource =
   | {
@@ -29,6 +38,8 @@ export type ModulationSource =
       shape?: LfoShape;
       /** Absolute rate. Ignored when `cycles` is set. */
       hz?: number;
+      /** Inhale share of the cycle for asymmetric shapes (0.4 = longer out). */
+      duty?: number;
       /** Rate relative to the pattern tempo — 1 = once per Strudel cycle. */
       cycles?: number;
       /** Starting phase, 0-1. Offset two LFOs to make them chase. */
@@ -43,6 +54,15 @@ export type ModulationSource =
       release?: number;
       /** Scales the band before depth, for quiet sources. */
       gain?: number;
+    }
+  | {
+      kind: 'bio';
+      /** Physiological channel to follow. */
+      channel?: 'heartRate' | 'breath';
+      /** Raw value mapped to the bottom of the -1..1 range. */
+      min?: number;
+      /** Raw value mapped to the top of the -1..1 range. */
+      max?: number;
     };
 
 export interface ModulatorSpec {
@@ -77,6 +97,20 @@ const modulators = new Map<string, Modulator>();
 const phases = new Map<string, number>();
 const envelopes = new Map<string, number>();
 const holds = new Map<string, { value: number }>();
+
+/** Latest raw physiological readings, keyed by channel. */
+const bioValues = new Map<string, number>();
+
+/** Feed a physiological reading so `bio` modulators can follow it. */
+export function setBioValue(channel: string, value: number): void {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return;
+  bioValues.set(channel, value);
+}
+
+export const setHeartRate = (value: number) => setBioValue('heartRate', value);
+export const setBreath = (value: number) => setBioValue('breath', value);
+export const noteHeartRate = setHeartRate;
+export const setBioSignal = setBioValue;
 
 let deps: ModulationDeps | null = null;
 let frame: number | null = null;
@@ -131,6 +165,18 @@ function advance(modulator: Modulator, deltaMs: number): number {
     return next;
   }
 
+  if (source.kind === 'bio') {
+    const channel = source.channel ?? 'heartRate';
+    const raw = bioValues.get(channel);
+    if (raw === undefined) return 0;
+    const min = source.min ?? 0;
+    const max = source.max ?? 1;
+    const span = max - min;
+    if (span === 0) return 0;
+    const normalized = ((raw - min) / span) * 2 - 1;
+    return Math.max(-1, Math.min(1, normalized));
+  }
+
   const cps = deps?.getCps() ?? null;
   const hz =
     source.cycles !== undefined
@@ -142,6 +188,19 @@ function advance(modulator: Modulator, deltaMs: number): number {
   phases.set(modulator.id, phase);
 
   const shape = source.shape ?? 'sine';
+  const asymmetric =
+    shape === 'asymmetric' ||
+    shape === 'longerOut' ||
+    shape === 'longer-out' ||
+    shape === 'breath' ||
+    source.duty !== undefined;
+  if (asymmetric) {
+    const duty = Math.max(0.01, Math.min(0.99, source.duty ?? 0.4));
+    if (phase < duty) {
+      return -1 + (2 * phase) / duty;
+    }
+    return 1 - (2 * (phase - duty)) / (1 - duty);
+  }
   if (shape === 'random') {
     // Sample and hold: one new level per cycle, held flat until the phase
     // wraps. Stepped movement rather than the sweep every other shape gives.
