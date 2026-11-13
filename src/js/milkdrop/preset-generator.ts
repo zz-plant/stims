@@ -32,6 +32,12 @@ export type PresetGenerationProvider =
       kind: 'openrouter';
       apiKey: string;
       model: string;
+    }
+  | {
+      /** Chrome's built-in Gemini Nano: the prompt never leaves the device. */
+      kind: 'on-device';
+      /** The first run downloads the model; reports 0–1 while it does. */
+      onDownloadProgress?: (fraction: number) => void;
     };
 
 export type GeneratePresetOptions = {
@@ -94,6 +100,26 @@ function getLoopbackChatEndpoint(endpoint: string) {
 const REMOTE_CHAT_COMPLETIONS_ALLOWLIST = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
 } as const;
+
+/** The system and user turns every chat provider is sent. */
+function generationMessages(
+  description: string,
+  options: GeneratePresetOptions,
+): [{ role: 'system'; content: string }, { role: 'user'; content: string }] {
+  return [
+    {
+      role: 'system',
+      content: buildGeneratePrompt(
+        description,
+        options.complexity || 'moderate',
+      ),
+    },
+    {
+      role: 'user',
+      content: `Generate a MilkDrop preset that: ${description}`,
+    },
+  ];
+}
 
 async function responseError(response: Response) {
   const body = await response.text();
@@ -166,19 +192,7 @@ async function requestOpenAiCompatiblePreset(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: provider.model,
-        messages: [
-          {
-            role: 'system',
-            content: buildGeneratePrompt(
-              description,
-              options.complexity || 'moderate',
-            ),
-          },
-          {
-            role: 'user',
-            content: `Generate a MilkDrop preset that: ${description}`,
-          },
-        ],
+        messages: generationMessages(description, options),
         stream: false,
       }),
     });
@@ -219,19 +233,7 @@ async function requestOpenRouterPreset(
       },
       body: JSON.stringify({
         model: provider.model,
-        messages: [
-          {
-            role: 'system',
-            content: buildGeneratePrompt(
-              description,
-              options.complexity || 'moderate',
-            ),
-          },
-          {
-            role: 'user',
-            content: `Generate a MilkDrop preset that: ${description}`,
-          },
-        ],
+        messages: generationMessages(description, options),
         stream: false,
       }),
     });
@@ -263,6 +265,92 @@ async function requestOpenRouterPreset(
 }
 
 /**
+ * Chrome's Prompt API (`LanguageModel`, on the web since Chrome 148, desktop
+ * only). Typed here because the DOM typings do not declare it yet.
+ */
+export type OnDeviceModelAvailability =
+  | 'unavailable'
+  | 'downloadable'
+  | 'downloading'
+  | 'available';
+type OnDeviceSession = {
+  prompt(input: string): Promise<string>;
+  destroy(): void;
+};
+type OnDeviceModelApi = {
+  availability(
+    options: typeof ON_DEVICE_IO,
+  ): Promise<OnDeviceModelAvailability>;
+  create(
+    options: typeof ON_DEVICE_IO & {
+      initialPrompts: Array<{ role: 'system'; content: string }>;
+      monitor?: (monitor: EventTarget) => void;
+    },
+  ): Promise<OnDeviceSession>;
+};
+/** Passed to both calls, as the API requires: English text in and out. */
+const ON_DEVICE_IO = {
+  expectedInputs: [{ type: 'text', languages: ['en'] }],
+  expectedOutputs: [{ type: 'text', languages: ['en'] }],
+} as const;
+
+function onDeviceModelApi(): OnDeviceModelApi | null {
+  const api = (globalThis as { LanguageModel?: Partial<OnDeviceModelApi> })
+    .LanguageModel;
+  return typeof api?.availability === 'function' &&
+    typeof api.create === 'function'
+    ? (api as OnDeviceModelApi)
+    : null;
+}
+
+/**
+ * Whether this browser can generate on the device. Asking never starts the
+ * model download; only a generation does.
+ */
+export async function onDeviceModelAvailability(): Promise<OnDeviceModelAvailability> {
+  const api = onDeviceModelApi();
+  if (!api) return 'unavailable';
+  try {
+    return await api.availability(ON_DEVICE_IO);
+  } catch {
+    return 'unavailable';
+  }
+}
+
+async function requestOnDevicePreset(
+  description: string,
+  options: GeneratePresetOptions,
+  provider: Extract<PresetGenerationProvider, { kind: 'on-device' }>,
+) {
+  const api = onDeviceModelApi();
+  if (!api || (await onDeviceModelAvailability()) === 'unavailable') {
+    throw new Error(
+      "This browser can't run Chrome's on-device model. It needs desktop Chrome 148 or later with a GPU over 4 GB, or 16 GB of RAM.",
+    );
+  }
+  const [system, user] = generationMessages(description, options);
+  const session = await api.create({
+    ...ON_DEVICE_IO,
+    initialPrompts: [system],
+    monitor(monitor) {
+      monitor.addEventListener('downloadprogress', (event) => {
+        const loaded = (event as Event & { loaded?: unknown }).loaded;
+        if (typeof loaded === 'number') provider.onDownloadProgress?.(loaded);
+      });
+    },
+  });
+  try {
+    const content = (await session.prompt(user.content)).trim();
+    if (!content) {
+      throw new Error('The on-device model returned no preset source.');
+    }
+    return extractMilkSource(content);
+  } finally {
+    session.destroy();
+  }
+}
+
+/**
  * Request raw `.milk` source for one prompt from any provider, without
  * compiling it. The Generate flow compiles inside `generatePreset`; the
  * generation bench needs the raw source so it can score the model's actual
@@ -278,6 +366,8 @@ export async function requestPresetFromProvider(
       return requestOpenAiCompatiblePreset(description, options, provider);
     case 'openrouter':
       return requestOpenRouterPreset(description, options, provider);
+    case 'on-device':
+      return requestOnDevicePreset(description, options, provider);
     default:
       return requestHostedPreset(description, options, provider);
   }
@@ -505,7 +595,10 @@ export async function generatePresetTournament(
   // Local models process requests serially, so extra candidates cost the
   // user linear wall-clock time; remote endpoints fan out.
   const attempted =
-    options.candidateCount ?? (provider.kind === 'openai-compatible' ? 2 : 3);
+    options.candidateCount ??
+    (provider.kind === 'openai-compatible' || provider.kind === 'on-device'
+      ? 2
+      : 3);
 
   const requests = Array.from({ length: attempted }, () =>
     requestPresetFromProvider(description, options, provider),
