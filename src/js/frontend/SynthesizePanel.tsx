@@ -11,6 +11,8 @@ import {
   type generatePreset,
   generatePresetFromImage,
   generatePresetTournament,
+  type OnDeviceModelAvailability,
+  onDeviceModelAvailability,
 } from '../milkdrop/preset-generator.ts';
 import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
 import { checkStageForNearBlack } from './generated-preset-visual-check.ts';
@@ -46,7 +48,7 @@ const PALETTES = [
 ];
 
 type Palette = (typeof PALETTES)[number]['value'];
-type ProviderKind = 'hosted' | 'local' | 'openrouter';
+type ProviderKind = 'hosted' | 'local' | 'openrouter' | 'on-device';
 
 const viteEnv = (import.meta as unknown as { env?: { DEV?: boolean } }).env;
 const DEFAULT_PROVIDER: ProviderKind = viteEnv?.DEV ? 'local' : 'hosted';
@@ -115,7 +117,8 @@ function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
       provider:
         parsed.provider === 'hosted' ||
         parsed.provider === 'local' ||
-        parsed.provider === 'openrouter'
+        parsed.provider === 'openrouter' ||
+        parsed.provider === 'on-device'
           ? parsed.provider
           : defaults.provider,
       localEndpoint: storedString(parsed.localEndpoint, defaults.localEndpoint),
@@ -141,7 +144,9 @@ function providerDestination(provider: ProviderKind) {
     ? 'Ollama on this computer'
     : provider === 'openrouter'
       ? 'OpenRouter'
-      : "Stims's hosted AI model";
+      : provider === 'on-device'
+        ? "Chrome's built-in model on this device"
+        : "Stims's hosted AI model";
 }
 
 function providerStatus(provider: ProviderKind, offline: boolean) {
@@ -152,7 +157,9 @@ function providerStatus(provider: ProviderKind, offline: boolean) {
     ? 'Local mode sends this prompt directly to Ollama on your computer.'
     : provider === 'openrouter'
       ? 'Prompts and your key go to OpenRouter. The key stays in this browser and never touches Stims servers.'
-      : 'Hosted mode uses the model service on the deployed Stims site.';
+      : provider === 'on-device'
+        ? 'On-device mode runs Gemini Nano inside Chrome. The prompt stays on this device, and the first run downloads the model.'
+        : 'Hosted mode uses the model service on the deployed Stims site.';
 }
 
 export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
@@ -186,6 +193,19 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   const [status, setStatus] = useState(() =>
     providerStatus(stored.provider, offline),
   );
+  // Null until Chrome answers; the option only appears where it can run.
+  const [onDevice, setOnDevice] = useState<OnDeviceModelAvailability | null>(
+    null,
+  );
+  useEffect(() => {
+    let live = true;
+    void onDeviceModelAvailability().then((availability) => {
+      if (live) setOnDevice(availability);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -260,7 +280,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           ? `Generating with ${localModel.trim() || 'the local model'}…`
           : provider === 'openrouter'
             ? `Generating with ${openrouterModel.trim() || 'OpenRouter'}…`
-            : 'Generating with the hosted model…',
+            : provider === 'on-device'
+              ? 'Generating on this device…'
+              : 'Generating with the hosted model…',
     );
     try {
       // The prompt and control sliders steer both paths: as the generation
@@ -298,7 +320,17 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                     apiKey: openrouterApiKey.trim(),
                     model: openrouterModel.trim(),
                   }
-                : { kind: 'hosted' },
+                : provider === 'on-device'
+                  ? {
+                      kind: 'on-device',
+                      onDownloadProgress: (fraction) =>
+                        startTransition(() =>
+                          setStatus(
+                            `Downloading Chrome's on-device model… ${Math.round(fraction * 100)}%`,
+                          ),
+                        ),
+                    }
+                  : { kind: 'hosted' },
         });
         compiled = outcome.winner;
       }
@@ -588,13 +620,28 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                 />
                 <span>OpenRouter</span>
               </label>
+              {(onDevice !== null && onDevice !== 'unavailable') ||
+              provider === 'on-device' ? (
+                <label className={styles.palette}>
+                  <input
+                    type="radio"
+                    name="model-provider"
+                    value="on-device"
+                    checked={provider === 'on-device'}
+                    onChange={() => handleProviderChange('on-device')}
+                  />
+                  <span>On this device</span>
+                </label>
+              ) : null}
             </div>
             <p className={styles.providerNote}>
               {provider === 'local'
                 ? 'No API key is used. Direct requests are limited to loopback addresses; Ollama must allow this browser origin.'
                 : provider === 'openrouter'
                   ? 'Prompts and your key go to OpenRouter. The key is sent straight from this browser to openrouter.ai and stored only in this browser.'
-                  : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
+                  : provider === 'on-device'
+                    ? 'Gemini Nano, built into desktop Chrome. Works offline once downloaded. Needs a GPU over 4 GB, or 16 GB of RAM.'
+                    : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
             </p>
           </fieldset>
 
