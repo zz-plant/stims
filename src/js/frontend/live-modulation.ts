@@ -43,6 +43,15 @@ export type ModulationSource =
       release?: number;
       /** Scales the band before depth, for quiet sources. */
       gain?: number;
+    }
+  | {
+      kind: 'bio';
+      /** Physiological channel to follow. */
+      channel?: 'heartRate' | 'breath';
+      /** Raw value mapped to the bottom of the -1..1 range. */
+      min?: number;
+      /** Raw value mapped to the top of the -1..1 range. */
+      max?: number;
     };
 
 export interface ModulatorSpec {
@@ -77,6 +86,20 @@ const modulators = new Map<string, Modulator>();
 const phases = new Map<string, number>();
 const envelopes = new Map<string, number>();
 const holds = new Map<string, { value: number }>();
+
+/** Latest raw physiological readings, keyed by channel. */
+const bioValues = new Map<string, number>();
+
+/** Feed a physiological reading so `bio` modulators can follow it. */
+export function setBioValue(channel: string, value: number): void {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return;
+  bioValues.set(channel, value);
+}
+
+export const setHeartRate = (value: number) => setBioValue('heartRate', value);
+export const setBreath = (value: number) => setBioValue('breath', value);
+export const noteHeartRate = setHeartRate;
+export const setBioSignal = setBioValue;
 
 let deps: ModulationDeps | null = null;
 let frame: number | null = null;
@@ -129,6 +152,18 @@ function advance(modulator: Modulator, deltaMs: number): number {
     const next = previous + (raw - previous) * coefficient;
     envelopes.set(modulator.id, next);
     return next;
+  }
+
+  if (source.kind === 'bio') {
+    const channel = source.channel ?? 'heartRate';
+    const raw = bioValues.get(channel);
+    if (raw === undefined) return 0;
+    const min = source.min ?? 0;
+    const max = source.max ?? 1;
+    const span = max - min;
+    if (span === 0) return 0;
+    const normalized = ((raw - min) / span) * 2 - 1;
+    return Math.max(-1, Math.min(1, normalized));
   }
 
   const cps = deps?.getCps() ?? null;
