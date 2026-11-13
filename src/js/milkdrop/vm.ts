@@ -123,6 +123,47 @@ const FRAME_LOOP_ITERATION_BUDGET = 2_097_152;
 export type MilkdropVMExecutionOptions = {
   frameDeadlineMs?: number;
   initDeadlineMs?: number;
+  /** When true, the constructor skips `reset()` (and therefore init). The
+   * caller must invoke `initAsync()` (worker) or `reset()` (in-process)
+   * before stepping. Used by the worker-isolation path (Phase 1). */
+  deferInit?: boolean;
+  /** Opt into running init in a worker via the supplied host. Only consulted
+   * by `initAsync()`. */
+  useWorkerInit?: boolean;
+};
+
+/** Host that runs a preset's init programs off the main thread. */
+export interface VmInitHost {
+  available(): boolean;
+  runInit(preset: MilkdropCompiledPreset): Promise<MilkdropInitSnapshot | null>;
+}
+
+/**
+ * Serializable snapshot of a VM's state *after* its init programs have run.
+ * Produced by the worker and applied to a main-thread VM so init can run off
+ * the main thread (Phase 1 of vm-worker-isolation). All mutable stores are
+ * copied (not shared) so the two realms stay independent.
+ */
+export type MilkdropInitSnapshot = {
+  state: Record<string, number>;
+  registersOwn: Record<string, number>;
+  megabuf: Float32Array;
+  gmegabuf: Float32Array;
+  randomCellS: number;
+  customWaveLocals: Record<string, number>[];
+  customWaveTAfterInit: Record<string, number>[];
+  customWaveBaseLocalsPool: Record<string, number>[];
+  customShapeLocals: Record<string, number>[];
+  customShapeTAfterInit: Record<string, number>[];
+  customShapeBaseFields: Record<string, number>[];
+  perFrameBaseValues: Record<string, number>;
+  perFrameBaseKeys: string[];
+  perFrameBaseNumbers: number[];
+  signalEnvOwn: Record<string, number>;
+  presetStartTime: number;
+  presetSlotSeconds: number;
+  presetProgress: number;
+  declaredBorderKeys: ('outer' | 'inner')[];
 };
 
 /**
@@ -142,7 +183,7 @@ const INSTANCE_BOUND_FIELDS: ReadonlySet<string> = new Set([
   'initDeadlineMs',
 ]);
 
-class MilkdropPresetVM implements MilkdropVM {
+export class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   /**
    * Which borders the preset explicitly sized. Borders default to a non-zero
@@ -195,6 +236,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private executionBudgetExceeded = false;
   private readonly frameDeadlineMs: number;
   private readonly initDeadlineMs: number;
+  private readonly executionOptions: MilkdropVMExecutionOptions;
   private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
   private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
@@ -378,7 +420,12 @@ class MilkdropPresetVM implements MilkdropVM {
       executionOptions.frameDeadlineMs ?? defaults.frameDeadlineMs;
     this.initDeadlineMs =
       executionOptions.initDeadlineMs ?? defaults.initDeadlineMs;
-    this.reset();
+    this.executionOptions = { ...executionOptions };
+    if (executionOptions.deferInit) {
+      this._setupState();
+    } else {
+      this.reset();
+    }
   }
 
   setPreset(preset: MilkdropCompiledPreset) {
@@ -454,6 +501,113 @@ class MilkdropPresetVM implements MilkdropVM {
     }
     if (name in this.registers) return this.registers[name];
     return this.state[name];
+  }
+
+  /** Serializes the post-init VM state so it can be produced in a worker
+   * and applied on the main thread (Phase 1 of vm-worker-isolation). */
+  exportPostInitState(): MilkdropInitSnapshot {
+    const registersOwn: Record<string, number> = {};
+    for (const key of Object.keys(this.registers)) {
+      const v = this.registers[key];
+      if (typeof v === 'number') registersOwn[key] = v;
+    }
+    const signalEnvOwn: Record<string, number> = {};
+    for (const key of Object.keys(this.signalEnv)) {
+      const v = this.signalEnv[key];
+      if (typeof v === 'number') signalEnvOwn[key] = v;
+    }
+    const cloneLocals = (arr: Record<string, number>[]) =>
+      arr.map((o) => ({ ...o }));
+    return {
+      state: { ...this.state },
+      registersOwn,
+      megabuf: this.megabuf.slice(),
+      gmegabuf: this.gmegabuf.slice(),
+      randomCellS: this.randomCell.s,
+      customWaveLocals: cloneLocals(this.waveState.customWaveLocals),
+      customWaveTAfterInit: cloneLocals(this.waveState.customWaveTAfterInit),
+      customWaveBaseLocalsPool: cloneLocals(
+        this.waveState.customWaveBaseLocalsPool,
+      ),
+      customShapeLocals: cloneLocals(this.shapeState.customShapeLocals),
+      customShapeTAfterInit: cloneLocals(this.shapeState.customShapeTAfterInit),
+      customShapeBaseFields: cloneLocals(this.shapeState.customShapeBaseFields),
+      perFrameBaseValues: { ...this.perFrameBaseValues },
+      perFrameBaseKeys: [...this.perFrameBaseKeys],
+      perFrameBaseNumbers: [...this.perFrameBaseNumbers],
+      signalEnvOwn,
+      presetStartTime: this.presetStartTime,
+      presetSlotSeconds: this.presetSlotSeconds,
+      presetProgress: this.presetProgress,
+      declaredBorderKeys: [...this.declaredBorderKeys] as ('outer' | 'inner')[],
+    };
+  }
+
+  /** Applies a post-init snapshot produced by `exportPostInitState` (possibly
+   * in a worker). Rebuilds the register prototype chain and per-frame base
+   * index. */
+  applyPostInitState(snapshot: MilkdropInitSnapshot): void {
+    this.state = { ...snapshot.state };
+    this.registers = Object.create(this.state) as MutableState;
+    for (const key of Object.keys(snapshot.registersOwn)) {
+      this.registers[key] = snapshot.registersOwn[key];
+    }
+    this.megabuf.set(snapshot.megabuf);
+    if (this.gmegabuf.length !== snapshot.gmegabuf.length) {
+      this.gmegabuf = snapshot.gmegabuf.slice();
+    } else {
+      this.gmegabuf.set(snapshot.gmegabuf);
+    }
+    this.randomCell.s = snapshot.randomCellS;
+    this.waveState.customWaveLocals = snapshot.customWaveLocals.map((o) => ({
+      ...o,
+    }));
+    this.waveState.customWaveTAfterInit = snapshot.customWaveTAfterInit.map(
+      (o) => ({ ...o }),
+    );
+    this.waveState.customWaveBaseLocalsPool =
+      snapshot.customWaveBaseLocalsPool.map((o) => ({ ...o }));
+    this.shapeState.customShapeLocals = snapshot.customShapeLocals.map((o) => ({
+      ...o,
+    }));
+    this.shapeState.customShapeTAfterInit = snapshot.customShapeTAfterInit.map(
+      (o) => ({ ...o }),
+    );
+    this.shapeState.customShapeBaseFields = snapshot.customShapeBaseFields.map(
+      (o) => ({ ...o }),
+    );
+    this.perFrameBaseValues = { ...snapshot.perFrameBaseValues };
+    this.perFrameBaseKeys = [...snapshot.perFrameBaseKeys];
+    this.perFrameBaseNumbers = [...snapshot.perFrameBaseNumbers];
+    this.perFrameBaseKeyIndex = new Map(
+      this.perFrameBaseKeys.map((key, index) => [key, index]),
+    );
+    this.signalEnv = createDefaultSignalEnv();
+    for (const key of Object.keys(snapshot.signalEnvOwn)) {
+      this.signalEnv[key] = snapshot.signalEnvOwn[key];
+    }
+    Object.setPrototypeOf(this.signalEnv, this.registers);
+    this.presetStartTime = snapshot.presetStartTime;
+    this.presetSlotSeconds = snapshot.presetSlotSeconds;
+    this.presetProgress = snapshot.presetProgress;
+    this.declaredBorderKeys = new Set(snapshot.declaredBorderKeys);
+  }
+
+  /** Runs init in a worker if `host` is provided, otherwise in-process.
+   * Returns true if the worker path was used. */
+  async initAsync(host?: VmInitHost): Promise<boolean> {
+    const useWorker = this.executionOptions?.useWorkerInit ?? false;
+    if (!useWorker || !host || !host.available()) {
+      this.reset();
+      return false;
+    }
+    const snapshot = await host.runInit(this.preset);
+    if (!snapshot) {
+      this.reset();
+      return false;
+    }
+    this.applyPostInitState(snapshot);
+    return true;
   }
 
   setDetailScale(scale: number) {
@@ -552,7 +706,7 @@ class MilkdropPresetVM implements MilkdropVM {
     return this.cachedEffectivePlan;
   }
 
-  reset() {
+  _setupState() {
     const declaredBorders = new Set<'outer' | 'inner'>();
     for (const field of this.preset.ast.fields) {
       const key = normalizeProgramAssignmentTarget(field.key);
@@ -610,7 +764,10 @@ class MilkdropPresetVM implements MilkdropVM {
     this.lastPreparedSignalTime = Number.NaN;
     this.presetStartTime = Number.NaN;
     this.presetProgress = 0;
+  }
 
+  reset() {
+    this._setupState();
     const zeroSignals = defaultSignalEnv();
     this.loopBudget.remaining = Number.POSITIVE_INFINITY;
     this.beginExecutionDeadline(this.initDeadlineMs);
