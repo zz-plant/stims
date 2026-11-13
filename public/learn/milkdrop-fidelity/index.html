@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>How Stims Measures Fidelity Against projectM | Stims</title>
+<meta name="description" content="How Stims compares frames against native projectM on a fixed clock, separates &quot;compiles and runs&quot; from &quot;diffed against a reference,&quot; and refuses captures a blank frame would pass." />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/milkdrop-fidelity/" />
+<link rel="alternate" type="text/markdown" href="https://toil.fyi/learn/milkdrop-fidelity.md" title="How Stims Measures Fidelity Against projectM — Markdown source" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="How Stims Measures Fidelity Against projectM | Stims" />
+<meta property="og:description" content="How Stims compares frames against native projectM on a fixed clock, separates &quot;compiles and runs&quot; from &quot;diffed against a reference,&quot; and refuses captures a blank frame would pass." />
+<meta property="og:url" content="https://toil.fyi/learn/milkdrop-fidelity/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="How Stims Measures Fidelity Against projectM | Stims" />
+<meta name="twitter:description" content="How Stims compares frames against native projectM on a fixed clock, separates &quot;compiles and runs&quot; from &quot;diffed against a reference,&quot; and refuses captures a blank frame would pass." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://toil.fyi/learn/milkdrop-fidelity/#page",
+      "headline": "How Stims measures fidelity against projectM",
+      "name": "How Stims Measures Fidelity Against projectM",
+      "description": "How Stims compares frames against native projectM on a fixed clock, separates \"compiles and runs\" from \"diffed against a reference,\" and refuses captures a blank frame would pass.",
+      "url": "https://toil.fyi/learn/milkdrop-fidelity/",
+      "mainEntityOfPage": "https://toil.fyi/learn/milkdrop-fidelity/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "about": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "MilkDrop",
+          "sameAs": [
+            "https://en.wikipedia.org/wiki/MilkDrop",
+            "https://www.wikidata.org/wiki/Q4044271"
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "projectM",
+          "sameAs": [
+            "https://github.com/projectM-visualizer/projectm"
+          ]
+        }
+      ],
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://toil.fyi/#website",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "@id": "https://toil.fyi/#organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/",
+        "logo": "https://toil.fyi/icons/icon-512.png",
+        "sameAs": [
+          "https://github.com/zz-plant/stims"
+        ]
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "How Stims measures fidelity against projectM",
+          "item": "https://toil.fyi/learn/milkdrop-fidelity/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>@font-face{font-family:"Pathway Extreme";font-style:normal;font-weight:100 900;font-stretch:75% 100%;font-display:swap;ascent-override:90%;descent-override:22%;line-gap-override:0%;src:url(/fonts/pathway-extreme-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:"Atkinson Hyperlegible Mono";font-style:normal;font-weight:200 800;font-display:swap;src:url(/fonts/atkinson-hyperlegible-mono-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}:root{color-scheme:dark light;--bg:#0f0f0e;--fg:#ecece7;--muted:#a3a29c;--line:rgba(236,236,231,.14);--code:#171716;--accent:#ffb21a;--accent-fg:#141210;--zebra:rgba(236,236,231,.035);--shadow:rgba(0,0,0,.6)}@media(prefers-color-scheme:light){:root{--bg:#f2f2ee;--fg:#161615;--muted:#55544f;--line:rgba(22,22,21,.16);--code:#e7e7e2;--accent:#8a4e00;--accent-fg:#fbfbf8;--zebra:rgba(22,22,21,.035);--shadow:rgba(22,22,21,.22)}}*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--fg);font:1.0625rem/1.7 "Pathway Extreme",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}::selection{background:rgba(255,178,26,.35);color:inherit}a{color:var(--fg);text-decoration-color:var(--accent);text-underline-offset:.2em;text-decoration-thickness:1px}a:hover{color:var(--accent)}a:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}img{max-width:100%;height:auto}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding-left:16px;padding-right:16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.brand{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-weight:820;font-stretch:75%;font-size:1.3rem;letter-spacing:.01em;text-decoration:none;color:var(--fg)}.brand:before{content:"";width:9px;height:9px;border-radius:50%;border:1px solid var(--muted)}.links{display:flex;flex-wrap:wrap;gap:2px 16px;order:3;flex-basis:100%}.links a{color:var(--muted);text-decoration:none;font-size:.95rem;font-stretch:88%;padding:4px 0}.links a:hover{color:var(--fg);text-decoration:underline}.nav-cta{order:2;background:var(--fg);color:var(--bg);text-decoration:none;font-weight:700;font-stretch:88%;font-size:.95rem;padding:8px 16px;border-radius:4px}.nav-cta:hover{color:var(--bg);background:var(--accent)}@media(min-width:640px){.links{order:1;flex-basis:auto;gap:2px 16px}.brand{order:0}}main{padding-top:28px;padding-bottom:32px}h1{font-size:clamp(2.1rem,6vw,3rem);font-weight:760;font-stretch:78%;line-height:1;letter-spacing:-.01em;margin:.3em 0 .5em;text-wrap:balance}h2{font-size:1.6rem;font-weight:760;font-stretch:82%;line-height:1.15;margin:2em 0 .5em;padding-top:.6em;border-top:1px solid var(--line);scroll-margin-top:16px}h3{font-size:1.15rem;margin:1.6em 0 .4em;scroll-margin-top:16px}p,li{max-width:42rem}code{font:.86em "Atkinson Hyperlegible Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .38em;border-radius:3px}pre{background:var(--code);padding:14px 16px;border-radius:6px;border:1px solid var(--line);overflow-x:auto;line-height:1.55}pre code{background:none;padding:0;font-size:.8rem}.table-wrap{margin:1.2em 0;border:1px solid var(--line);border-radius:6px;overflow-x:auto;background:linear-gradient(to right,var(--bg) 30%,transparent) 0 0/40px 100% no-repeat local,linear-gradient(to left,var(--bg) 30%,transparent) 100% 0/40px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,var(--shadow),transparent) 0 0/14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,var(--shadow),transparent) 100% 0/14px 100% no-repeat scroll}table{border-collapse:collapse;min-width:100%;font-size:.95rem}th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{font-weight:700;background:var(--zebra);white-space:nowrap}tbody tr:nth-child(even){background:var(--zebra)}td:first-child{min-width:7rem}blockquote{margin:1.2em 0;padding:.2em 1.1em;border-left:1px solid var(--line);background:var(--zebra);border-radius:0 6px 6px 0;color:var(--muted)}details{margin:1em 0}summary{cursor:pointer;color:var(--muted)}.toc{border:1px solid var(--line);border-radius:6px;padding:10px 18px;margin:1.2em 0;background:var(--zebra)}.toc ul{margin:.4em 0;padding-left:1.2em}.toc a{text-decoration:none}.toc a:hover{text-decoration:underline}.run-link{display:inline-block;padding:.3em 1em;border:1px solid var(--line);border-radius:4px;font-weight:700;text-decoration:none;line-height:1.5}.run-link:hover{border-color:var(--accent);color:var(--fg)}.cta{display:inline-block;background:var(--fg);color:var(--bg);padding:11px 20px;border-radius:4px;text-decoration:none;font-weight:700;font-stretch:88%}.cta:hover{color:var(--bg);background:var(--accent)}.try{margin:2.5em 0 1em;padding:20px 22px;border:1px solid var(--line);border-radius:6px;background:var(--code)}.try p{margin:.2em 0 .8em}.pager{display:grid;gap:12px;margin:1.5em 0}@media(min-width:640px){.pager{grid-template-columns:1fr 1fr}.pager .next{grid-column:2}}.pager a{display:block;padding:10px 14px;border:1px solid var(--line);border-radius:6px;text-decoration:none;max-width:100%}.pager a:hover{border-color:var(--accent)}.pager .next{text-align:right}.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;padding-top:8px;padding-bottom:48px}.site-footer h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin:1.4em 0 .5em;padding:0;border:0;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}.site-footer a{color:var(--muted)}.site-footer a:hover{color:var(--accent)}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/whats-new/">What's new</a><a href="/presets/">Presets</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
+<a class="nav-cta" href="/">Open Stims</a>
+</header>
+<main>
+<article>
+<h1 id="how-stims-measures-fidelity-against-projectm">How Stims measures fidelity against projectM</h1>
+<p><a class="cta" href="/">Open Stims — no install needed</a></p>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#what-gets-measured">What gets measured</a></li><li><a href="#what-the-labels-mean">What the labels mean</a></li><li><a href="#how-a-reference-is-promoted">How a reference is promoted</a></li><li><a href="#why-projectm">Why projectM</a></li><li><a href="#what-this-is-not">What this is not</a></li></ul></nav>
+<p>Stims is its own browser implementation of MilkDrop. It does not reuse projectM&#39;s code. To know whether a preset looks right, Stims compares its frames against a native projectM capture, one preset at a time, on a fixed clock.</p>
+<h2 id="what-gets-measured">What gets measured</h2>
+<ul>
+<li>Both renderers are stepped on the <strong>same fixed clock</strong>, so the comparison is frame-for-frame rather than &quot;looks about right.&quot;</li>
+<li>A difference <strong>counts only when it exceeds that preset&#39;s own run-to-run noise</strong>. Presets are noisy (audio, randomness, feedback), so a small pixel delta is not a failure.</li>
+<li>Every measured preset&#39;s result is <strong>published, passing or not</strong> — there is no silent dropping of failures.</li>
+</ul>
+<h2 id="what-the-labels-mean">What the labels mean</h2>
+<p>Stims separates three claims that are easy to conflate:</p>
+<ol>
+<li><strong>Compiles and runs.</strong> The preset&#39;s equations and shaders parse and execute on both the WebGL2 and WebGPU backends. This is checked for the whole 1,750-preset Butterchurn pack in CI: none is unsupported on either backend.</li>
+<li><strong>Runs with no approximation.</strong> 1,578 of those presets run with no approximation on both backends; the other 172 approximate a shader on WebGPU or use a name the expression VM does not know.</li>
+<li><strong>Diffed against a projectM reference.</strong> A frame-level comparison against a native projectM capture. Only a few presets have been measured this way so far.</li>
+</ol>
+<p>A preset can pass (1) and (2) and still be unmeasured for (3). The labels keep those distinct so a &quot;runs&quot; badge is never mistaken for &quot;matches.&quot;</p>
+<h2 id="how-a-reference-is-promoted">How a reference is promoted</h2>
+<p>A reference capture is not accepted just because it exists. Promotion refuses a reference that a blank frame would pass — i.e. a capture that contains no real signal. This stops an empty or broken capture from being recorded as a pass.</p>
+<h2 id="why-projectm">Why projectM</h2>
+<p>projectM is the reference implementation most people trust for <code>.milk</code> fidelity, and it reads <code>.milk</code> files directly. Stims uses it as the oracle, not as a dependency.</p>
+<h2 id="what-this-is-not">What this is not</h2>
+<ul>
+<li>It is not a claim that Stims matches projectM pixel-for-pixel everywhere. Only a few presets have been measured; the rest are labeled by compile/run status only.</li>
+<li>It is not a reimplementation of projectM. Stims runs on the GPU (per-pixel equations compile into the shader on WebGPU), while projectM and Butterchurn run them on the CPU.</li>
+</ul>
+
+<aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
+</article>
+
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/presets/">All presets, A–Z</a></li><li><a href="/whats-new/">What's new</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li><li><a href="/author/royal">Royal</a></li><li><a href="/author/amandio-c">amandio c</a></li><li><a href="/author/bdrv">BDRV</a></li><li><a href="/author/hexcollie">Hexcollie</a></li><li><a href="/author/yin">Yin</a></li><li><a href="/author/luxxx">LuxXx</a></li><li><a href="/author/adamfx">AdamFX</a></li><li><a href="/author/beta106i">beta106i</a></li><li><a href="/author/tonymilkdrop">TonyMilkdrop</a></li><li><a href="/author/loadus">Loadus</a></li><li><a href="/author/pieturp">PieturP</a></li><li><a href="/author/evet">Evet</a></li><li><a href="/author/rozzor">Rozzor</a></li><li><a href="/author/tripgnosis">Tripgnosis</a></li><li><a href="/author/bmelgren">Bmelgren</a></li><li><a href="/author/idiot">Idiot</a></li><li><a href="/author/illusion">Illusion</a></li><li><a href="/author/esotic">Esotic</a></li><li><a href="/author/shadowharlequin">ShadowHarlequin</a></li></ul>
+</footer>
+</body>
+</html>
