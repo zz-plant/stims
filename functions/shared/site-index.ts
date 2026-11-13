@@ -15,6 +15,13 @@ export type SiteIndexSection = { heading: string; links: SiteIndexLink[] };
 
 export const PRESET_INDEX_PATH = '/presets/';
 
+/**
+ * The robots value of every page meant to rank. `max-image-preview:large`
+ * lets Google show a page's 1200-wide card at full size in results, and
+ * Discover only features large images from pages that allow them.
+ */
+export const INDEXED_ROBOTS = 'index,follow,max-image-preview:large';
+
 export const SITE_INDEX_SECTIONS: readonly SiteIndexSection[] = [
   {
     heading: 'Stims',

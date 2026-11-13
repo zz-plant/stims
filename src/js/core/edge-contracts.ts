@@ -229,6 +229,15 @@ export type TelemetryEvent = {
   flashGuard?: (typeof TELEMETRY_FLASH_GUARD_STATES)[number];
   /** Where it read pixels: 'main' is the slow synchronous fallback. */
   flashSampler?: (typeof TELEMETRY_FLASH_SAMPLERS)[number];
+  /**
+   * A Core Web Vital (`vital-lcp`, `vital-inp`, `vital-cls`; see
+   * web-vitals-telemetry.ts). LCP and INP are milliseconds, CLS is unitless.
+   */
+  vitalValue?: number;
+  /** How the page was reached; a prerender or bfcache restore starts later. */
+  navigationType?: (typeof TELEMETRY_NAVIGATION_TYPES)[number];
+  /** Which kind of app page the visit loaded, never its address. */
+  page?: (typeof TELEMETRY_PAGES)[number];
 };
 
 const RENDERER_VALUES = ['webgpu', 'webgl2', 'webgl1', 'canvas'] as const;
@@ -299,6 +308,26 @@ export const TELEMETRY_ENGINES = [
   'chromium',
   'webkit',
   'gecko',
+  'other',
+] as const;
+/** The web-vitals library's spellings, minus soft navigations (not sent). */
+export const TELEMETRY_NAVIGATION_TYPES = [
+  'navigate',
+  'reload',
+  'back-forward',
+  'back-forward-cache',
+  'prerender',
+  'restore',
+] as const;
+/**
+ * `preset` is a `?preset=` deep link, `hub` a curated `/discover/…` or author
+ * page, `embed` any of the chromeless flags the middleware frames.
+ */
+export const TELEMETRY_PAGES = [
+  'home',
+  'preset',
+  'hub',
+  'embed',
   'other',
 ] as const;
 
@@ -421,6 +450,20 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.flashSampler !== undefined) {
     if (!isOneOf(TELEMETRY_FLASH_SAMPLERS, input.flashSampler)) return null;
     result.flashSampler = input.flashSampler;
+  }
+  if (input.vitalValue !== undefined) {
+    if (!isNumber(input.vitalValue)) return null;
+    result.vitalValue = input.vitalValue;
+  }
+  if (input.navigationType !== undefined) {
+    if (!isOneOf(TELEMETRY_NAVIGATION_TYPES, input.navigationType)) {
+      return null;
+    }
+    result.navigationType = input.navigationType;
+  }
+  if (input.page !== undefined) {
+    if (!isOneOf(TELEMETRY_PAGES, input.page)) return null;
+    result.page = input.page;
   }
   return result;
 });

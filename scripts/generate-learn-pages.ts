@@ -33,7 +33,10 @@ import {
   learnPageOutFile,
   learnPagePath,
 } from '../functions/shared/learn-pages.ts';
-import { siteIndexHtml } from '../functions/shared/site-index.ts';
+import {
+  INDEXED_ROBOTS,
+  siteIndexHtml,
+} from '../functions/shared/site-index.ts';
 import {
   breadcrumbList,
   type JsonLdNode,
@@ -310,7 +313,7 @@ export function renderStaticPage(page: StaticPage): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>${escapeHtml(page.title)}</title>
 <meta name="description" content="${escapeHtml(page.description)}" />
-<meta name="robots" content="index,follow" />
+<meta name="robots" content="${INDEXED_ROBOTS}" />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="${page.url}" />
 ${page.alternateMarkdown ? `<link rel="alternate" type="text/markdown" href="${escapeHtml(page.alternateMarkdown.href)}" title="${escapeHtml(page.alternateMarkdown.title)}" />\n` : ''}<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
