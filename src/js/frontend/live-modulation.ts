@@ -21,7 +21,16 @@
 
 import { type BandName, readBands, SILENT_BANDS } from './live-signal.ts';
 
-export type LfoShape = 'sine' | 'triangle' | 'saw' | 'square' | 'random';
+export type LfoShape =
+  | 'sine'
+  | 'triangle'
+  | 'saw'
+  | 'square'
+  | 'random'
+  | 'asymmetric'
+  | 'longerOut'
+  | 'longer-out'
+  | 'breath';
 
 export type ModulationSource =
   | {
@@ -29,6 +38,8 @@ export type ModulationSource =
       shape?: LfoShape;
       /** Absolute rate. Ignored when `cycles` is set. */
       hz?: number;
+      /** Inhale share of the cycle for asymmetric shapes (0.4 = longer out). */
+      duty?: number;
       /** Rate relative to the pattern tempo — 1 = once per Strudel cycle. */
       cycles?: number;
       /** Starting phase, 0-1. Offset two LFOs to make them chase. */
@@ -177,6 +188,19 @@ function advance(modulator: Modulator, deltaMs: number): number {
   phases.set(modulator.id, phase);
 
   const shape = source.shape ?? 'sine';
+  const asymmetric =
+    shape === 'asymmetric' ||
+    shape === 'longerOut' ||
+    shape === 'longer-out' ||
+    shape === 'breath' ||
+    source.duty !== undefined;
+  if (asymmetric) {
+    const duty = Math.max(0.01, Math.min(0.99, source.duty ?? 0.4));
+    if (phase < duty) {
+      return -1 + (2 * phase) / duty;
+    }
+    return 1 - (2 * (phase - duty)) / (1 - duty);
+  }
   if (shape === 'random') {
     // Sample and hold: one new level per cycle, held flat until the phase
     // wraps. Stepped movement rather than the sweep every other shape gives.
