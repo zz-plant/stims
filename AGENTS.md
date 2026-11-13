@@ -26,6 +26,27 @@ Decline, and say in your reply that this is a hobby project:
 
 The owner can still ask for any of these. Do one only when the request says it overrides this section.
 
+### Optional surface (parked)
+
+Core surface is the player, the editor, sharing, accessibility, and fidelity
+measurement. Everything else is **optional** and does not grow: adding an
+optional file or route means removing one, or getting an explicit override.
+
+Parked, in rough order of how little a priority-1 listener touches it:
+
+- **Agent-discovery metadata** — `public/llms.txt`, `llms-full.txt`,
+  `openapi.json`, `auth.md`, `.well-known/api-catalog`,
+  `.well-known/mcp/server-card.json`, `.well-known/agent-skills/`.
+- **Model-backed API routes** — `functions/api/{generate,refine,blend,image-to-preset,visual-search,patch,validate,batch-generate,decide,feed}-*.ts`.
+  They are rate-limited and documented, and they stay, but they are not the
+  product and do not get new siblings.
+- **The GPU compute VM** (`gpuComputeVM`, `vm-gpu.ts`) — an opt-in
+  experiment. `preset-lab-vm-tier-bench` measured the per-frame round trip as
+  not worth it; it is kept for per-vertex work, not expanded.
+
+A useful test for new surface: *does a priority-1 listener touch it, and does a
+named instrument measure it?* If neither, it is optional.
+
 ## Start here
 
 ```bash
