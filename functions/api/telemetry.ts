@@ -10,8 +10,10 @@ import {
   TELEMETRY_FLASH_GUARD_STATES,
   TELEMETRY_FLASH_SAMPLERS,
   TELEMETRY_FOLDS,
+  TELEMETRY_NAVIGATION_TYPES,
   TELEMETRY_ORIENTATIONS,
   TELEMETRY_OS_FAMILIES,
+  TELEMETRY_PAGES,
   TELEMETRY_QUALITY_STEPS,
   TELEMETRY_SURFACES,
   type TelemetryEvent,
@@ -87,6 +89,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
           known(TELEMETRY_FLASH_GUARD_STATES, data.flashGuard),
           known(TELEMETRY_FLASH_SAMPLERS, data.flashSampler),
           known(TELEMETRY_FOLDS, data.fold),
+          // Analytics Engine stores at most 20 blobs a row; these two make 19.
+          known(TELEMETRY_NAVIGATION_TYPES, data.navigationType),
+          known(TELEMETRY_PAGES, data.page),
         ],
         doubles: [
           data.fps || 0,
@@ -101,6 +106,8 @@ export async function onRequest(context: { request: Request; env: Env }) {
           measured(data.gpuMs),
           measured(data.cadenceMs),
           measured(data.renderScale),
+          // On a vital-* row 0 is a reading (no layout shift), not a gap.
+          measured(data.vitalValue),
         ],
         indexes: [data.event.slice(0, 32)],
       });

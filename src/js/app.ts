@@ -78,6 +78,9 @@ async function startPostPaintServices() {
       ({ installRendererTelemetryPersistence }) =>
         installRendererTelemetryPersistence(),
     ),
+    import('./core/services/web-vitals-telemetry.ts').then(
+      ({ installWebVitalsTelemetry }) => installWebVitalsTelemetry(),
+    ),
     import('./core/agent-api.ts').then(({ initAgentAPI }) => initAgentAPI()),
     import('gamepad-navigation').then(({ initGamepadNavigation }) =>
       // Keyboard-as-remote only where the keyboard *is* a remote. On a

@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { DISCOVERY_LINK_HEADER } from '../functions/_middleware.ts';
+import { INDEXED_ROBOTS } from '../functions/shared/site-index.ts';
 import { buildAgentSkillsIndex } from './generate-agent-skills.ts';
 import {
   findStaleLearnFiles,
@@ -573,7 +574,7 @@ async function pushLearnPageChecks(
       html.includes('<meta name="description" content="')
         ? null
         : 'description',
-      html.includes('<meta name="robots" content="index,follow" />')
+      html.includes(`<meta name="robots" content="${INDEXED_ROBOTS}" />`)
         ? null
         : 'robots',
       jsonLdOk ? null : 'json-ld',
@@ -633,7 +634,7 @@ async function pushWhatsNewChecks(
     (html.match(/<h1[ >]/gu) ?? []).length === 1 ? null : 'exactly one h1',
     /<title>[^<]+ \| Stims<\/title>/u.test(html) ? null : 'title',
     html.includes('<meta name="description" content="') ? null : 'description',
-    html.includes('<meta name="robots" content="index,follow" />')
+    html.includes(`<meta name="robots" content="${INDEXED_ROBOTS}" />`)
       ? null
       : 'robots',
     sitemapChunk.includes(`<loc>${url}</loc>`) ? null : 'sitemap entry',

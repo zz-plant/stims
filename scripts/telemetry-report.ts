@@ -10,6 +10,8 @@
 //
 // Usage: bun run telemetry:report [--days=7]
 
+import { CLSThresholds, INPThresholds, LCPThresholds } from 'web-vitals';
+
 const DATASET = 'stims_telemetry';
 
 /**
@@ -148,6 +150,17 @@ const SLOW_FRAME_STATE_COLUMNS = [
   'render_or_gpu_bound',
   'unattributed',
 ];
+
+/**
+ * The upper bound of "good" for each vital, taken from the library that
+ * measures them so the report and the beacon cannot disagree.
+ */
+export const GOOD_VITAL_THRESHOLDS = {
+  'vital-lcp': LCPThresholds[0],
+  'vital-inp': INPThresholds[0],
+  'vital-cls': CLSThresholds[0],
+} as const;
+const GOOD_VITAL_SQL = `IF(blob1 = 'vital-lcp', ${GOOD_VITAL_THRESHOLDS['vital-lcp']}, IF(blob1 = 'vital-inp', ${GOOD_VITAL_THRESHOLDS['vital-inp']}, ${GOOD_VITAL_THRESHOLDS['vital-cls']}))`;
 
 /** The reports `main` prints, parameterized by the lookback window. */
 export function buildReports(days: number): Report[] {
@@ -445,6 +458,21 @@ export function buildReports(days: number): Report[] {
         'slow',
         'unattributed',
       ],
+    },
+    {
+      // Google's assessment: a page passes a vital when its 75th percentile
+      // is within the "good" threshold. `good` is the share of rows that are.
+      // `page` is the landing page class; '' is a row from before it existed.
+      title: `Core Web Vitals by page and device (last ${days}d)`,
+      sql: `SELECT blob1 AS metric, blob20 AS page, blob7 AS device,
+                   COUNT() AS samples,
+                   quantileWeighted(0.75)(double11, 1) AS p75,
+                   SUM(IF(double11 <= ${GOOD_VITAL_SQL}, 1, 0)) / COUNT() AS good
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 IN ('vital-lcp', 'vital-inp', 'vital-cls')
+            GROUP BY blob1, blob20, blob7 ORDER BY metric, page, samples DESC`,
+      columns: ['metric', 'page', 'device', 'samples', 'p75', 'good'],
     },
     {
       title: `Presets most often approximated (last ${days}d)`,

@@ -614,7 +614,7 @@ describe('/?preset=<id> middleware', () => {
     );
 
     expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
-      'index,follow',
+      'index,follow,max-image-preview:large',
     );
   });
 
@@ -635,7 +635,7 @@ describe('/?preset=<id> middleware', () => {
       );
     }
     expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
-      'index,follow',
+      'index,follow,max-image-preview:large',
     );
   });
 
@@ -674,7 +674,7 @@ describe('/?preset=<id> middleware', () => {
     __resetPresetMetaForTest();
     await onRequest(makeContext('https://toil.fyi/?preset=geiss-lit', meta));
     expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
-      'index,follow',
+      'index,follow,max-image-preview:large',
     );
     // An offered page's crawler copy links onward as normal; the withheld
     // preset is kept out of search by its own robots tag, not by omission

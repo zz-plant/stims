@@ -44,7 +44,7 @@ describe('/api/telemetry', () => {
     ]);
     expect(points[0]?.doubles?.[0]).toBe(40);
     expect(points[0]?.doubles?.[4]).toBe(117);
-    expect(points[0]?.doubles?.slice(5)).toEqual([4.5, 3, 7, 25, 0.96]);
+    expect(points[0]?.doubles?.slice(5, 10)).toEqual([4.5, 3, 7, 25, 0.96]);
   });
 
   test('an older client leaves the attribution columns empty', async () => {
@@ -54,7 +54,7 @@ describe('/api/telemetry', () => {
     });
     expect(response.status).toBe(204);
     expect(points[0]?.blobs?.slice(13, 16)).toEqual(['', '', '']);
-    expect(points[0]?.doubles?.slice(5)).toEqual([0, 0, 0, 0, 0]);
+    expect(points[0]?.doubles?.slice(5, 10)).toEqual([0, 0, 0, 0, 0]);
   });
 
   test('an unknown or malformed value never becomes a column value', async () => {
@@ -102,6 +102,8 @@ describe('/api/telemetry', () => {
       '',
       '',
       '',
+      '',
+      '',
     ]);
   });
 
@@ -114,7 +116,7 @@ describe('/api/telemetry', () => {
       androidWebView: true,
     });
 
-    expect(points[0]?.blobs?.slice(10)).toEqual([
+    expect(points[0]?.blobs?.slice(10, 17)).toEqual([
       'android',
       'chromium',
       'webview',
@@ -145,7 +147,7 @@ describe('/api/telemetry', () => {
       userAgent: 'Mozilla/5.0 (Linux; Android 13; Pixel 7)',
     });
 
-    expect(points[0]?.blobs?.slice(10)).toEqual(Array(7).fill(''));
+    expect(points[0]?.blobs?.slice(10, 17)).toEqual(Array(7).fill(''));
     expect(points[0]?.doubles?.[4]).toBe(0);
     expect(JSON.stringify(points[0])).not.toContain('Pixel 7');
   });
@@ -179,14 +181,14 @@ describe('/api/telemetry', () => {
       fold: 'upside-down',
     });
 
-    expect(points[0]?.blobs?.slice(5)).toEqual(Array(12).fill(''));
+    expect(points[0]?.blobs?.slice(5)).toEqual(Array(14).fill(''));
   });
 
   test('keeps accepting beacons from clients that send no context', async () => {
     const { response, points } = await post({ event: 'growth-demo-started' });
 
     expect(response.status).toBe(204);
-    expect(points[0]?.blobs?.slice(5)).toEqual(Array(12).fill(''));
+    expect(points[0]?.blobs?.slice(5)).toEqual(Array(14).fill(''));
     expect(points[0]?.doubles?.[4]).toBe(0);
   });
 });

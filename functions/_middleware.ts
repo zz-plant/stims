@@ -50,6 +50,7 @@ import {
   presetPageDescription,
   presetPageHref,
 } from './shared/preset-page.ts';
+import { INDEXED_ROBOTS } from './shared/site-index.ts';
 import {
   breadcrumbList,
   MILKDROP_ENTITY,
@@ -666,7 +667,7 @@ async function rewritePresetPage(context: EventContext): Promise<Response> {
     .on(
       'meta[name="robots"]',
       setContent(
-        indexing.kind === 'noindex' ? 'noindex,follow' : 'index,follow',
+        indexing.kind === 'noindex' ? 'noindex,follow' : INDEXED_ROBOTS,
       ),
     )
     .on('meta[property="og:title"]', setContent(fullTitle))
