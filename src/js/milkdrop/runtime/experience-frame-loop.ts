@@ -161,6 +161,8 @@ export function createMilkdropExperienceFrameLoop({
     /** Re-runs per-frame init and restores base state — see the resetHistory
      * branch in the frame loop. */
     reset: () => void;
+    /** False while a worker init is in flight; the loop skips the frame. */
+    isReady?: () => boolean;
     /** The variables the preset's equations own, for the Inspect tab. */
     getInspectableVariables: () => Record<string, number>;
   };
@@ -406,6 +408,11 @@ export function createMilkdropExperienceFrameLoop({
           navigation.prepareNextRandomPreset();
         }
 
+        // A worker init is in flight (Phase 1b): keep the last presented
+        // frame rather than stepping a VM whose init has not landed yet.
+        if (vm.isReady?.() === false) {
+          return;
+        }
         const rawFrameState = vm.step(signals);
         // Capture before the interaction response: replay re-runs vm.step
         // only, and the response mutates the frame state in place. Gated on

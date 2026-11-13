@@ -135,6 +135,7 @@ import type {
   MilkdropRuntimeSignals,
 } from './types';
 import { createMilkdropVM } from './vm';
+import { getSharedVmInitHost, isWorkerInitEnabled } from './vm-init-host';
 import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags';
 
 const log = createLogger('MilkdropRuntime');
@@ -518,6 +519,11 @@ export function createMilkdropExperience({
     setEffectiveTransitionMode(mode, { rememberPreferred: true });
   };
 
+  const workerInitHost = isWorkerInitEnabled() ? getSharedVmInitHost() : null;
+  // One switch applies twice (navigation, then the session subscriber). The
+  // worker path is async, so dedupe on the compiled preset to avoid two inits.
+  let pendingWorkerCompiled: MilkdropCompiledPreset | null = null;
+
   const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
     // One switch applies twice (navigation, then the session subscriber);
     // the first apply takes the armed live blend and the second is in place.
@@ -535,6 +541,22 @@ export function createMilkdropExperience({
       transitionController.annotate('live-blend-started', activePresetId ?? '');
       presentationController.applyCompiledPreset(compiled, {
         presetAlreadyStarted: true,
+      });
+      return;
+    }
+    if (workerInitHost) {
+      // Phase 1b: run init in a worker. The frame loop skips while
+      // `vm.isReady()` is false, so the stage holds its last frame until init
+      // lands. A newer switch supersedes this one; only apply if still current.
+      if (pendingWorkerCompiled === compiled) return;
+      pendingWorkerCompiled = compiled;
+      void vm.setPresetAsync(compiled, workerInitHost).then(() => {
+        if (pendingWorkerCompiled === compiled) pendingWorkerCompiled = null;
+        if (!lifetime.isActive()) return;
+        if (session.getState().activeCompiled !== compiled) return;
+        presentationController.applyCompiledPreset(compiled, {
+          presetAlreadyStarted: true,
+        });
       });
       return;
     }
