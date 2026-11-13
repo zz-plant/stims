@@ -44,6 +44,7 @@ import {
   updateCapturedVideoReactivityIfReady,
 } from './captured-video-reactivity.ts';
 import { createMilkdropEnhancedEffectsPolicy } from './enhanced-effects-policy.ts';
+import { createFrameFailureWatchdog } from './frame-failure-watchdog';
 import {
   applyMilkdropInteractionResponse,
   buildMilkdropInputSignalOverrides,
@@ -115,6 +116,7 @@ export function createMilkdropExperienceFrameLoop({
   noteTempo,
   noteFramePresented,
   liveBlend,
+  onPresetStalled,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
   getAdapter: () => {
@@ -155,6 +157,8 @@ export function createMilkdropExperienceFrameLoop({
     } | null;
     end: () => void;
   };
+  /** Called when a preset's failure streak triggers recovery. */
+  onPresetStalled?: () => void;
   vm: {
     setDetailScale: (value: number) => void;
     step: (signals: MilkdropRuntimeSignals) => MilkdropFrameState;
@@ -241,7 +245,7 @@ export function createMilkdropExperienceFrameLoop({
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
   /** True while an autoplay advance is between trigger and transition. */
   let autoAdvanceInFlight = false;
-  let consecutiveFrameFailures = 0;
+  const frameFailureWatchdog = createFrameFailureWatchdog();
   const autoAdvanceGate = createAutoAdvanceGate();
   const buildRenderFrameState = createRenderFrameStateBuilder();
   const applyMilkdropEnhancedEffectsPolicy =
@@ -633,20 +637,19 @@ export function createMilkdropExperienceFrameLoop({
           qualityStep: qualityState?.qualityStepId,
           renderScale: qualityState?.renderScaleMultiplier,
         });
-        consecutiveFrameFailures = 0;
+        frameFailureWatchdog.recordSuccess();
       } catch (error) {
-        consecutiveFrameFailures += 1;
-        if (consecutiveFrameFailures === 1) {
+        const { verdict, log } = frameFailureWatchdog.recordFailure();
+        if (log) {
           console.warn(
-            '[milkdrop] Frame update failed; skipping frame.',
+            verdict === 'recover'
+              ? '[milkdrop] Preset kept failing; selecting another preset.'
+              : '[milkdrop] Frame update failed; skipping frame.',
             error,
           );
         }
-        if (consecutiveFrameFailures >= 120) {
-          consecutiveFrameFailures = 0;
-          console.warn(
-            '[milkdrop] Preset kept failing; selecting another preset.',
-          );
+        if (verdict === 'recover') {
+          onPresetStalled?.();
           void navigation.selectRandomPreset();
         }
       }
