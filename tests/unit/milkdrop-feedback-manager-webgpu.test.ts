@@ -367,22 +367,20 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       640,
       360,
     ) as unknown as {
-      compositeMaterial: {
-        outputNode: {
-          node: {
-            shaderNode?: {
-              jsFunc?: () => unknown;
-            };
-          };
-        };
-      };
+      compositeMaterial: { outputNode: unknown };
       dispose: () => void;
     };
 
     try {
-      const source =
-        manager.compositeMaterial.outputNode.node.shaderNode?.jsFunc?.toString() ??
-        '';
+      // three 0.186 wrapped the composite call in a VarNode; 0.187 does not.
+      const output = manager.compositeMaterial.outputNode as {
+        isVarNode?: boolean;
+        node?: unknown;
+      };
+      const call = (output.isVarNode ? output.node : output) as {
+        shaderNode?: { jsFunc?: () => unknown };
+      };
+      const source = call.shaderNode?.jsFunc?.toString() ?? '';
       // The composite node still computes gamma, then runs the pointwise
       // post effects: film grain and the display-frame afterimage
       // accumulator (which samples the display ping-pong history, never the

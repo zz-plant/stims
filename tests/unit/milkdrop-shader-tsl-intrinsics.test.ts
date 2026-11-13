@@ -81,6 +81,15 @@ function sampledNodeType(value: unknown) {
   return node?.constructor?.name ?? null;
 }
 
+/**
+ * The node a value was built from. three 0.186 handed operator and math
+ * results back wrapped in a VarNode; 0.187 returns them bare.
+ */
+function unwrapVar(node: unknown) {
+  const candidate = node as { isVarNode?: boolean; node?: unknown } | null;
+  return candidate?.isVarNode ? candidate.node : candidate;
+}
+
 function compileExpression(source: string) {
   const statement = parseMilkdropShaderStatement(source);
   if (!statement) {
@@ -158,12 +167,11 @@ describe('milkdrop WebGPU TSL extended intrinsics', () => {
     // normalize(f32) overload, so the module used to fail to parse.
     const scalarValue = compileExpression('x = normalize(0.5)');
     expect(scalarValue?.kind).toBe('scalar');
-    // shaderFloat wraps the MathNode in a VarNode; the method is what
-    // reaches the WGSL.
-    expect(sampledNodeType(scalarValue)).toBe('MathNode');
-    const node = (
-      scalarValue as { node?: { node?: { method?: string } } } | null
-    )?.node?.node;
+    // The method is what reaches the WGSL.
+    const node = unwrapVar((scalarValue as { node?: unknown } | null)?.node) as
+      | { method?: string }
+      | undefined;
+    expect(node?.constructor?.name).toBe('MathNode');
     expect(node?.method).toBe('sign');
   });
 
@@ -495,10 +503,11 @@ describe('milkdrop WebGPU TSL mat3/mat4 element writes', () => {
     ]);
     const basis = env.values.get('basis_1');
     expect(basis?.kind).toBe('mat3');
-    // Column 0 is the sum, not the bare vec3 that was assigned. TSL hands
-    // an operator result back wrapped in a VarNode; the operator sits on the
-    // wrapped node.
-    expect(basis?.columns?.[0]?.node?.op).toBe('+');
+    // Column 0 is the sum, not the bare vec3 that was assigned.
+    const column = unwrapVar(basis?.columns?.[0]) as
+      | { op?: string }
+      | undefined;
+    expect(column?.op).toBe('+');
     expect(env.values.get('packed_2')?.kind).toBe('mat2');
     expect(env.values.get('ret')?.kind).toBe('vec3');
   });
