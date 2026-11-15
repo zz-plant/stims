@@ -234,7 +234,8 @@
     "where": "bun run scripts/where.ts",
     "worktree:new": "bun run scripts/worktree-new.ts",
     "worktree:prune": "bun run scripts/worktree-prune.ts",
-    "packages:split": "bun run scripts/split-package.ts"
+    "packages:split": "bun run scripts/split-package.ts",
+    "lab:revive-reactivity": "bun run scripts/preset-lab-revive-reactivity.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
