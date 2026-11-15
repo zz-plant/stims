@@ -8,7 +8,11 @@
  * floating card renders the result; Escape or a click elsewhere dismisses it.
  */
 
-import type { PresetDataflow } from 'milkdrop-toolchain/src/preset-dataflow.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import {
+  analyzePresetDataflow,
+  type PresetDataflow,
+} from 'milkdrop-toolchain/src/preset-dataflow.ts';
 
 export type InspectCoords = {
   /** Normalized 0..1, left-to-right. */
@@ -91,6 +95,7 @@ class CanvasInspector {
   private readonly card: HTMLElement;
   private dataflow: PresetDataflow | null = null;
   private onEditCode: ((control: string) => void) | null = null;
+  private onScale: ((control: string, value: number) => void) | null = null;
   private dismissHandler: ((e: KeyboardEvent) => void) | null = null;
   private clickHandler: ((e: MouseEvent) => void) | null = null;
   private attachedCanvas: HTMLCanvasElement | null = null;
@@ -114,9 +119,11 @@ class CanvasInspector {
     canvas: HTMLCanvasElement,
     dataflow: PresetDataflow | null,
     onEditCode?: (control: string) => void,
+    onScale?: (control: string, value: number) => void,
   ) {
     this.dataflow = dataflow;
     this.onEditCode = onEditCode ?? null;
+    this.onScale = onScale ?? null;
     this.attachedCanvas = canvas;
     stage.appendChild(this.element);
 
@@ -198,6 +205,19 @@ class CanvasInspector {
       audio.className = 'stims-canvas-inspector__audio';
       audio.textContent = c.audio.length ? c.audio.join(', ') : 'clockwork';
       li.appendChild(audio);
+      if (this.onScale) {
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '0';
+        slider.max = '2';
+        slider.step = '0.01';
+        slider.value = '1';
+        slider.setAttribute('aria-label', `Scale ${c.name}`);
+        slider.addEventListener('input', () =>
+          this.onScale?.(c.name, Number(slider.value)),
+        );
+        li.appendChild(slider);
+      }
       if (this.onEditCode) {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -228,6 +248,7 @@ export function toggleCanvasInspector(
   canvas: HTMLCanvasElement | null,
   dataflow: PresetDataflow | null,
   onEditCode?: (control: string) => void,
+  onScale?: (control: string, value: number) => void,
 ): boolean {
   if (inspector) {
     inspector.detach();
@@ -236,10 +257,35 @@ export function toggleCanvasInspector(
   }
   if (!stage || !canvas) return false;
   inspector = new CanvasInspector();
-  inspector.attach(stage, canvas, dataflow, onEditCode);
+  inspector.attach(stage, canvas, dataflow, onEditCode, onScale);
   return true;
 }
 
 export function updateCanvasInspectorDataflow(dataflow: PresetDataflow | null) {
   inspector?.updateDataflow(dataflow);
+}
+
+/** Compile `source` for its dataflow, then toggle the inspector over the
+ * stage's canvas. A compile failure leaves the inspector with no controls
+ * rather than throwing into the click path. */
+export function toggleCanvasInspectorForSource(
+  stage: HTMLElement | null,
+  source: string | null | undefined,
+  presetId: string | null | undefined,
+  onEditCode?: (control: string) => void,
+  onScale?: (control: string, value: number) => void,
+): boolean {
+  let dataflow: PresetDataflow | null = null;
+  if (source) {
+    try {
+      const ir = compileMilkdropPresetSource(source, {
+        id: presetId ?? 'current',
+      }).ir;
+      dataflow = analyzePresetDataflow(ir);
+    } catch {
+      dataflow = null;
+    }
+  }
+  const canvas = stage?.querySelector('canvas') ?? null;
+  return toggleCanvasInspector(stage, canvas, dataflow, onEditCode, onScale);
 }

@@ -14,6 +14,7 @@ export type ShortcutActionId =
   | 'editor'
   | 'refine'
   | 'visualsearch'
+  | 'inspect'
   | 'shuffle'
   | 'previous'
   | 'favorite'
@@ -136,6 +137,13 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     label: 'Find presets that match the music or picture',
     defaultKeys: ['M'],
     paletteActionId: 'find-similar',
+  },
+  {
+    id: 'inspect',
+    label: 'Inspect the canvas: click a spot to name its equations',
+    defaultKeys: ['X'],
+    paletteActionId: 'toggle-canvas-inspector',
+    dispatchViaPalette: true,
   },
   {
     id: 'shuffle',

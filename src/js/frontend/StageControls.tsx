@@ -37,6 +37,10 @@ import {
   isRecordingActive,
   subscribeRecordingActive,
 } from '../core/services/recording-state.ts';
+import {
+  isCanvasInspectorActive,
+  toggleCanvasInspectorForSource,
+} from '../milkdrop/overlay/canvas-inspector.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
@@ -899,6 +903,35 @@ export function StageControls({
       actionId: 'toggle-reduce-flashing',
       action: () => toggleReduceFlashingAction(ui.setStatusMessage),
       active: reduceFlashing,
+    },
+    {
+      icon: 'eye' as const,
+      label: isCanvasInspectorActive()
+        ? 'Stop inspecting the canvas'
+        : 'Inspect the canvas',
+      actionId: 'toggle-canvas-inspector',
+      action: () => {
+        const stage = ui.stageRef?.current ?? null;
+        const on = toggleCanvasInspectorForSource(
+          stage,
+          engineSnapshot?.currentSource,
+          engineSnapshot?.activePresetId,
+          (control) => {
+            ui.updatePanel('editor');
+            ui.setStatusMessage(`Opening the editor for ${control}.`);
+          },
+          (control, value) => {
+            const base = control === 'zoom' || control === 'warp' ? 1 : 0;
+            engine.updateFieldLive(control, base * value);
+          },
+        );
+        ui.setStatusMessage(
+          on
+            ? 'Canvas inspector on. Click a spot to see what drives it.'
+            : 'Canvas inspector off.',
+        );
+      },
+      active: isCanvasInspectorActive(),
     },
     ...(onOpenPalette
       ? [

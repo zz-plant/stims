@@ -35,6 +35,10 @@ import {
 } from '../core/theme-preferences.ts';
 import { createTwoStepConfirm } from '../core/two-step-confirm.ts';
 import {
+  isCanvasInspectorActive,
+  toggleCanvasInspectorForSource,
+} from '../milkdrop/overlay/canvas-inspector.ts';
+import {
   isWatchHudActive,
   toggleWatcherHud,
 } from '../milkdrop/overlay/watcher-hud.ts';
@@ -301,6 +305,52 @@ export function buildPaletteActions(
             ? 'Variable watch HUD on — it plots the variables you pin in Inspect.'
             : uiRef.current.stageRef?.current
               ? 'Variable watch HUD off.'
+              : 'The stage is not running yet.',
+        );
+      },
+    },
+    {
+      // Click-to-Demystify (#1680): a click on the live canvas names the
+      // per-pixel controls at that spot and the sounds behind them.
+      id: 'toggle-canvas-inspector',
+      group: 'Create',
+      get label() {
+        return isCanvasInspectorActive()
+          ? 'Stop inspecting the canvas'
+          : 'Inspect the canvas: click a spot to name its equations';
+      },
+      keywords: [
+        'inspect',
+        'canvas',
+        'demystify',
+        'equation',
+        'click',
+        'u',
+        'v',
+      ],
+      run: () => {
+        const stage = uiRef.current.stageRef?.current ?? null;
+        const snapshot = engineSnapshotRef?.current ?? null;
+        const on = toggleCanvasInspectorForSource(
+          stage,
+          snapshot?.currentSource,
+          snapshot?.activePresetId,
+          (control) => {
+            uiRef.current.updatePanel('editor');
+            uiRef.current.setStatusMessage(
+              `Opening the editor for ${control}.`,
+            );
+          },
+          (control, value) => {
+            const base = control === 'zoom' || control === 'warp' ? 1 : 0;
+            readEngine?.().updateFieldLive(control, base * value);
+          },
+        );
+        uiRef.current.setStatusMessage(
+          on
+            ? 'Canvas inspector on. Click a spot to see what drives it; Escape dismisses.'
+            : stage
+              ? 'Canvas inspector off.'
               : 'The stage is not running yet.',
         );
       },
