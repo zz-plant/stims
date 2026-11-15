@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildInspectResult,
   drivingControls,
+  isCanvasInspectorActive,
   pixelToCoords,
+  toggleCanvasInspectorForSource,
 } from '../../src/js/milkdrop/overlay/canvas-inspector.ts';
 
 describe('canvas inspector', () => {
@@ -65,5 +67,25 @@ describe('canvas inspector', () => {
 
   test('null dataflow yields empty controls', () => {
     expect(drivingControls(null)).toEqual([]);
+  });
+});
+
+describe('canvas inspector toggle helper', () => {
+  test('compiles the source, toggles on and off without throwing', () => {
+    const stage = document.createElement('div');
+    const canvas = document.createElement('canvas');
+    stage.appendChild(canvas);
+    document.body.appendChild(stage);
+    const on = toggleCanvasInspectorForSource(
+      stage,
+      'per_frame_1=zoom=1;',
+      'test-preset',
+    );
+    expect(on).toBe(true);
+    expect(isCanvasInspectorActive()).toBe(true);
+    const off = toggleCanvasInspectorForSource(stage, null, null);
+    expect(off).toBe(false);
+    expect(isCanvasInspectorActive()).toBe(false);
+    stage.remove();
   });
 });
