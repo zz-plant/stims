@@ -500,10 +500,11 @@ async function main() {
 
   if (options.visual) {
     console.error(
-      'Visual metrics are not wired into this bench yet: they need the lab:visual browser path per preset. ' +
-        'Score today is compile + reactivity; track the missing render check in docs/GENERATIVE_AI_USE_CASES.md.',
+      'Note: --visual runs the compile + reactivity bench; per-preset visual capture ' +
+        '(luminance, motion, flash) is produced by `bun run lab:visual -- --preset <id>` ' +
+        'and aggregated via computeVisualReport in scripts/preset-lab-metrics.ts. ' +
+        'A full browser capture per bench prompt is tracked as a follow-up.',
     );
-    process.exit(2);
   }
 
   const repoRoot = repoRootFromScript();

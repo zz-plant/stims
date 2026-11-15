@@ -621,3 +621,94 @@ export function formatMetricDeltaLines(
     return `${DELTA_GLYPH[delta.direction]}  ${delta.label}: ${baseline} → ${current}${change}`;
   });
 }
+
+export type VisualReport = {
+  frameCount: number;
+  luminanceMean: number;
+  luminanceStdDev: number;
+  motionEstimate: number;
+  nearBlack: boolean;
+  blownOut: boolean;
+  frozen: boolean;
+};
+
+export function computeVisualReport(frames: RawImage[]): VisualReport {
+  if (frames.length === 0) {
+    return {
+      frameCount: 0,
+      luminanceMean: 0,
+      luminanceStdDev: 0,
+      motionEstimate: 0,
+      nearBlack: true,
+      blownOut: false,
+      frozen: true,
+    };
+  }
+  const metrics = frames.map(computeImageMetrics);
+  const luminanceMean =
+    metrics.reduce((s, m) => s + m.meanLuminance, 0) / metrics.length;
+  const luminanceStdDev =
+    metrics.reduce((s, m) => s + m.luminanceStdDev, 0) / metrics.length;
+  let motion = 0;
+  if (frames.length >= 2) {
+    const ratios = [];
+    for (let i = 1; i < frames.length; i += 1) {
+      ratios.push(computeChangedPixelRatio(frames[i - 1], frames[i]));
+    }
+    motion = ratios.reduce((s, r) => s + r, 0) / ratios.length;
+  }
+  const nearBlack = metrics.every((m) => m.nearBlack);
+  const blownOut = metrics.some(
+    (m) => m.clippedHighlightRatio > 0.5 || m.meanLuminance > 240,
+  );
+  const frozen = motion < 0.001;
+  return {
+    frameCount: frames.length,
+    luminanceMean,
+    luminanceStdDev,
+    motionEstimate: motion,
+    nearBlack,
+    blownOut,
+    frozen,
+  };
+}
+
+export function repairPreset(
+  source: string,
+  diagnostics: string[],
+  visualReport: VisualReport | null,
+): { source: string; applied: string[] } {
+  const applied: string[] = [];
+  let next = source;
+  const failures: string[] = [];
+  if (visualReport) {
+    if (visualReport.nearBlack) failures.push('canvas stayed near-black');
+    if (visualReport.blownOut) failures.push('canvas blew out');
+    if (visualReport.frozen) failures.push('canvas frozen');
+  }
+  for (const d of diagnostics) failures.push(d);
+
+  // Bounded, deterministic repair hypotheses: bump decay up, ensure zoom/rot
+  // move. Only applied when a failure was reported.
+  if (failures.length === 0) return { source: next, applied };
+
+  // decay too low -> raise it.
+  if (/decay\s*=\s*0(\.0+)?\s*;/u.test(next)) {
+    next = next.replace(/decay\s*=\s*0(\.0+)?\s*;/u, 'decay = 0.94;');
+    applied.push('raise decay from 0');
+  }
+  // zoom zeroed -> restore.
+  if (/zoom\s*=\s*0(\.0+)?\s*;/u.test(next)) {
+    next = next.replace(/zoom\s*=\s*0(\.0+)?\s*;/u, 'zoom = 1.0;');
+    applied.push('restore zoom');
+  }
+  // rot zeroed -> add motion.
+  if (
+    !/rot\s*=\s*rot\s*\+/u.test(next) &&
+    failures.some((f) => /frozen/i.test(f))
+  ) {
+    next = `${next.trim()}\nper_frame_1=rot = rot + 0.02;\n`;
+    applied.push('add rot motion');
+  }
+  return { source: next, applied };
+}
