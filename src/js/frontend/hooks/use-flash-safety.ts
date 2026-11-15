@@ -90,8 +90,30 @@ export function useFlashSafety(
         : null;
     observer?.observe(stage, { subtree: true, childList: true });
 
+    // A drawing-buffer resize (e.g. the editor closing and restoring the
+    // stage size) is a layout discontinuity, not a flash: the feedback
+    // restarts and the canvas luma dips for a few frames, but the content
+    // did not strobe. Treating that dip as a flash clamped the governor to
+    // ~0.1 and read as a black stage (#1408). Reset the governor's history
+    // and release the mitigation on a real size change so it does not.
+    let lastWidth = stage.clientWidth;
+    let lastHeight = stage.clientHeight;
+    const resizeObserver =
+      typeof ResizeObserver === 'function'
+        ? new ResizeObserver(() => {
+            const w = stage.clientWidth;
+            const h = stage.clientHeight;
+            if (w === lastWidth && h === lastHeight) return;
+            lastWidth = w;
+            lastHeight = h;
+            controllerRef.current?.release();
+          })
+        : null;
+    resizeObserver?.observe(stage);
+
     return () => {
       observer?.disconnect();
+      resizeObserver?.disconnect();
       controller?.stop();
       controllerRef.current = null;
     };
