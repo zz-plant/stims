@@ -327,6 +327,9 @@ export function unbindAll(): string[] {
 export function listModulators(): Modulator[] {
   return [...modulators.values()];
 }
+export function getModulatorPhase(id: string): number | undefined {
+  return phases.get(id);
+}
 
 export interface ModulationHealth {
   scheduled: boolean;

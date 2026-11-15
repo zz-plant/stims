@@ -132,3 +132,12 @@ Measured on 2026-10-07 against the dev server on WebGL, walking the same path. T
 - A brief names its moment and its reference, and labels a guess about the cause as a guess.
 - Before building, run the cheapest test that could prove that guess wrong. On 2026-10-06, loading with and without `?preset=` and reading back the render targets would have pointed away from the renderer within minutes.
 - A change that moves a moment's premise, such as a default preset or a default setting, updates this file and names what depended on it.
+
+### 6. Breathe
+
+- **Context.** A visitor follows a slow paced-breathing guide with no sensor or microphone. Full-bleed stage, no other chrome; phone or desktop.
+- **Claim.** "The picture paces your breathing." A slow LFO swells `zoom` on the inhale and settles on the exhale; the bar and label are the source of truth, so the mode still works with motion at Still or OS reduced motion.
+- **Correct.** The modulator is an offset on `zoom` and composes with other motion. Stopping at any moment removes the modulator (`listModulators()` empty) and restores `zoom` to its centre. Phase turns within one frame of the expected time at each rate (4.5–7 breaths/min), with no drift over a 20-minute run.
+- **Instruments.** `tests/unit/paced-breathing.test.ts` (longer-out shape, phase timing, unbind-on-stop, active flag). `src/js/frontend/paced-breathing.ts` drives `bind()` in `src/js/frontend/live-modulation.ts`.
+- **Telemetry.** None yet.
+- **Gap.** Calm-set curation (presets with a non-high `sensoryProfile`, silent, both backends/viewports) and wake-lock/command-palette/`?breathe=` wiring are follow-ups; see #1625.
