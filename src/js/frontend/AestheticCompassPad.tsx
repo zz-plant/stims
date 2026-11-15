@@ -58,9 +58,15 @@ export function AestheticCompassPad({
   // WebMIDI joystick: the callback is stable across renders and reads the
   // latest moveTo through a ref, because moveTo depends on the loaded map.
   const moveToRef = useRef<
-    ((point: PlanePoint, commit: boolean) => void) | null
+    ((point: PlanePoint, commit: boolean, continuous?: boolean) => void) | null
   >(null);
-  useCompassMidi((point, commit) => moveToRef.current?.(point, commit));
+  useCompassMidi((point, commit) =>
+    moveToRef.current?.(point, commit, !commit),
+  );
+  // Continuous morph: while dragging, commit the nearest preset at most
+  // every 250ms so the stage crossfades with the puck instead of waiting
+  // for release. Release still commits the final point.
+  const lastCommitRef = useRef<{ id: string; at: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,7 +126,7 @@ export function AestheticCompassPad({
     : null;
   const nameOf = (presetId: string) => describePreset?.(presetId) ?? presetId;
 
-  const moveTo = (point: PlanePoint, commit: boolean) => {
+  const moveTo = (point: PlanePoint, commit: boolean, continuous = false) => {
     const next = { x: clampUnit(point.x), y: clampUnit(point.y) };
     setPuck(next);
     const id = compass.nearestPreset(next.x, next.y, isSelectable);
@@ -128,6 +134,15 @@ export function AestheticCompassPad({
     if (commit && id) {
       setPlayed(id);
       onSelectPreset(id);
+      lastCommitRef.current = { id, at: Date.now() };
+    } else if (id && continuous) {
+      const last = lastCommitRef.current;
+      const now = Date.now();
+      if (last?.id !== id && (!last || now - last.at >= 250)) {
+        lastCommitRef.current = { id, at: now };
+        setPlayed(id);
+        onSelectPreset(id);
+      }
     } else {
       setPlayed(null);
     }
@@ -190,7 +205,7 @@ export function AestheticCompassPad({
         }}
         onPointerMove={(event) => {
           if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-          moveTo(pointerToPlane(event.clientX, event.clientY), false);
+          moveTo(pointerToPlane(event.clientX, event.clientY), false, true);
         }}
         onPointerUp={(event) => {
           if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
