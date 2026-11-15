@@ -26,6 +26,7 @@ import {
   QUALITY_STORAGE_KEY,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
+import { applyRecipe } from '../milkdrop/cookbook.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { scheduleOnFirstIntent } from '../utils/browser/idle-task.ts';
@@ -397,11 +398,31 @@ export function useWorkspaceSessionState({
     (key: string) => engineRef.current?.getBaseFieldLive(key),
     [],
   );
+  const commitGesture = useCallback((delta: { zoom: number; rot: number }) => {
+    const engine = engineRef.current;
+    const source = engineSnapshotRef.current?.currentSource;
+    if (!engine || !source) return;
+    const lines: string[] = [];
+    if (Math.abs(delta.zoom) > 1e-4) {
+      lines.push(`zoom = zoom + ${delta.zoom.toFixed(4)};`);
+    }
+    if (Math.abs(delta.rot) > 1e-4) {
+      lines.push(`rot = rot + ${delta.rot.toFixed(4)};`);
+    }
+    if (lines.length === 0) return;
+    const next = applyRecipe(source, { code: { perFrame: lines } }).source;
+    engine.updateEditorSource(next);
+    // The equation now carries the gesture; drop the live preview so the
+    // two do not apply twice.
+    engine.updateFieldLive('zoom', engine.getBaseFieldLive('zoom') ?? 1);
+    engine.updateFieldLive('rot', engine.getBaseFieldLive('rot') ?? 0);
+  }, []);
   useCanvasGestures({
     enabled: true,
     stageRef,
     setField: setGestureField,
     getFieldBase: getGestureFieldBase,
+    onCommit: commitGesture,
   });
 
   useEffect(() => {
