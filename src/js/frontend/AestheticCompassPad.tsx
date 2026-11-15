@@ -12,6 +12,7 @@ import {
   type AestheticCompass,
   loadAestheticCompass,
 } from '../core/services/aesthetic-compass.ts';
+import { useCompassMidi } from './hooks/use-compass-midi.ts';
 
 const PAD_SIZE = 220;
 const DOT_RADIUS = 1.6;
@@ -54,6 +55,12 @@ export function AestheticCompassPad({
   // The readout names the gesture that plays: release for a pointer, Enter
   // for the keyboard.
   const [byKeyboard, setByKeyboard] = useState(false);
+  // WebMIDI joystick: the callback is stable across renders and reads the
+  // latest moveTo through a ref, because moveTo depends on the loaded map.
+  const moveToRef = useRef<
+    ((point: PlanePoint, commit: boolean) => void) | null
+  >(null);
+  useCompassMidi((point, commit) => moveToRef.current?.(point, commit));
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +132,7 @@ export function AestheticCompassPad({
       setPlayed(null);
     }
   };
+  moveToRef.current = moveTo;
 
   const pointerToPlane = (clientX: number, clientY: number): PlanePoint => {
     const rect = padRef.current?.getBoundingClientRect();
