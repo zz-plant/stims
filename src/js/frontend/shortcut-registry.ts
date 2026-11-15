@@ -141,7 +141,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     id: 'inspect',
     label: 'Inspect the canvas: click a spot to name its equations',
-    defaultKeys: ['X'],
+    defaultKeys: ['Alt+I'],
     paletteActionId: 'toggle-canvas-inspector',
     dispatchViaPalette: true,
   },
