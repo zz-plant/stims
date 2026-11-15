@@ -20,6 +20,12 @@ export interface CanvasGestureOptions {
    * would otherwise apply a second time on top of the gesture.
    */
   getFieldBase: (key: string) => number | undefined;
+  /**
+   * Called once when a pinch/twirl gesture ends, with the net change to the
+   * fields. The host writes the equivalent EEL delta into the live draft so
+   * the gesture survives the live preview ending.
+   */
+  onCommit?: (delta: { zoom: number; rot: number }) => void;
 }
 
 /** A touchscreen reports at most a handful of simultaneous pointers. */
@@ -29,13 +35,15 @@ const PINCH_SENSITIVITY = 1.0;
 const TWIRL_SENSITIVITY = 1.0;
 
 export function useCanvasGestures(options: CanvasGestureOptions): void {
-  const { enabled, stageRef, setField, getFieldBase } = options;
+  const { enabled, stageRef, setField, getFieldBase, onCommit } = options;
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const gestureRef = useRef<{
     initialDistance: number;
     initialAngle: number;
     initialZoom: number;
     initialRot: number;
+    lastZoom: number;
+    lastRot: number;
   } | null>(null);
 
   useEffect(() => {
@@ -65,6 +73,8 @@ export function useCanvasGestures(options: CanvasGestureOptions): void {
         initialAngle: angle(pts[0], pts[1]),
         initialZoom: getFieldBase('zoom') ?? 1,
         initialRot: getFieldBase('rot') ?? 0,
+        lastZoom: getFieldBase('zoom') ?? 1,
+        lastRot: getFieldBase('rot') ?? 0,
       };
     };
 
@@ -90,13 +100,24 @@ export function useCanvasGestures(options: CanvasGestureOptions): void {
         const a = angle(pts[0], pts[1]);
         const scale = d / (g.initialDistance || 1);
         const rotDelta = a - g.initialAngle;
-        setField('zoom', g.initialZoom * Math.pow(scale, PINCH_SENSITIVITY));
-        setField('rot', g.initialRot + rotDelta * TWIRL_SENSITIVITY);
+        const zoom = g.initialZoom * scale ** PINCH_SENSITIVITY;
+        const rot = g.initialRot + rotDelta * TWIRL_SENSITIVITY;
+        g.lastZoom = zoom;
+        g.lastRot = rot;
+        setField('zoom', zoom);
+        setField('rot', rot);
       }
     };
 
     const onPointerUp = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
+      const g = gestureRef.current;
+      if (g) {
+        onCommit?.({
+          zoom: g.lastZoom - g.initialZoom,
+          rot: g.lastRot - g.initialRot,
+        });
+      }
       pointersRef.current.delete(e.pointerId);
       anchor();
     };
@@ -114,5 +135,5 @@ export function useCanvasGestures(options: CanvasGestureOptions): void {
       pointersRef.current.clear();
       gestureRef.current = null;
     };
-  }, [enabled, stageRef, setField, getFieldBase]);
+  }, [enabled, stageRef, setField, getFieldBase, onCommit]);
 }
