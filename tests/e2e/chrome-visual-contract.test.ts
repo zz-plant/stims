@@ -355,6 +355,70 @@ chromeTest(
 );
 
 chromeTest(
+  'mobile: the returning visitor sees every launch action inside the card',
+  async () => {
+    // The page-width check above cannot see this one: the card clips what
+    // leaves it, so the document never grew. On a phone the action stack
+    // wrapped "Try sample audio instead" into a second column past the
+    // card's right edge (visible only as "Try s"), and left an empty band
+    // under Edit where it belonged.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 375, height: 812 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.addInitScript(() => {
+        try {
+          localStorage.setItem(
+            'stims:last-session',
+            JSON.stringify({
+              presetId: 'luxxx-subtle-hiphopflake',
+              presetTitle: 'LuxXx - Subtle HipHopFlake',
+              source: 'microphone',
+              savedAt: Date.now(),
+            }),
+          );
+        } catch {}
+      });
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell__launch-demo-link', {
+        timeout: 30000,
+      });
+      const layout = await page.evaluate(() => {
+        const stack = document.querySelector(
+          '.stims-shell__launch-actions-minimal',
+        );
+        if (!stack) return null;
+        const bounds = stack.getBoundingClientRect();
+        return [...stack.children].map((child) => {
+          const rect = child.getBoundingClientRect();
+          return {
+            label: child.textContent?.trim() ?? '',
+            pastLeft: Math.round(bounds.left - rect.left),
+            pastRight: Math.round(rect.right - bounds.right),
+          };
+        });
+      });
+      expect(layout).not.toBeNull();
+      expect(
+        layout?.some((item) => item.label.startsWith('Try sample audio')),
+      ).toBe(true);
+      // Keyed by label, so a failure names the action that left the card.
+      const stray = (layout ?? []).filter(
+        (item) => item.pastLeft > 0 || item.pastRight > 0,
+      );
+      expect(stray).toEqual([]);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
   'short landscape: the launch hero scrolls instead of clipping',
   async () => {
     // Start each input path fresh: tabbing after wheeling to the bottom

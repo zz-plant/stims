@@ -1485,10 +1485,16 @@ body[data-page="workspace"] {
     border-radius: var(--stims-radius-control);
   }
 
+  /* One column on a phone, and it must not wrap: `flex-basis` runs along
+     the column here, so the demo link's 100% basis (its own row in the
+     desktop layout) made it as tall as the stack and wrapped it into a
+     second column past the card's right edge, clipped to "Try s", with
+     the stack holding an empty band where it should have been. */
   @media (max-width: 480px) {
     .stims-shell__launch-actions-minimal {
       width: 100%;
       flex-direction: column;
+      flex-wrap: nowrap;
       align-items: stretch;
     }
   }
