@@ -115,8 +115,14 @@ jobs:
       # Fails on high/critical advisories against the lockfile. Moderate and
       # below only report locally via `bun audit`; gate them here once the
       # transitive hono advisories (via @modelcontextprotocol/sdk) clear.
+      #
+      # Accepted: GHSA-fc5q-39xc-vjpf, picomatch <=4.0.7 ReDoS through
+      # repeated extglobs. picomatch arrives only through dev tooling
+      # (dependency-cruiser, knip, vite > tinyglobby > fdir) and is in no
+      # runtime bundle or Worker; no fixed release exists as of 2026-11-17.
+      # Remove when picomatch > 4.0.7 is published.
       - name: Audit dependencies
-        run: bun audit --audit-level=high
+        run: bun audit --audit-level=high --ignore=GHSA-fc5q-39xc-vjpf
 
       # `--no-tests` leaves the checks and hands the gate test suite to the
       # `gate-tests` job below. The two are independent, so running them in

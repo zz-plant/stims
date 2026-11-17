@@ -32,7 +32,10 @@ generic PR rules: it covers conventions and traps specific to Stims.
   `bun run check` does not. A new high advisory in the lockfile turns every
   open PR red at once (#1359), so run `bun audit --audit-level=high` before
   pushing a dependency change, and when an unrelated PR fails only that step,
-  look for an advisory published since main last went green.
+  look for an advisory published since main last went green. An advisory
+  with no fixed release that reaches only dev tooling can be accepted with
+  an `--ignore=<GHSA id>` on that step, explained in a comment beside it
+  with when to remove it; run the step's exact command locally.
 - `screenshots/` is gitignored except its three evidence directories
   (`aesthetic-audit/`, `butterchurn-support-sweep/`, `parity/`). Stage by
   explicit path and leave new screenshots out unless a tracked report cites
