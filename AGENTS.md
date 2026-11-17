@@ -202,7 +202,9 @@ and guards.
 - **Docs-only changes**: `bun run check:doc-references` and
   `bun run check:readme-claims`. Skip typecheck and tests unless commands,
   paths, or workflow-critical instructions changed.
-- **Before pushing a dependency change**: `bun audit --audit-level=high`.
+- **Before pushing a dependency change**: `bun audit --audit-level=high`,
+  with the `--ignore` flags CI's "Audit dependencies" step carries (each
+  accepted advisory is explained beside it in `.github/workflows/ci.yml`).
 
 Run what your change can break rather than the whole gate while iterating:
 
