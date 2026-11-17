@@ -110,13 +110,13 @@
 <article>
 <h1 id="how-stims-measures-fidelity-against-projectm">How Stims measures fidelity against projectM</h1>
 <p><a class="cta" href="/">Open Stims — no install needed</a></p>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#what-gets-measured">What gets measured</a></li><li><a href="#what-the-labels-mean">What the labels mean</a></li><li><a href="#how-a-reference-is-promoted">How a reference is promoted</a></li><li><a href="#why-projectm">Why projectM</a></li><li><a href="#what-this-is-not">What this is not</a></li></ul></nav>
-<p>Stims is its own browser implementation of MilkDrop. It does not reuse projectM&#39;s code. To know whether a preset looks right, Stims compares its frames against a native projectM capture, one preset at a time, on a fixed clock.</p>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#what-gets-measured">What gets measured</a></li><li><a href="#what-the-labels-mean">What the labels mean</a></li><li><a href="#how-a-reference-is-promoted">How a reference is promoted</a></li><li><a href="#why-projectm">Why projectM</a></li><li><a href="#limits">Limits</a></li></ul></nav>
+<p>Stims is its own browser implementation of MilkDrop, written separately from projectM. To know whether a preset looks right, Stims compares its frames against a native projectM capture, one preset at a time, on a fixed clock.</p>
 <h2 id="what-gets-measured">What gets measured</h2>
 <ul>
 <li>Both renderers are stepped on the <strong>same fixed clock</strong>, so the comparison is frame-for-frame rather than &quot;looks about right.&quot;</li>
 <li>A difference <strong>counts only when it exceeds that preset&#39;s own run-to-run noise</strong>. Presets are noisy (audio, randomness, feedback), so a small pixel delta is not a failure.</li>
-<li>Every measured preset&#39;s result is <strong>published, passing or not</strong> — there is no silent dropping of failures.</li>
+<li>Every measured preset&#39;s result is <strong>published, passing or failing</strong>.</li>
 </ul>
 <h2 id="what-the-labels-mean">What the labels mean</h2>
 <p>Stims separates three claims that are easy to conflate:</p>
@@ -127,13 +127,13 @@
 </ol>
 <p>A preset can pass (1) and (2) and still be unmeasured for (3). The labels keep those distinct so a &quot;runs&quot; badge is never mistaken for &quot;matches.&quot;</p>
 <h2 id="how-a-reference-is-promoted">How a reference is promoted</h2>
-<p>A reference capture is not accepted just because it exists. Promotion refuses a reference that a blank frame would pass — i.e. a capture that contains no real signal. This stops an empty or broken capture from being recorded as a pass.</p>
+<p>Promotion accepts a reference capture only when it carries real signal: it refuses one that a blank frame would pass, so an empty or broken capture cannot be recorded as a pass.</p>
 <h2 id="why-projectm">Why projectM</h2>
 <p>projectM is the reference implementation most people trust for <code>.milk</code> fidelity, and it reads <code>.milk</code> files directly. Stims uses it as the oracle, not as a dependency.</p>
-<h2 id="what-this-is-not">What this is not</h2>
+<h2 id="limits">Limits</h2>
 <ul>
-<li>It is not a claim that Stims matches projectM pixel-for-pixel everywhere. Only a few presets have been measured; the rest are labeled by compile/run status only.</li>
-<li>It is not a reimplementation of projectM. Stims runs on the GPU (per-pixel equations compile into the shader on WebGPU), while projectM and Butterchurn run them on the CPU.</li>
+<li>Only a few presets have been measured against projectM; the rest are labeled by compile/run status only. The labels are not a claim that Stims matches projectM pixel-for-pixel everywhere.</li>
+<li>The two run the same equations in different places: Stims compiles per-pixel equations into the shader on WebGPU, while projectM and Butterchurn run them on the CPU.</li>
 </ul>
 
 <aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>

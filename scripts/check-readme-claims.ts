@@ -25,6 +25,17 @@
  * It is the same principle as `check-doc-references.ts` applied to claims
  * rather than paths: documentation that lies is worse than documentation that
  * is missing, because it is trusted.
+ *
+ * It also rejects copy that answers an objection no visitor has raised:
+ * mind-reading ("you might be wondering"), reassurance ("don't worry"),
+ * motive denials ("not another …"), negation openers ("Not a toy. A …") and
+ * unasked self-justification ("we don't X because …"). The scan covers what
+ * the site publishes: the README, every /learn/ source, the static pages and
+ * agent files under `public/`, `index.html`, and the strings in `src/js/` and
+ * `functions/` (comment lines skipped). A sentence that answers an objection a
+ * visitor did raise carries a marker naming its row in `docs/objections.md`:
+ * `<!-- objection: <id> -->` in markdown or HTML, `// objection: <id>` in
+ * TypeScript, on the same line or the line above.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -237,10 +248,193 @@ export async function validateDocumentedClaims(
   }
 }
 
+/**
+ * Phrasings that answer an objection the reader has not raised. The rule and
+ * the ledger of objections visitors did raise are in `docs/objections.md`;
+ * keep this the only list of them.
+ */
+export const PRESUPPOSING_COPY: ReadonlyArray<{
+  kind: string;
+  pattern: RegExp;
+}> = [
+  {
+    kind: 'mind-reading',
+    pattern:
+      /\b(?:you (?:might|may|could) (?:be )?(?:wonder(?:ing)?|think(?:ing)?)|you(?:'re| are) (?:probably )?(?:wondering|thinking)|worried (?:that|about)|before you ask)\b/iu,
+  },
+  {
+    kind: 'reassurance',
+    pattern:
+      /\b(?:don'?t worry|do not worry|rest assured|no catch|no strings attached|no hidden (?:fees?|costs?|charges?|catch|agenda)|an honest (?:side-by-side|comparison|look|review|take))\b/iu,
+  },
+  {
+    kind: 'motive denial',
+    pattern:
+      /\b(?:(?:this|it) (?:isn'?t|is not) (?:a |an )?(?:pitch|sales pitch|sales page|ad|advert)\b|we (?:won'?t|will not|never) (?:sell|spam|share your)|not (?:just )?another\b|we(?:'re| are) not trying to)/iu,
+  },
+  {
+    kind: 'negation opener',
+    pattern:
+      /(?:^|[.!?>#]\s*)not (?:a|an|just a|just an) [^.!?\n<]{1,60}[.!?]\s+(?:a|an|it'?s|just)\b|\bunlike (?:other|most|many) (?:tools|visualizers|apps|sites|players)\b/iu,
+  },
+  {
+    kind: 'self-justification',
+    pattern: /\bwe (?:don'?t|do not|never) [^.!?\n]{1,80}\bbecause\b/iu,
+  },
+];
+
+const OBJECTION_LEDGER = 'docs/objections.md';
+const OBJECTION_MARKER =
+  /(?:<!--\s*objection:\s*([a-z0-9-]+)\s*-->|\/\/\s*objection:\s*([a-z0-9-]+))/giu;
+
+/** Pages the site serves, plus the README that GitHub shows as its front page. */
+const PUBLISHED_COPY_FILES = [
+  'README.md',
+  'index.html',
+  'public/404.html',
+  'public/auth.md',
+  'public/llms.txt',
+  'public/llms-full.txt',
+];
+const PUBLISHED_COPY_DIRS = [
+  { dir: 'public/.well-known', ext: /\.md$/u },
+  { dir: 'src/js', ext: /\.tsx?$/u },
+  { dir: 'functions', ext: /\.tsx?$/u },
+];
+
+async function listFiles(root: string, dir: string, ext: RegExp) {
+  try {
+    const entries = await fs.readdir(path.join(root, dir), { recursive: true });
+    return entries
+      .filter((entry) => ext.test(entry))
+      .map((entry) => path.join(dir, entry).split(path.sep).join('/'));
+  } catch {
+    return [];
+  }
+}
+
+/** Every file whose text a visitor can read on the site, repo-relative. */
+export async function collectPublishedCopy(root = repoRoot) {
+  const { LEARN_PAGES } = await import('../functions/shared/learn-pages.ts');
+  const files = new Set([
+    ...PUBLISHED_COPY_FILES,
+    ...LEARN_PAGES.map((page) => page.source),
+  ]);
+  for (const { dir, ext } of PUBLISHED_COPY_DIRS) {
+    for (const file of await listFiles(root, dir, ext)) files.add(file);
+  }
+  return [...files].sort();
+}
+
+/** Ids in the first column of the ledger's table. */
+export function parseObjectionLedger(markdown: string) {
+  const ids = new Set<string>();
+  for (const line of markdown.split('\n')) {
+    const cell = /^\|\s*`?([a-z0-9][a-z0-9-]*)`?\s*\|/u.exec(line)?.[1];
+    if (cell && cell !== 'id') ids.add(cell);
+  }
+  return ids;
+}
+
+/** The text of a line a visitor reads, or '' for a line they never see. */
+function visibleText(file: string, line: string, state: { inBlock: boolean }) {
+  if (/\.tsx?$/u.test(file)) {
+    const trimmed = line.trim();
+    if (state.inBlock) {
+      if (trimmed.includes('*/')) state.inBlock = false;
+      return '';
+    }
+    if (trimmed.startsWith('/*')) {
+      state.inBlock = !trimmed.includes('*/');
+      return '';
+    }
+    if (trimmed.startsWith('//') || trimmed.startsWith('*')) return '';
+    return line;
+  }
+  if (/\.html$/u.test(file)) {
+    if (state.inBlock) {
+      if (/<\/(?:script|style)>/iu.test(line)) state.inBlock = false;
+      return '';
+    }
+    if (
+      /<(?:script|style)\b/iu.test(line) &&
+      !/<\/(?:script|style)>/iu.test(line)
+    ) {
+      state.inBlock = true;
+      return '';
+    }
+  }
+  return line;
+}
+
+function markersOn(line: string) {
+  return [...line.matchAll(OBJECTION_MARKER)].map(
+    (match) => match[1] ?? match[2] ?? '',
+  );
+}
+
+/**
+ * Flags published copy that answers an objection nobody has raised, unless
+ * the line (or the one above it) carries a marker naming a ledger row.
+ */
+export async function validateObjectionCopy(
+  issues: string[],
+  root = repoRoot,
+  files?: string[],
+) {
+  let ledger = new Set<string>();
+  try {
+    ledger = parseObjectionLedger(
+      await fs.readFile(path.join(root, OBJECTION_LEDGER), 'utf8'),
+    );
+  } catch {
+    issues.push(
+      `${OBJECTION_LEDGER} is missing; the objection markers name its rows.`,
+    );
+  }
+
+  for (const file of files ?? (await collectPublishedCopy(root))) {
+    let contents: string;
+    try {
+      contents = await fs.readFile(path.join(root, file), 'utf8');
+    } catch {
+      continue;
+    }
+    const lines = contents.split('\n');
+    const state = { inBlock: false };
+
+    lines.forEach((line, index) => {
+      for (const id of markersOn(line)) {
+        if (!ledger.has(id)) {
+          issues.push(
+            `${file}:${index + 1} names objection "${id}", which has no row in ${OBJECTION_LEDGER}. Add the row with its evidence, or remove the marker.`,
+          );
+        }
+      }
+
+      const text = visibleText(file, line, state);
+      if (!text) return;
+      for (const { kind, pattern } of PRESUPPOSING_COPY) {
+        const match = pattern.exec(text);
+        if (!match) continue;
+        const marked = [
+          ...markersOn(line),
+          ...markersOn(lines[index - 1] ?? ''),
+        ];
+        if (marked.some((id) => ledger.has(id))) continue;
+        issues.push(
+          `${file}:${index + 1} answers an objection no visitor has raised (${kind}: "${match[0].trim()}"). Say what the thing does instead, or, if a visitor did raise it, add a row to ${OBJECTION_LEDGER} and mark the line with its id.`,
+        );
+      }
+    });
+  }
+}
+
 export async function runReadmeClaimChecks(root = repoRoot) {
   const issues: string[] = [];
   await validateReadmeProductClaims(issues, root);
   await validateDocumentedClaims(issues, root);
+  await validateObjectionCopy(issues, root);
   return { issues: [...new Set(issues)] };
 }
 

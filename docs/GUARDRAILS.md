@@ -712,6 +712,17 @@ It is the same principle as `check-doc-references.ts` applied to claims
 rather than paths: documentation that lies is worse than documentation that
 is missing, because it is trusted.
 
+It also rejects copy that answers an objection no visitor has raised:
+mind-reading ("you might be wondering"), reassurance ("don't worry"),
+motive denials ("not another …"), negation openers ("Not a toy. A …") and
+unasked self-justification ("we don't X because …"). The scan covers what
+the site publishes: the README, every /learn/ source, the static pages and
+agent files under `public/`, `index.html`, and the strings in `src/js/` and
+`functions/` (comment lines skipped). A sentence that answers an objection a
+visitor did raise carries a marker naming its row in `docs/objections.md`:
+`<!-- objection: <id> -->` in markdown or HTML, `// objection: <id>` in
+TypeScript, on the same line or the line above.
+
 Run it directly: `bun run check:readme-claims`
 
 ## check:reference-audio-header

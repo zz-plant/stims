@@ -22,7 +22,7 @@ The [Learn section](/learn/) is a free curriculum for writing presets, from drag
 
 ## How Stims compares to Butterchurn and projectM
 
-Butterchurn and projectM are the projects most people arrive from. See [Stims vs Butterchurn vs projectM](/learn/milkdrop-vs-butterchurn-projectm/) for an honest side-by-side.
+Butterchurn and projectM are the projects most people arrive from. See [Stims vs Butterchurn vs projectM](/learn/milkdrop-vs-butterchurn-projectm/) for a side-by-side of what each one is for.
 
 ## FAQ
 
