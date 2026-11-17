@@ -30,7 +30,7 @@ Start with [the app](https://toil.fyi), the [user guide](./USER_GUIDE.md), or [c
 | Review enforced rules               | [Guardrails](./GUARDRAILS.md), generated from guard scripts                                                                                                                    |
 | Prepare a commit or release         | [Commit conventions](./COMMIT_CONVENTIONS.md), [release checklist](./DEPLOYMENT.md#release-checklist), [changelog](../CHANGELOG.md), [dated release notes](./RELEASE_NOTES.md) |
 | Deploy or preview                   | [Deployment](./DEPLOYMENT.md)                                                                                                                                                  |
-| Maintain documentation              | [Maintenance rules](./DOCS_MAINTENANCE.md), [public docs site map](./PUBLIC_DOCS_SITE_MAP.md)                                                                                  |
+| Maintain documentation              | [Maintenance rules](./DOCS_MAINTENANCE.md), [public docs site map](./PUBLIC_DOCS_SITE_MAP.md), [objections visitors raised](./objections.md)                                   |
 | Work through an agent               | [Agent instructions](../AGENTS.md), [agent docs](./agents/README.md), [MCP server](./MCP_SERVER.md)                                                                            |
 | Work on extracted libraries         | [Packages](../packages/README.md), [package promotion](./PACKAGE_PROMOTION.md)                                                                                                 |
 
@@ -57,6 +57,7 @@ Certification targets, reference images, and measured results are separate recor
 ## Plans and design studies
 
 These documents describe priorities, proposed behavior, or an investigation at a particular revision. Consult source code and tests for what runs today.
+
 - [Roadmap](./ROADMAP.md) and [product moments](./PRODUCT_MOMENTS.md); [the product record](../PRODUCT.md) (users, positioning, evidence) that design work starts from
 - [Generative AI proposals](./GENERATIVE_AI_USE_CASES.md)
 - [Learning-loop specification](./LEARNING_LOOPS_SPEC.md): planned retrieval, remix, repair, teaching, performance, and feedback contracts

@@ -39,6 +39,8 @@ When restructuring docs, keep these entry points in sync:
 
 Don't open a page by narrating itself. If the title, outline, or a table's header row already conveys the scope, don't start with "This document/guide/page covers..." — start with the content, and keep only sentences that add information the structure doesn't.
 
+Don't answer an objection no visitor has raised ("you might be wondering", "don't worry", "not another …"); say what the thing does. [Objections visitors raised](./objections.md) has the rule, the ledger and the marker that lets a sentence answer one of them; `bun run check:readme-claims` enforces it.
+
 ## Commit and PR metadata
 
 Commit subjects follow [Commit conventions](./COMMIT_CONVENTIONS.md). A PR description says what changed and why, lists each check run with its result, and names the docs touched (or `None`); `bun run pr:body` scaffolds one from the diff and `bun run pr:body -- --check <file>` applies CI's rules. The [steward skill](../.claude/skills/steward/SKILL.md) covers the rest of a PR's life.
