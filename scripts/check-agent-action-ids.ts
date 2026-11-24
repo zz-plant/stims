@@ -108,6 +108,9 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'sensory-stimulate',
   'sensory-reset',
   'sensory-breathing-toggle',
+  // A session the visitor sets up and sits with, not a mid-show move: it
+  // hides the dock while it runs, so a dock button would vanish on press.
+  'paced-breathing',
   // Keyboard-first tuning of the playing preset (shortcut-registry.ts binds
   // H, W, I, O, J and < >). The dock's transition control opens the ladder
   // of durations, which covers blend-vs-cut; a bar button per nudge would

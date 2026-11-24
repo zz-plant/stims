@@ -1,13 +1,15 @@
 /**
- * Paced breathing mode (#1625).
+ * Paced breathing mode (#1625): the session around the guided breathing
+ * clock in `core/services/guided-breathing.ts`.
  *
- * Drives a slow LFO through the modulation engine so the picture swells on
- * the inhale and settles on the exhale. No sensor, no microphone: the guide
- * (bar + label) is the source of truth, and with motion at Still or OS
- * reduced motion the swell simply does not run while the guide still paces.
+ * Starting a session runs the clock (which sets the stage's swell and the
+ * guide's phase), turns Reduce flashing on for the session and restores the
+ * visitor's own setting after, holds a screen wake lock, and ends a timed
+ * session on its own. Nothing here edits the preset: the swell is applied
+ * to each frame, so ending leaves the preset exactly as it was.
  *
- * The modulator is an offset on `zoom`, so it composes with whatever else
- * moves. Stopping removes the modulator and restores `zoom` to its centre.
+ * The setup sheet's open state lives here too, so the palette action and a
+ * `?breathe=` link can open it without a prop chain into the stage.
  */
 
 import {
@@ -15,48 +17,30 @@ import {
   setAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import {
-  bind,
-  getModulatorPhase,
-  listModulators,
-  type ModulationDeps,
-  unbind,
-} from './live-modulation.ts';
+  type BreathingShape,
+  clampBreathsPerMinute,
+  getGuidedBreathing,
+  startGuidedBreathing,
+  stopGuidedBreathing,
+} from '../core/services/guided-breathing.ts';
 import { connectWakeLock } from './wake-lock.ts';
 
-export type BreathingShape = 'even' | 'longer-out';
+export type { BreathingShape };
 
 export interface PacedBreathingOptions {
-  /** Breaths per minute, clamped to 4.5..7. */
+  /** Breaths a minute, clamped to 4.5-7. */
   rate: number;
   shape: BreathingShape;
-  /** Session length in ms; null = open-ended. */
-  lengthMs?: number | null;
-  /** Called when the inhale/exhale turn changes. */
-  onPhase?: (phase: 'in' | 'out') => void;
-  /** Called when a timed session ends. */
-  onComplete?: () => void;
+  /** Session length in ms; null is open-ended. */
+  lengthMs: number | null;
+  /** Clock for the session start; defaults to performance.now(). */
+  now?: number;
 }
-
-const MOD_TARGET = 'zoom';
-const MOD_DEPTH = 0.05;
 
 let activeStop: (() => void) | null = null;
 
 export function isPacedBreathingActive(): boolean {
-  return activeStop !== null;
-}
-
-function clampRate(rate: number): number {
-  if (!Number.isFinite(rate)) return 6;
-  return Math.min(7, Math.max(4.5, rate));
-}
-
-function shapeFor(shape: BreathingShape): 'sine' | 'longerOut' {
-  return shape === 'longer-out' ? 'longerOut' : 'sine';
-}
-
-function dutyFor(shape: BreathingShape): number | undefined {
-  return shape === 'longer-out' ? 0.4 : undefined;
+  return activeStop !== null && getGuidedBreathing() !== null;
 }
 
 export function startPacedBreathing(
@@ -64,87 +48,88 @@ export function startPacedBreathing(
 ): () => void {
   stopPacedBreathing();
 
-  const rate = clampRate(options.rate);
-  const hz = rate / 60; // breaths per second
-  const shape = shapeFor(options.shape);
-  const duty = dutyFor(options.shape);
-
-  const mod = bind({
-    target: MOD_TARGET,
-    depth: MOD_DEPTH,
-    source: {
-      kind: 'lfo',
-      shape,
-      hz,
-      duty,
+  startGuidedBreathing(
+    {
+      breathsPerMinute: clampBreathsPerMinute(options.rate),
+      shape: options.shape,
+      lengthMs: options.lengthMs,
     },
-  });
+    options.now ?? performance.now(),
+  );
 
   const previousReduceFlashing =
     getActiveAccessibilityPreference().reduceFlashing;
-  setAccessibilityPreference({ reduceFlashing: true });
+  if (!previousReduceFlashing) {
+    setAccessibilityPreference({ reduceFlashing: true });
+  }
 
   let stopped = false;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let lastPhase: 'in' | 'out' | null = null;
-
-  const wakeUnlock = connectWakeLock(() => !stopped);
-
-  const pollPhase = () => {
-    if (stopped) return;
-    const phase = getModulatorPhase(mod.id);
-    if (phase !== undefined) {
-      const inhale =
-        shape === 'longerOut' ? phase < (duty ?? 0.4) : phase < 0.5;
-      const next: 'in' | 'out' = inhale ? 'in' : 'out';
-      if (next !== lastPhase) {
-        lastPhase = next;
-        options.onPhase?.(next);
-      }
-    }
-    if (!stopped) requestAnimationFrame(pollPhase);
-  };
-  requestAnimationFrame(pollPhase);
+  const releaseWakeLock = connectWakeLock(() => !stopped);
+  const timer =
+    options.lengthMs !== null && options.lengthMs > 0
+      ? setTimeout(() => stop(), options.lengthMs)
+      : null;
 
   const stop = () => {
     if (stopped) return;
     stopped = true;
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
+    if (timer !== null) clearTimeout(timer);
+    releaseWakeLock();
+    stopGuidedBreathing();
+    // Only undo what the session did: a visitor who already had Reduce
+    // flashing on is not touched at either end.
+    if (!previousReduceFlashing) {
+      setAccessibilityPreference({ reduceFlashing: false });
     }
-    wakeUnlock();
-    unbind({ id: mod.id });
-    setAccessibilityPreference({ reduceFlashing: previousReduceFlashing });
-    activeStop = null;
-    options.onComplete?.();
+    if (activeStop === stop) activeStop = null;
   };
-
-  if (options.lengthMs && options.lengthMs > 0) {
-    timer = setTimeout(stop, options.lengthMs);
-  }
 
   activeStop = stop;
   return stop;
 }
 
 export function stopPacedBreathing(): void {
-  if (activeStop) {
-    const stop = activeStop;
-    activeStop = null;
-    stop();
-  }
+  activeStop?.();
 }
 
-export function getPacedBreathingPhase(): 'in' | 'out' | null {
-  // Best-effort: derive from the active modulator if any.
-  const mods = listModulators().filter((m) => m.target === MOD_TARGET);
-  if (mods.length === 0) return null;
-  const phase = getModulatorPhase(mods[mods.length - 1].id);
-  if (phase === undefined) return null;
-  // Default to even split when shape unknown.
-  return phase < 0.5 ? 'in' : 'out';
+/** Prefill for the setup sheet, from a link or the visitor's last choice. */
+export interface BreathingSetupRequest {
+  rate: number;
 }
 
-// Re-export for tests that need deps typing.
-export type { ModulationDeps };
+let setupRequest: BreathingSetupRequest | null = null;
+const setupListeners = new Set<() => void>();
+
+export function openBreathingSetup(
+  request: BreathingSetupRequest = { rate: 6 },
+): void {
+  setupRequest = { rate: clampBreathsPerMinute(request.rate) };
+  for (const listener of setupListeners) listener();
+}
+
+export function closeBreathingSetup(): void {
+  if (!setupRequest) return;
+  setupRequest = null;
+  for (const listener of setupListeners) listener();
+}
+
+export function getBreathingSetupRequest(): BreathingSetupRequest | null {
+  return setupRequest;
+}
+
+export function subscribeBreathingSetup(listener: () => void): () => void {
+  setupListeners.add(listener);
+  return () => {
+    setupListeners.delete(listener);
+  };
+}
+
+/** `?breathe=6` asks for the setup sheet at that rate; absent or junk is null. */
+export function readBreatheParam(search: string): number | null {
+  const raw = new URLSearchParams(search).get('breathe');
+  if (raw === null) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0
+    ? clampBreathsPerMinute(value)
+    : null;
+}
