@@ -26,6 +26,7 @@ import { analyzePresetMath } from 'milkdrop-toolchain/src/preset-math-analyzer.t
 import { webMidiService } from '../../core/services/webmidi-controller.ts';
 import { attachTwoStepConfirm } from '../../core/two-step-confirm.ts';
 import { renderIconSvg } from '../../ui/icon-library.ts';
+import { findControlLine } from '../control-line.ts';
 import {
   COLOR_GROUPS,
   CONTROL_SECTIONS,
@@ -2744,6 +2745,30 @@ export class EditorPanel {
     } else {
       picker.value = this.tunedSlot ?? '';
     }
+  }
+
+  /**
+   * Selects the line that assigns `control` and scrolls it into view, for
+   * a request from outside the editor (the canvas inspector's Edit code).
+   * Returns false when the preset never sets it, so the caller can say so.
+   */
+  revealControl(control: string): boolean {
+    const lineNumber = findControlLine(
+      this.editor.state.doc.toString(),
+      control,
+    );
+    if (lineNumber === null || lineNumber > this.editor.state.doc.lines) {
+      return false;
+    }
+    const line = this.editor.state.doc.line(lineNumber);
+    // Centred, not at the edge: the line arrives out of context, so the
+    // code around it should show too.
+    this.editor.dispatch({
+      selection: { anchor: line.from, head: line.to },
+      effects: EditorView.scrollIntoView(line.from, { y: 'center' }),
+    });
+    this.editor.focus();
+    return true;
   }
 
   /**

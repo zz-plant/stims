@@ -6,6 +6,7 @@ import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { EditorDescribeChange } from './EditorDescribeChange.tsx';
 import { EditorShareOffer } from './EditorShareOffer.tsx';
+import { subscribeEditorReveal, takeEditorReveal } from './editor-reveal.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { FirstEditGuide } from './FirstEditGuide.tsx';
 import {
@@ -30,6 +31,20 @@ import { useWorkspace } from './workspace-context.tsx';
 // React Compiler skip the whole component (#1540).
 const loadEditorPanel = () => import('../milkdrop/overlay/editor-panel.ts');
 
+/**
+ * Selects the line Edit code asked for, or says the preset never sets it
+ * rather than opening on an unrelated line.
+ */
+function revealOrSay(
+  panel: { revealControl: (control: string) => boolean },
+  control: string,
+  announce: (message: string) => void,
+) {
+  if (!panel.revealControl(control)) {
+    announce(`This preset never sets ${control} in its code.`);
+  }
+}
+
 export function EditorSurface() {
   const [shared, setShared] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -38,6 +53,7 @@ export function EditorSurface() {
     dispose: () => void;
     setSessionState: (state: MilkdropEditorSessionState) => void;
     setStageFrozen: (frozen: boolean) => void;
+    revealControl: (control: string) => boolean;
     element: HTMLElement;
   } | null>(null);
   const { engine, ui } = useWorkspace();
@@ -139,6 +155,13 @@ export function EditorSurface() {
         panel.setSessionState(sessionStateRef.current);
       }
       panel.setStageFrozen(playbackPausedRef.current);
+      // An Edit code request from the canvas inspector opened this editor.
+      const control = takeEditorReveal();
+      if (control) {
+        revealOrSay(panel, control, (message) =>
+          uiRef.current.setStatusMessage(message),
+        );
+      }
     });
 
     return () => {
@@ -147,6 +170,22 @@ export function EditorSurface() {
       panelRef.current = null;
     };
   }, []);
+
+  // A request that arrives with the editor already open.
+  useEffect(
+    () =>
+      subscribeEditorReveal(() => {
+        const panel = panelRef.current;
+        if (!panel) return;
+        const control = takeEditorReveal();
+        if (control) {
+          revealOrSay(panel, control, (message) =>
+            uiRef.current.setStatusMessage(message),
+          );
+        }
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (sessionState && panelRef.current) {

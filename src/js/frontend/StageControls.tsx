@@ -45,6 +45,7 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
 import { AudioStatusControl } from './AudioStatusControl.tsx';
+import { buildCanvasInspectorHooks } from './editor-reveal.ts';
 import { pulseHaptic } from './haptics.ts';
 import {
   useBottomOverlaySignal,
@@ -916,14 +917,12 @@ export function StageControls({
           stage,
           engineSnapshot?.currentSource,
           engineSnapshot?.activePresetId,
-          (control) => {
-            ui.updatePanel('editor');
-            ui.setStatusMessage(`Opening the editor for ${control}.`);
-          },
-          (control, value) => {
-            const base = control === 'zoom' || control === 'warp' ? 1 : 0;
-            engine.updateFieldLive(control, base * value);
-          },
+          buildCanvasInspectorHooks({
+            openEditor: () => ui.updatePanel('editor'),
+            announce: ui.setStatusMessage,
+            readBase: (control) => engine.getBaseFieldLive(control),
+            setLive: (control, value) => engine.updateFieldLive(control, value),
+          }),
         );
         ui.setStatusMessage(
           on

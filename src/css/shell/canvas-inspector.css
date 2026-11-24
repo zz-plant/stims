@@ -1,0 +1,103 @@
+/* The canvas inspector's card: card stock over the stage, like the rest of
+   the on-stage chrome. The layer itself covers the stage but takes no
+   pointer, so only the card catches clicks. */
+.stims-canvas-inspector {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+
+.stims-canvas-inspector__card {
+  position: absolute;
+  display: grid;
+  gap: 8px;
+  width: 264px;
+  max-width: calc(100% - 16px);
+  /* Clear of the dock along the stage's bottom edge (DOCK_CLEARANCE). */
+  max-height: calc(100% - 104px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--stims-on-stage-line);
+  border-radius: var(--radius-md);
+  background: var(--stims-on-stage-card);
+  color: var(--stims-on-stage-ink);
+  font-size: var(--text-xs);
+  pointer-events: auto;
+}
+
+.stims-canvas-inspector__card[hidden] {
+  display: none;
+}
+
+.stims-canvas-inspector__title {
+  margin: 0;
+  color: var(--stims-on-stage-ink-strong);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stims-canvas-inspector__where,
+.stims-canvas-inspector__empty,
+.stims-canvas-inspector__note {
+  margin: 0;
+  color: var(--stims-on-stage-muted);
+}
+
+.stims-canvas-inspector__controls {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stims-canvas-inspector__control {
+  display: grid;
+  gap: 4px;
+}
+
+.stims-canvas-inspector__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stims-canvas-inspector__name {
+  color: var(--stims-on-stage-ink-strong);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stims-canvas-inspector__audio {
+  flex: 1;
+  min-width: 0;
+  color: var(--stims-on-stage-muted);
+}
+
+.stims-canvas-inspector__slider {
+  width: 100%;
+  accent-color: var(--stims-on-stage-accent);
+}
+
+.stims-canvas-inspector__edit {
+  flex: none;
+  min-height: 0;
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--stims-on-stage-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--stims-on-stage-control-fill);
+  color: var(--stims-on-stage-ink-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.stims-canvas-inspector__edit:hover {
+  background: var(--stims-on-stage-control-fill-hover);
+}
+
+.stims-canvas-inspector__edit:focus-visible,
+.stims-canvas-inspector__slider:focus-visible {
+  outline: 2px solid var(--stims-on-stage-accent);
+  outline-offset: 2px;
+}

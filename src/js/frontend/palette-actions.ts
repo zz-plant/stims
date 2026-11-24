@@ -44,6 +44,7 @@ import {
 } from '../milkdrop/overlay/watcher-hud.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { CommandAction } from './command-palette-registry.ts';
+import { buildCanvasInspectorHooks } from './editor-reveal.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
 import { nextFileTrack, previousFileTrack } from './file-audio.ts';
@@ -335,16 +336,14 @@ export function buildPaletteActions(
           stage,
           snapshot?.currentSource,
           snapshot?.activePresetId,
-          (control) => {
-            uiRef.current.updatePanel('editor');
-            uiRef.current.setStatusMessage(
-              `Opening the editor for ${control}.`,
-            );
-          },
-          (control, value) => {
-            const base = control === 'zoom' || control === 'warp' ? 1 : 0;
-            readEngine?.().updateFieldLive(control, base * value);
-          },
+          buildCanvasInspectorHooks({
+            openEditor: () => uiRef.current.updatePanel('editor'),
+            announce: (message) => uiRef.current.setStatusMessage(message),
+            readBase: (control) =>
+              engineBridgeRef.current.getBaseFieldLive(control),
+            setLive: (control, value) =>
+              engineBridgeRef.current.updateFieldLive(control, value),
+          }),
         );
         uiRef.current.setStatusMessage(
           on

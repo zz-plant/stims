@@ -6,13 +6,23 @@
  * coordinates and the preset's dataflow is consulted to name the per-pixel
  * controls that drive that spot and the audio signals behind them. A small
  * floating card renders the result; Escape or a click elsewhere dismisses it.
+ *
+ * Each control in the card has an Edit code button that opens the editor on
+ * the line that assigns it. Where the preset's base value reaches the
+ * picture (no per-frame code overwrites it, and its per-pixel code builds
+ * on it), a slider scales that value about its neutral point: 0 removes
+ * the effect, 1 is the preset, 2 doubles it. Where the code sets the
+ * control from scratch each frame, a slider could not move it, so the card
+ * says so instead.
  */
 
+import '../../../css/shell/canvas-inspector.css';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   analyzePresetDataflow,
   type PresetDataflow,
 } from 'milkdrop-toolchain/src/preset-dataflow.ts';
+import { baseReachesControl } from '../control-line.ts';
 
 export type InspectCoords = {
   /** Normalized 0..1, left-to-right. */
@@ -38,6 +48,36 @@ export type InspectResult = {
 };
 
 const INSPECTOR_CLASS = 'stims-canvas-inspector';
+/** Room kept free at the stage's bottom, where the dock sits. */
+const DOCK_CLEARANCE = 96;
+
+/** What the card can do beyond naming controls; each part is optional. */
+export interface CanvasInspectorHooks {
+  /** Open the editor on the line that assigns `control`. */
+  editCode?: (control: string) => void;
+  /** The preset's own per-frame value of `control`, before the slider. */
+  readBase?: (control: string) => number | undefined;
+  /** Apply a value to the running preset without recompiling. */
+  setLive?: (control: string, value: number) => void;
+}
+
+/**
+ * The value a control has when it does nothing: 1 for the scale-like
+ * fields, 0 for the rest. The slider scales the preset's distance from it.
+ */
+export function neutralValue(control: string): number {
+  return control === 'zoom' || control === 'sx' || control === 'sy' ? 1 : 0;
+}
+
+/** The control's value with the preset's effect scaled by `factor`. */
+export function scaleAboutNeutral(
+  control: string,
+  base: number,
+  factor: number,
+): number {
+  const neutral = neutralValue(control);
+  return neutral + (base - neutral) * factor;
+}
 
 export function pixelToCoords(
   px: number,
@@ -94,8 +134,8 @@ class CanvasInspector {
   readonly element: HTMLElement;
   private readonly card: HTMLElement;
   private dataflow: PresetDataflow | null = null;
-  private onEditCode: ((control: string) => void) | null = null;
-  private onScale: ((control: string, value: number) => void) | null = null;
+  private source: string | null = null;
+  private hooks: CanvasInspectorHooks = {};
   private dismissHandler: ((e: KeyboardEvent) => void) | null = null;
   private clickHandler: ((e: MouseEvent) => void) | null = null;
   private attachedCanvas: HTMLCanvasElement | null = null;
@@ -103,14 +143,12 @@ class CanvasInspector {
   constructor() {
     this.element = document.createElement('div');
     this.element.className = INSPECTOR_CLASS;
-    this.element.style.position = 'absolute';
-    this.element.style.pointerEvents = 'none';
-    this.element.style.zIndex = 'var(--z-overlay)';
 
     this.card = document.createElement('div');
     this.card.className = 'stims-canvas-inspector__card';
-    this.card.style.pointerEvents = 'auto';
-    this.card.style.display = 'none';
+    this.card.setAttribute('role', 'dialog');
+    this.card.setAttribute('aria-label', 'What drives this spot');
+    this.card.hidden = true;
     this.element.appendChild(this.card);
   }
 
@@ -118,12 +156,12 @@ class CanvasInspector {
     stage: HTMLElement,
     canvas: HTMLCanvasElement,
     dataflow: PresetDataflow | null,
-    onEditCode?: (control: string) => void,
-    onScale?: (control: string, value: number) => void,
+    hooks: CanvasInspectorHooks,
+    source: string | null,
   ) {
     this.dataflow = dataflow;
-    this.onEditCode = onEditCode ?? null;
-    this.onScale = onScale ?? null;
+    this.hooks = hooks;
+    this.source = source;
     this.attachedCanvas = canvas;
     stage.appendChild(this.element);
 
@@ -171,8 +209,8 @@ class CanvasInspector {
   }
 
   private hideCard() {
-    this.card.style.display = 'none';
-    this.card.innerHTML = '';
+    this.card.hidden = true;
+    this.card.replaceChildren();
   }
 
   private renderCard(
@@ -183,57 +221,111 @@ class CanvasInspector {
     height: number,
   ) {
     const { coords, controls } = result;
-    this.card.innerHTML = '';
-    this.card.style.display = 'block';
-    this.card.style.left = `${Math.min(px + 12, width - 260)}px`;
-    this.card.style.top = `${Math.min(py + 12, height - 160)}px`;
+    this.card.replaceChildren();
+    this.card.hidden = false;
 
-    const title = document.createElement('div');
+    const title = document.createElement('p');
     title.className = 'stims-canvas-inspector__title';
-    title.textContent = `u=${coords.u.toFixed(2)} v=${coords.v.toFixed(2)} · rad=${coords.rad.toFixed(2)}`;
+    title.textContent = 'What drives this spot';
     this.card.appendChild(title);
+
+    const where = document.createElement('p');
+    where.className = 'stims-canvas-inspector__where';
+    where.textContent = `u ${coords.u.toFixed(2)} · v ${coords.v.toFixed(2)} · rad ${coords.rad.toFixed(2)}`;
+    this.card.appendChild(where);
+
+    if (controls.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'stims-canvas-inspector__empty';
+      empty.textContent =
+        'No per-pixel code: this preset moves every spot the same way.';
+      this.card.appendChild(empty);
+      this.place(px, py, width, height);
+      return;
+    }
 
     const list = document.createElement('ul');
     list.className = 'stims-canvas-inspector__controls';
+    let fromScratch = 0;
     for (const c of controls) {
       const li = document.createElement('li');
-      const name = document.createElement('span');
+      li.className = 'stims-canvas-inspector__control';
+      const head = document.createElement('span');
+      head.className = 'stims-canvas-inspector__head';
+      const name = document.createElement('code');
       name.className = 'stims-canvas-inspector__name';
       name.textContent = c.name;
-      li.appendChild(name);
+      head.appendChild(name);
       const audio = document.createElement('span');
       audio.className = 'stims-canvas-inspector__audio';
-      audio.textContent = c.audio.length ? c.audio.join(', ') : 'clockwork';
-      li.appendChild(audio);
-      if (this.onScale) {
-        const slider = document.createElement('input');
-        slider.type = 'range';
-        slider.min = '0';
-        slider.max = '2';
-        slider.step = '0.01';
-        slider.value = '1';
-        slider.setAttribute('aria-label', `Scale ${c.name}`);
-        slider.addEventListener('input', () =>
-          this.onScale?.(c.name, Number(slider.value)),
-        );
-        li.appendChild(slider);
-      }
-      if (this.onEditCode) {
+      audio.textContent = c.audio.length
+        ? `follows ${c.audio.join(', ')}`
+        : 'no sound';
+      head.appendChild(audio);
+      if (this.hooks.editCode) {
+        const editCode = this.hooks.editCode;
         const btn = document.createElement('button');
         btn.type = 'button';
+        btn.className = 'stims-canvas-inspector__edit';
         btn.textContent = 'Edit code';
-        btn.addEventListener('click', () => this.onEditCode?.(c.name));
-        li.appendChild(btn);
+        btn.setAttribute('aria-label', `Edit the code for ${c.name}`);
+        btn.addEventListener('click', () => editCode(c.name));
+        head.appendChild(btn);
+      }
+      li.appendChild(head);
+
+      const base = this.hooks.readBase?.(c.name);
+      const scalable =
+        this.source !== null && baseReachesControl(this.source, c.name);
+      if (!scalable) {
+        fromScratch += 1;
+      } else if (
+        this.hooks.setLive &&
+        base !== undefined &&
+        Number.isFinite(base)
+      ) {
+        const setLive = this.hooks.setLive;
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'stims-canvas-inspector__slider';
+        slider.min = '0';
+        slider.max = '2';
+        slider.step = '0.05';
+        slider.value = '1';
+        slider.setAttribute('aria-label', `Scale ${c.name}`);
+        slider.setAttribute('aria-valuetext', '1x, as the preset has it');
+        slider.addEventListener('input', () => {
+          const factor = Number(slider.value);
+          slider.setAttribute('aria-valuetext', `${factor}x`);
+          setLive(c.name, scaleAboutNeutral(c.name, base, factor));
+        });
+        li.appendChild(slider);
       }
       list.appendChild(li);
     }
-    if (controls.length === 0) {
-      const empty = document.createElement('p');
-      empty.textContent = 'No per-pixel controls.';
-      this.card.appendChild(empty);
-    } else {
-      this.card.appendChild(list);
+    this.card.appendChild(list);
+    if (fromScratch > 0) {
+      const note = document.createElement('p');
+      note.className = 'stims-canvas-inspector__note';
+      note.textContent =
+        fromScratch === controls.length
+          ? 'No sliders: this preset sets these from scratch each frame, so only its code changes them.'
+          : 'Controls without a slider are set from scratch each frame, so only their code changes them.';
+      this.card.appendChild(note);
     }
+    this.place(px, py, width, height);
+  }
+
+  /** Beside the click, kept inside the stage by the card's measured size. */
+  private place(px: number, py: number, width: number, height: number) {
+    const cardWidth = this.card.offsetWidth || 264;
+    const cardHeight = this.card.offsetHeight || 0;
+    const left =
+      px + 12 + cardWidth > width - 8 ? px - 12 - cardWidth : px + 12;
+    // The dock covers the stage's bottom edge; stay above it.
+    const top = Math.min(py + 12, height - DOCK_CLEARANCE - cardHeight);
+    this.card.style.left = `${Math.max(8, left)}px`;
+    this.card.style.top = `${Math.max(8, top)}px`;
   }
 }
 
@@ -247,8 +339,8 @@ export function toggleCanvasInspector(
   stage: HTMLElement | null,
   canvas: HTMLCanvasElement | null,
   dataflow: PresetDataflow | null,
-  onEditCode?: (control: string) => void,
-  onScale?: (control: string, value: number) => void,
+  hooks: CanvasInspectorHooks = {},
+  source: string | null = null,
 ): boolean {
   if (inspector) {
     inspector.detach();
@@ -257,7 +349,7 @@ export function toggleCanvasInspector(
   }
   if (!stage || !canvas) return false;
   inspector = new CanvasInspector();
-  inspector.attach(stage, canvas, dataflow, onEditCode, onScale);
+  inspector.attach(stage, canvas, dataflow, hooks, source);
   return true;
 }
 
@@ -272,8 +364,7 @@ export function toggleCanvasInspectorForSource(
   stage: HTMLElement | null,
   source: string | null | undefined,
   presetId: string | null | undefined,
-  onEditCode?: (control: string) => void,
-  onScale?: (control: string, value: number) => void,
+  hooks: CanvasInspectorHooks = {},
 ): boolean {
   let dataflow: PresetDataflow | null = null;
   if (source) {
@@ -287,5 +378,5 @@ export function toggleCanvasInspectorForSource(
     }
   }
   const canvas = stage?.querySelector('canvas') ?? null;
-  return toggleCanvasInspector(stage, canvas, dataflow, onEditCode, onScale);
+  return toggleCanvasInspector(stage, canvas, dataflow, hooks, source ?? null);
 }

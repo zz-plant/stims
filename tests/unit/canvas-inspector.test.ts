@@ -4,6 +4,7 @@ import {
   drivingControls,
   isCanvasInspectorActive,
   pixelToCoords,
+  scaleAboutNeutral,
   toggleCanvasInspectorForSource,
 } from '../../src/js/milkdrop/overlay/canvas-inspector.ts';
 
@@ -87,5 +88,111 @@ describe('canvas inspector toggle helper', () => {
     expect(off).toBe(false);
     expect(isCanvasInspectorActive()).toBe(false);
     stage.remove();
+  });
+});
+
+describe('canvas inspector card', () => {
+  const PRESET = [
+    'zoom=1.04',
+    'rot=0.02',
+    'per_pixel_1=zoom = zoom + 0.02*bass;',
+    'per_pixel_2=rot = rot + 0.01*rad;',
+  ].join('\n');
+
+  const mount = (
+    hooks: Parameters<typeof toggleCanvasInspectorForSource>[3],
+  ) => {
+    const stage = document.createElement('div');
+    const canvas = document.createElement('canvas');
+    stage.appendChild(canvas);
+    document.body.appendChild(stage);
+    toggleCanvasInspectorForSource(stage, PRESET, 'card-test', hooks);
+    canvas.dispatchEvent(
+      new window.MouseEvent('click', { clientX: 5, clientY: 5 }),
+    );
+    return {
+      stage,
+      slider: (name: string) =>
+        stage.querySelector<HTMLInputElement>(
+          `input[aria-label="Scale ${name}"]`,
+        ),
+      edit: (name: string) =>
+        stage.querySelector<HTMLButtonElement>(
+          `button[aria-label="Edit the code for ${name}"]`,
+        ),
+      done: () => {
+        toggleCanvasInspectorForSource(stage, null, null);
+        stage.remove();
+      },
+    };
+  };
+
+  test('the slider scales the preset value about its neutral point', () => {
+    const applied: Array<[string, number]> = [];
+    const base: Record<string, number> = { zoom: 1.04, rot: 0.02 };
+    const view = mount({
+      readBase: (control) => base[control],
+      setLive: (control, value) => applied.push([control, value]),
+    });
+    const zoom = view.slider('zoom');
+    const rot = view.slider('rot');
+    expect(zoom).not.toBeNull();
+    expect(rot).not.toBeNull();
+    for (const [input, value] of [
+      [zoom, '0'],
+      [zoom, '2'],
+      [rot, '0'],
+      [rot, '2'],
+    ] as const) {
+      if (!input) throw new Error('slider missing');
+      input.value = value;
+      input.dispatchEvent(new window.Event('input'));
+    }
+    expect(applied[0][0]).toBe('zoom');
+    expect(applied[0][1]).toBeCloseTo(1, 6);
+    expect(applied[1][1]).toBeCloseTo(1.08, 6);
+    expect(applied[2]).toEqual(['rot', 0]);
+    expect(applied[3][1]).toBeCloseTo(0.04, 6);
+    view.done();
+  });
+
+  test('a control its code sets from scratch gets a note, not a slider', () => {
+    const stage = document.createElement('div');
+    const canvas = document.createElement('canvas');
+    stage.appendChild(canvas);
+    document.body.appendChild(stage);
+    toggleCanvasInspectorForSource(
+      stage,
+      'rot=0.1\nper_frame_1=rot = 0.1;\nper_pixel_1=rot = rot + 0.01*rad;',
+      'scratch-test',
+      { readBase: () => 0.1, setLive: () => {} },
+    );
+    canvas.dispatchEvent(
+      new window.MouseEvent('click', { clientX: 5, clientY: 5 }),
+    );
+    expect(stage.querySelector('input[aria-label="Scale rot"]')).toBeNull();
+    expect(stage.textContent).toContain('sets these from scratch each frame');
+    toggleCanvasInspectorForSource(stage, null, null);
+    stage.remove();
+  });
+
+  test('no slider for a control whose base cannot be read', () => {
+    const view = mount({ readBase: () => undefined, setLive: () => {} });
+    expect(view.slider('zoom')).toBeNull();
+    view.done();
+  });
+
+  test('Edit code hands over the control name', () => {
+    const edited: string[] = [];
+    const view = mount({ editCode: (control) => edited.push(control) });
+    view.edit('rot')?.click();
+    expect(edited).toEqual(['rot']);
+    view.done();
+  });
+
+  test('scaleAboutNeutral keeps identity at 1x', () => {
+    expect(scaleAboutNeutral('zoom', 0.97, 1)).toBeCloseTo(0.97, 6);
+    expect(scaleAboutNeutral('dx', -0.01, 1)).toBeCloseTo(-0.01, 6);
+    expect(scaleAboutNeutral('sx', 1.2, 0)).toBe(1);
   });
 });
