@@ -51,6 +51,10 @@ import {
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
+import {
+  getGuidedBreathing,
+  subscribeGuidedBreathing,
+} from '../core/services/guided-breathing.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { setTelemetryAudioSource } from '../core/services/telemetry-context.ts';
 import { saveLastSession } from '../core/state/last-session-store.ts';
@@ -374,6 +378,11 @@ function StimsWorkspaceAppShell() {
   const [browseTrying, setBrowseTrying] = useState(false);
   const [showManageSets, setShowManageSets] = useState(false);
   // Drives the palette's theme row label, so it names the current choice.
+  const breathing = useSyncExternalStore(
+    subscribeGuidedBreathing,
+    () => getGuidedBreathing() !== null,
+    () => false,
+  );
   const themeChoice = useSyncExternalStore(
     subscribeToThemePreference,
     () => getActiveThemePreference().theme,
@@ -1577,7 +1586,8 @@ function StimsWorkspaceAppShell() {
           Rendered regardless of open panels: the browse/editor hints fire
           exactly when those panels open, so unmounting on panel-open made
           them unreachable. */}
-      <div className="stims-shell__toast-stack">
+      {/* A paced breathing session is the stage and its guide only. */}
+      <div className="stims-shell__toast-stack" hidden={breathing}>
         <SilentAudioNotice active={liveMode} />
         <ContextualHelp hint={visibleHint} anchor="stage" />
         {/* One notice at a time: the match waits while a stage hint is up

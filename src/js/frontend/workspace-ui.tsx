@@ -1,6 +1,10 @@
 import { type ReactNode, useSyncExternalStore } from 'react';
 import { isRoomModeRequested } from '../core/room-mode.ts';
 import {
+  getGuidedBreathing,
+  subscribeGuidedBreathing,
+} from '../core/services/guided-breathing.ts';
+import {
   getStageOverlayPreference,
   subscribeToStageOverlayPreference,
 } from '../core/stage-overlay-preferences.ts';
@@ -8,6 +12,7 @@ import { parseURLParams } from '../core/url-params.ts';
 import { CueMonitor } from './CueMonitor.tsx';
 import { FlashProtectionNotice } from './FlashProtectionNotice.tsx';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
+import { PacedBreathingLayer } from './PacedBreathingLayer.tsx';
 import { PerformSurface } from './PerformSurface.tsx';
 import { PresetTitleCard } from './PresetTitleCard.tsx';
 import { StageControls } from './StageControls.tsx';
@@ -68,7 +73,14 @@ export function WorkspaceStagePanel({
   // A room display (core/room-mode.ts) shows the picture and nothing else:
   // no controls to reach for, no names over the visuals, no notices.
   const roomMode = isRoomModeRequested();
-  const stageChrome = stageReady && !roomMode;
+  // A paced breathing session (#1625) is the stage and its guide, nothing
+  // else: the chrome returns when it ends.
+  const breathing = useSyncExternalStore(
+    subscribeGuidedBreathing,
+    () => getGuidedBreathing() !== null,
+    () => false,
+  );
+  const stageChrome = stageReady && !roomMode && !breathing;
 
   return (
     <section
@@ -147,7 +159,9 @@ export function WorkspaceStagePanel({
             on the launch page, and unmounting with the session releases any
             latched blackout. */}
         {stageReady ? <StageUtilitiesOverlay stageRef={ui.stageRef} /> : null}
-        <WorkspaceToast toast={ui.toast} />
+        {roomMode ? null : <PacedBreathingLayer liveMode={stageReady} />}
+        {/* Toasts are chrome too, and one landed on the guide's label. */}
+        {breathing ? null : <WorkspaceToast toast={ui.toast} />}
         {strudelLabEnabled ? <StrudelLabPanel /> : null}
       </StimsStageFrame>
     </section>

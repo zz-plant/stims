@@ -48,6 +48,11 @@ import { buildCanvasInspectorHooks } from './editor-reveal.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
 import { nextFileTrack, previousFileTrack } from './file-audio.ts';
+import {
+  isPacedBreathingActive,
+  openBreathingSetup,
+  stopPacedBreathing,
+} from './paced-breathing.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import { buildPresetSetShareUrl, saveNamedSet } from './preset-sets.ts';
@@ -857,12 +862,14 @@ export function buildPaletteActions(
     {
       id: 'sensory-breathing-toggle',
       group: 'View',
+      // The Breathing pace dial's background pulse. The guided session with
+      // a bar and a timer is 'paced-breathing' below.
       get label() {
         return getSensoryMoodKnobs().breathingCadenceSeconds === null
-          ? 'Turn on paced breathing guide'
-          : 'Turn off paced breathing guide';
+          ? 'Turn on the slow breathing pulse'
+          : 'Turn off the slow breathing pulse';
       },
-      keywords: ['sensory', 'breathing', 'pace', 'breath'],
+      keywords: ['sensory', 'breathing', 'pace', 'breath', 'pulse'],
       run: () => {
         const current = getSensoryMoodKnobs().breathingCadenceSeconds;
         setSensoryMoodKnobs({
@@ -870,9 +877,24 @@ export function buildPaletteActions(
         });
         uiRef.current.setStatusMessage(
           current === null
-            ? 'Paced breathing guide on.'
-            : 'Paced breathing guide off.',
+            ? 'Slow breathing pulse on.'
+            : 'Slow breathing pulse off.',
         );
+      },
+    },
+    {
+      // #1625: a timed session with a guide to breathe along with.
+      id: 'paced-breathing',
+      group: 'View',
+      get label() {
+        return isPacedBreathingActive()
+          ? 'End paced breathing'
+          : 'Paced breathing: a guide to breathe along with';
+      },
+      keywords: ['breathe', 'breathing', 'paced', 'guide', 'slow', 'calm'],
+      run: () => {
+        if (isPacedBreathingActive()) stopPacedBreathing();
+        else openBreathingSetup();
       },
     },
     {

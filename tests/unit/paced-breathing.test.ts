@@ -1,98 +1,87 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
-  bind,
-  installModulation,
-  listModulators,
-  unbindAll,
-} from '../../src/js/frontend/live-modulation.ts';
+  getActiveAccessibilityPreference,
+  resetAccessibilityPreferenceState,
+  setAccessibilityPreference,
+} from '../../src/js/core/accessibility-preferences.ts';
+import { getGuidedBreathing } from '../../src/js/core/services/guided-breathing.ts';
 import {
+  closeBreathingSetup,
+  getBreathingSetupRequest,
   isPacedBreathingActive,
+  openBreathingSetup,
+  readBreatheParam,
   startPacedBreathing,
   stopPacedBreathing,
 } from '../../src/js/frontend/paced-breathing.ts';
-import {
-  advanceAnimationFrames,
-  installAnimationFrameController,
-} from '../environment/animation-frame.ts';
-
-function rig() {
-  const applied: Array<[string, number]> = [];
-  const positions = new Map<string, number>([['zoom', 0]]);
-  const deps = {
-    setTarget: (target: string, value: number) => {
-      applied.push([target, value]);
-    },
-    getCenter: (target: string) => positions.get(target),
-    getCps: () => 0.5,
-  };
-  return { applied, positions, uninstall: installModulation(deps) };
-}
 
 beforeEach(() => {
-  installAnimationFrameController({ autoAdvance: false });
+  localStorage.clear();
+  resetAccessibilityPreferenceState();
 });
 
 afterEach(() => {
   stopPacedBreathing();
-  unbindAll();
+  closeBreathingSetup();
 });
 
-describe('paced breathing', () => {
-  test('longer-out shape is asymmetric: inhale shorter than exhale', () => {
-    // Bind a longer-out modulator and sample the shaped value across phases.
-    const { uninstall } = rig();
-    const _mod = bind({
-      target: 'zoom',
-      depth: 1,
-      source: { kind: 'lfo', shape: 'longerOut', hz: 0.1, duty: 0.4 },
-    });
-    // phase 0.2 (inhale) -> rising; 0.6 (exhale) -> falling.
-    // We can't set phase directly, but the shape function is exercised via
-    // advance; instead verify duty split by checking phase thresholds.
-    const phases = [0.1, 0.3, 0.5, 0.7, 0.9];
-    // Re-derive expected from the documented duty: inhale occupies [0,0.4).
-    for (const p of phases) {
-      const inhale = p < 0.4;
-      expect(typeof inhale).toBe('boolean');
-    }
-    unbindAll();
-    uninstall();
-  });
-
-  test('phase turns within one frame at 6 breaths/min', () => {
-    const { uninstall } = rig();
-    const phases: string[] = [];
+describe('paced breathing session', () => {
+  test('turns Reduce flashing on for the session and back off after', () => {
+    // On by default; this visitor turned it off.
+    setAccessibilityPreference({ reduceFlashing: false });
     const stop = startPacedBreathing({
       rate: 6,
       shape: 'even',
-      onPhase: (p) => phases.push(p),
+      lengthMs: null,
     });
-    // Pump enough frames to cross the first turn (5s in at 6 bpm = 0.5 phase).
-    // At 60fps, 5s = 300 frames. The turn should land within one frame.
-    advanceAnimationFrames(320);
-    expect(phases).toContain('out');
-    stop();
-    uninstall();
-  });
-
-  test('stop removes the modulator and leaves zoom at centre', () => {
-    const { positions, uninstall } = rig();
-    const stop = startPacedBreathing({ rate: 6, shape: 'even' });
-    advanceAnimationFrames(5);
-    expect(listModulators().length).toBeGreaterThan(0);
-    stop();
-    expect(listModulators().length).toBe(0);
-    expect(positions.get('zoom')).toBe(0);
-    uninstall();
-  });
-
-  test('isPacedBreathingActive reflects state', () => {
-    const { uninstall } = rig();
-    expect(isPacedBreathingActive()).toBe(false);
-    const stop = startPacedBreathing({ rate: 6, shape: 'even' });
     expect(isPacedBreathingActive()).toBe(true);
+    expect(getGuidedBreathing()?.breathsPerMinute).toBe(6);
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(true);
     stop();
     expect(isPacedBreathingActive()).toBe(false);
-    uninstall();
+    expect(getGuidedBreathing()).toBeNull();
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(false);
+  });
+
+  test('leaves a visitor who already reduces flashing as they were', () => {
+    setAccessibilityPreference({ reduceFlashing: true });
+    startPacedBreathing({ rate: 6, shape: 'even', lengthMs: null });
+    stopPacedBreathing();
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(true);
+  });
+
+  test('a timed session ends on its own', async () => {
+    startPacedBreathing({ rate: 6, shape: 'longer-out', lengthMs: 30 });
+    expect(isPacedBreathingActive()).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(isPacedBreathingActive()).toBe(false);
+    expect(getGuidedBreathing()).toBeNull();
+  });
+
+  test('starting again replaces the running session', () => {
+    setAccessibilityPreference({ reduceFlashing: false });
+    startPacedBreathing({ rate: 5, shape: 'even', lengthMs: null });
+    startPacedBreathing({ rate: 7, shape: 'longer-out', lengthMs: null });
+    expect(getGuidedBreathing()?.breathsPerMinute).toBe(7);
+    stopPacedBreathing();
+    expect(getGuidedBreathing()).toBeNull();
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(false);
+  });
+});
+
+describe('breathing setup request', () => {
+  test('opens with a clamped rate and closes', () => {
+    openBreathingSetup({ rate: 9 });
+    expect(getBreathingSetupRequest()).toEqual({ rate: 7 });
+    closeBreathingSetup();
+    expect(getBreathingSetupRequest()).toBeNull();
+  });
+
+  test('reads ?breathe= links', () => {
+    expect(readBreatheParam('?breathe=5.5')).toBe(5.5);
+    expect(readBreatheParam('?preset=x&breathe=6')).toBe(6);
+    expect(readBreatheParam('?breathe=40')).toBe(7);
+    expect(readBreatheParam('?breathe=abc')).toBeNull();
+    expect(readBreatheParam('?preset=x')).toBeNull();
   });
 });

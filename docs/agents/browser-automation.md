@@ -303,6 +303,9 @@ copy and may change; ids must not.
   drive a room page through `__stims_agent.run()` rather than key presses.
   `?brightness=` and `?motion=` (0–1) lower the comfort settings for one visit,
   with or without it. None of these save anything.
+- `?breathe=6` — open the paced breathing setup at that rate (4.5–7
+  breaths a minute; `src/js/frontend/paced-breathing.ts`). It starts nothing
+  until Start is pressed.
 - `window.__STIMS_AGENT_RENDER_FRAMES__` (agent mode) — synchronously
   render N frames with synthetic time/audio, for capture harnesses.
 - `window.__stims_live` — performance API (ramp, listen, pattern

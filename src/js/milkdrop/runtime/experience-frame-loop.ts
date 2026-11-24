@@ -14,6 +14,7 @@ import { getPowerSavingFrameCapHz } from '../../core/power-state.ts';
 import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-controller.ts';
 import { isMilkdropCapturedVideoReady } from '../../core/services/captured-video-texture.ts';
 import { createGpuRenderTimingSampler } from '../../core/services/gpu-render-timing.ts';
+import { guidedBreathingExpansion } from '../../core/services/guided-breathing.ts';
 import { notePresetFrame } from '../../core/services/preset-telemetry.ts';
 import {
   calculateBreathingLFO,
@@ -433,6 +434,15 @@ export function createMilkdropExperienceFrameLoop({
             detailScale: detailScale * adaptiveDensityMultiplier,
           });
         }
+        // A guided breathing session (#1625) sets the swell on its own clock,
+        // so the guide's bar and the picture turn together; otherwise the
+        // Breathing pace dial does.
+        const breathingExpansion =
+          guidedBreathingExpansion(now) ??
+          calculateBreathingLFO(
+            frame.time ?? 0,
+            getSensoryTranslationService().getKnobs().breathingCadenceSeconds,
+          );
         // After the interaction response, so a viewer's own drag or pinch
         // is dampened by the same amount as the preset's motion.
         const currentFrameState = applyMotionDampening(
@@ -445,10 +455,7 @@ export function createMilkdropExperienceFrameLoop({
               ),
               getSensoryTranslationService().getKnobs().predictability,
             ),
-            calculateBreathingLFO(
-              frame.time ?? 0,
-              getSensoryTranslationService().getKnobs().breathingCadenceSeconds,
-            ),
+            breathingExpansion,
           ),
           getMotionScale(),
         );
@@ -494,11 +501,7 @@ export function createMilkdropExperienceFrameLoop({
                       ),
                       getSensoryTranslationService().getKnobs().predictability,
                     ),
-                    calculateBreathingLFO(
-                      frame.time ?? 0,
-                      getSensoryTranslationService().getKnobs()
-                        .breathingCadenceSeconds,
-                    ),
+                    breathingExpansion,
                   ),
                   getMotionScale(),
                 ),
