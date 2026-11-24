@@ -4,7 +4,9 @@
  * nearest preset, so a visitor can steer by look instead of by name.
  *
  * The projection lives in `aesthetic-compass.ts`; this component only draws
- * it and turns a pointer or arrow-key position into a selection.
+ * it and turns a pointer or arrow-key position into a selection. With a
+ * `fade` host, a drag rides the engine's hand-driven crossfade from preset
+ * to preset (`compass-morph.ts`) instead of switching on a timer.
  */
 import '../../css/shell/aesthetic-compass.css';
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
@@ -12,6 +14,7 @@ import {
   type AestheticCompass,
   loadAestheticCompass,
 } from '../core/services/aesthetic-compass.ts';
+import { type CompassMorph, createCompassMorph } from './compass-morph.ts';
 import { useCompassMidi } from './hooks/use-compass-midi.ts';
 
 const PAD_SIZE = 220;
@@ -21,6 +24,16 @@ const KEY_STEP = 0.08;
 const KEY_STEP_COARSE = 0.25;
 
 type PlanePoint = { x: number; y: number };
+
+/** The engine calls a drag needs to ride a hand-driven crossfade. */
+export interface CompassFadeHost {
+  /** Arm the manual crossfade for the next switch. */
+  arm: () => void;
+  /** Switch the stage without the pick side effects (folding the panel). */
+  switchTo: (presetId: string) => void;
+  set: (position: number) => void;
+  get: () => number | null;
+}
 
 const clampUnit = (value: number) => Math.min(1, Math.max(-1, value));
 
@@ -35,6 +48,7 @@ export function AestheticCompassPad({
   isSelectable,
   describePreset,
   currentPresetId = null,
+  fade,
 }: {
   onSelectPreset: (presetId: string) => void;
   /** Skip presets the catalog hides, e.g. flashing ones under Reduce flashing. */
@@ -43,6 +57,8 @@ export function AestheticCompassPad({
   describePreset?: (presetId: string) => string | null;
   /** The preset on stage, ringed on the map. */
   currentPresetId?: string | null;
+  /** Without it, a drag plays the nearest preset every 250 ms instead. */
+  fade?: CompassFadeHost;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const padRef = useRef<HTMLDivElement | null>(null);
@@ -63,10 +79,56 @@ export function AestheticCompassPad({
   useCompassMidi((point, commit) =>
     moveToRef.current?.(point, commit, !commit),
   );
-  // Continuous morph: while dragging, commit the nearest preset at most
-  // every 250ms so the stage crossfades with the puck instead of waiting
-  // for release. Release still commits the final point.
+  // Without a fade host: while dragging, commit the nearest preset at most
+  // every 250ms so the stage follows the puck instead of waiting for
+  // release. Release still commits the final point.
   const lastCommitRef = useRef<{ id: string; at: number } | null>(null);
+
+  // The morph outlives renders; its host reads the latest props through a
+  // ref, so a re-render mid-drag does not drop the fade.
+  const hostRef = useRef({ fade, onSelectPreset });
+  useEffect(() => {
+    hostRef.current = { fade, onSelectPreset };
+  });
+  // Built after mount, not in a state initializer: its host closes over
+  // refs, and React Compiler rejects handing those to a call during render.
+  const morphRef = useRef<CompassMorph | null>(null);
+  const draggingRef = useRef(false);
+  const frameRef = useRef<number | null>(null);
+  useEffect(() => {
+    const morph = createCompassMorph({
+      startFade: (presetId) => {
+        hostRef.current.fade?.arm();
+        hostRef.current.fade?.switchTo(presetId);
+      },
+      setPosition: (position) => hostRef.current.fade?.set(position),
+      getPosition: () => hostRef.current.fade?.get() ?? null,
+      select: (presetId) => hostRef.current.onSelectPreset(presetId),
+      now: () => performance.now(),
+    });
+    morphRef.current = morph;
+    // Leaving mid-fade completes it: an armed fade nobody drives would hold
+    // the outgoing preset on stage.
+    return () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+      morph.finish();
+      morphRef.current = null;
+    };
+  }, []);
+  const runMorph = (morph: CompassMorph) => {
+    if (frameRef.current !== null) return;
+    const step = () => {
+      morph.tick();
+      if (morph.isBusy()) {
+        frameRef.current = requestAnimationFrame(step);
+        return;
+      }
+      frameRef.current = null;
+      setPlayed(morph.stagePresetId());
+    };
+    frameRef.current = requestAnimationFrame(step);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +165,51 @@ export function AestheticCompassPad({
     }
   }, [compass]);
 
+  const moveTo = (point: PlanePoint, commit: boolean, continuous = false) => {
+    if (!compass) return;
+    const next = { x: clampUnit(point.x), y: clampUnit(point.y) };
+    setPuck(next);
+    const id = compass.nearestPreset(next.x, next.y, isSelectable);
+    setNearest(id);
+    const morph = morphRef.current;
+    if (fade && morph && continuous) {
+      if (!draggingRef.current) {
+        draggingRef.current = true;
+        morph.begin(currentPresetId);
+      }
+      morph.update(id, next.x, next.y);
+      setPlayed(morph.stagePresetId());
+      runMorph(morph);
+      return;
+    }
+    if (morph && commit && draggingRef.current) {
+      draggingRef.current = false;
+      morph.release(id);
+      setPlayed(id);
+      runMorph(morph);
+      return;
+    }
+    if (commit && id) {
+      setPlayed(id);
+      onSelectPreset(id);
+      lastCommitRef.current = { id, at: Date.now() };
+    } else if (id && continuous) {
+      const last = lastCommitRef.current;
+      const now = Date.now();
+      if (last?.id !== id && (!last || now - last.at >= 250)) {
+        lastCommitRef.current = { id, at: now };
+        setPlayed(id);
+        onSelectPreset(id);
+      }
+    } else {
+      setPlayed(null);
+    }
+  };
+  // Written after render: the MIDI callback reads it later, never during.
+  useEffect(() => {
+    moveToRef.current = moveTo;
+  });
+
   if (loading) {
     return (
       <div className="ctl-compass" aria-busy="true">
@@ -125,29 +232,6 @@ export function AestheticCompassPad({
       null)
     : null;
   const nameOf = (presetId: string) => describePreset?.(presetId) ?? presetId;
-
-  const moveTo = (point: PlanePoint, commit: boolean, continuous = false) => {
-    const next = { x: clampUnit(point.x), y: clampUnit(point.y) };
-    setPuck(next);
-    const id = compass.nearestPreset(next.x, next.y, isSelectable);
-    setNearest(id);
-    if (commit && id) {
-      setPlayed(id);
-      onSelectPreset(id);
-      lastCommitRef.current = { id, at: Date.now() };
-    } else if (id && continuous) {
-      const last = lastCommitRef.current;
-      const now = Date.now();
-      if (last?.id !== id && (!last || now - last.at >= 250)) {
-        lastCommitRef.current = { id, at: now };
-        setPlayed(id);
-        onSelectPreset(id);
-      }
-    } else {
-      setPlayed(null);
-    }
-  };
-  moveToRef.current = moveTo;
 
   const pointerToPlane = (clientX: number, clientY: number): PlanePoint => {
     const rect = padRef.current?.getBoundingClientRect();

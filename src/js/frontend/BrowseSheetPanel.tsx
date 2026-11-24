@@ -228,6 +228,9 @@ export function BrowseSheetPanel({
     handleAudioStart,
     handlePresetSelection,
     toggleFavoritePreset,
+    startManualCrossfade,
+    setCrossfade,
+    getCrossfade,
   } = engine;
   const panelRootRef = useRef<HTMLDivElement | null>(null);
   const lastPointerDownRef = useRef(Number.NEGATIVE_INFINITY);
@@ -1169,6 +1172,15 @@ export function BrowseSheetPanel({
             isSelectable={(id) => !hiddenByFlash.has(id)}
             describePreset={(id) => titleById.get(id) ?? null}
             currentPresetId={currentPresetId}
+            fade={{
+              arm: startManualCrossfade,
+              // Route only: a pick folds the panel, which would unmount
+              // the pad mid-drag. Release plays through selectPreset.
+              switchTo: (presetId) =>
+                commitRoute((current) => ({ ...current, presetId })),
+              set: setCrossfade,
+              get: getCrossfade,
+            }}
           />
         </section>
       ) : null}
