@@ -50,22 +50,25 @@ export function useFlashSafety(
       return;
     }
 
-    let controller: ReturnType<typeof createFlashSafetyController> | null =
-      null;
-    let attachedCanvas: HTMLCanvasElement | null = null;
+    // Held in an object, not reassigned locals, so React Compiler compiles
+    // this hook (#1540).
+    const attached: {
+      controller: ReturnType<typeof createFlashSafetyController> | null;
+      canvas: HTMLCanvasElement | null;
+    } = { controller: null, canvas: null };
 
     const attach = () => {
       const canvas = stage.querySelector('canvas');
-      if (canvas === attachedCanvas) return;
+      if (canvas === attached.canvas) return;
 
-      controller?.stop();
-      controller = null;
+      attached.controller?.stop();
+      attached.controller = null;
       controllerRef.current = null;
-      attachedCanvas = null;
+      attached.canvas = null;
 
       if (!(canvas instanceof HTMLCanvasElement)) return;
-      attachedCanvas = canvas;
-      controller = createFlashSafetyController({
+      attached.canvas = canvas;
+      const controller = createFlashSafetyController({
         canvas,
         applyLuminanceScale: createStageLuminanceApplier(stage),
         // The governor's own channel plus the blackout, not the visitor's
@@ -77,6 +80,7 @@ export function useFlashSafety(
         // direction; under-clamping the recording is not.
         compositedScale: createStageCompositedScale(stage),
       });
+      attached.controller = controller;
       controllerRef.current = controller;
       if (primingHoldRef.current > 0) controller.prime(primingHoldRef.current);
       controller.start();
@@ -96,16 +100,15 @@ export function useFlashSafety(
     // did not strobe. Treating that dip as a flash clamped the governor to
     // ~0.1 and read as a black stage (#1408). Reset the governor's history
     // and release the mitigation on a real size change so it does not.
-    let lastWidth = stage.clientWidth;
-    let lastHeight = stage.clientHeight;
+    const lastSize = { width: stage.clientWidth, height: stage.clientHeight };
     const resizeObserver =
       typeof ResizeObserver === 'function'
         ? new ResizeObserver(() => {
             const w = stage.clientWidth;
             const h = stage.clientHeight;
-            if (w === lastWidth && h === lastHeight) return;
-            lastWidth = w;
-            lastHeight = h;
+            if (w === lastSize.width && h === lastSize.height) return;
+            lastSize.width = w;
+            lastSize.height = h;
             controllerRef.current?.release();
           })
         : null;
@@ -114,7 +117,7 @@ export function useFlashSafety(
     return () => {
       observer?.disconnect();
       resizeObserver?.disconnect();
-      controller?.stop();
+      attached.controller?.stop();
       controllerRef.current = null;
     };
   }, [stageRef]);

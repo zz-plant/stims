@@ -190,15 +190,15 @@ export function PresetTitleCard() {
     // Refit when the line changes size — including from zero, once the stage
     // is laid out — and once the display face has loaded, since a card that lands
     // before the font would otherwise stay fitted to the fallback face.
-    let cancelled = false;
+    const unmounted = new AbortController();
     const observer =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
     if (measureRef.current) observer?.observe(measureRef.current);
     void document.fonts?.ready.then(() => {
-      if (!cancelled) fit();
+      if (!unmounted.signal.aborted) fit();
     });
     return () => {
-      cancelled = true;
+      unmounted.abort();
       observer?.disconnect();
     };
   }, [nonce]);

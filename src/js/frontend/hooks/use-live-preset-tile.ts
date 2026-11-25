@@ -127,23 +127,27 @@ export function useLivePresetTile(
       return;
     }
     setPresetFile(entry.id, entry.file);
-    let cancelled = false;
-    let handle: MilkdropLiveTileHandle | null = null;
-    let canvas: HTMLCanvasElement | null = null;
-    let readyPoll: number | null = null;
+    // One object for what the async acquire hands to the cleanup: React
+    // Compiler bails on locals a later callback reassigns (#1540).
+    const tile: {
+      cancelled: boolean;
+      handle: MilkdropLiveTileHandle | null;
+      canvas: HTMLCanvasElement | null;
+      readyPoll: number | null;
+    } = { cancelled: false, handle: null, canvas: null, readyPoll: null };
     const host = hostRef.current;
     void ensurePool().then((pool) => {
-      if (cancelled) {
+      if (tile.cancelled) {
         return;
       }
-      handle = pool.acquire(entry.id);
-      canvas = handle.canvas;
-      if (host && canvas.parentElement !== host) {
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.objectFit = 'cover';
-        canvas.style.display = 'block';
-        host.append(canvas);
+      tile.handle = pool.acquire(entry.id);
+      tile.canvas = tile.handle.canvas;
+      if (host && tile.canvas.parentElement !== host) {
+        tile.canvas.style.width = '100%';
+        tile.canvas.style.height = '100%';
+        tile.canvas.style.objectFit = 'cover';
+        tile.canvas.style.display = 'block';
+        host.append(tile.canvas);
       }
       // The canvas element exists (and reports a nonzero size) the instant
       // it's acquired, well before the engine has compiled or painted a
@@ -151,10 +155,10 @@ export function useLivePresetTile(
       // checks canvas dimensions can grab a blank frame. Mirror the pool's
       // real status onto the DOM so consumers can gate on it.
       const syncStatus = () => {
-        if (!host || !handle) {
+        if (!host || !tile.handle) {
           return false;
         }
-        const status = handle.getStatus();
+        const status = tile.handle.getStatus();
         host.dataset.liveTileReady = String(status === 'live');
         // Stills are captured by the pool's onTileStepped hook, not here: a
         // read from this poll happens between ticks, when the drawing buffer
@@ -165,22 +169,22 @@ export function useLivePresetTile(
         return status === 'live' || status === 'failed';
       };
       if (!syncStatus()) {
-        readyPoll = window.setInterval(() => {
-          if (syncStatus() && readyPoll !== null) {
-            window.clearInterval(readyPoll);
-            readyPoll = null;
+        tile.readyPoll = window.setInterval(() => {
+          if (syncStatus() && tile.readyPoll !== null) {
+            window.clearInterval(tile.readyPoll);
+            tile.readyPoll = null;
           }
         }, 120) as unknown as number;
       }
     });
     return () => {
-      cancelled = true;
-      if (readyPoll !== null) {
-        window.clearInterval(readyPoll);
+      tile.cancelled = true;
+      if (tile.readyPoll !== null) {
+        window.clearInterval(tile.readyPoll);
       }
-      handle?.release();
-      if (canvas && canvas.parentElement === host) {
-        canvas.remove();
+      tile.handle?.release();
+      if (tile.canvas && tile.canvas.parentElement === host) {
+        tile.canvas.remove();
       }
     };
   }, [enabled, entry.id, entry.file]);

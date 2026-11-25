@@ -37,21 +37,22 @@ export function GlobalMediaIntake() {
 
   useEffect(() => {
     // dragenter and dragleave fire for every element crossed, so only the
-    // count coming back to zero means the drag left the page.
-    let depth = 0;
+    // count coming back to zero means the drag left the page. Held in an
+    // object because React Compiler bails on a reassigned local (#1540).
+    const drag = { depth: 0 };
     const endDrag = () => {
-      depth = 0;
+      drag.depth = 0;
       setDragging(false);
     };
     const onDragEnter = (event: DragEvent) => {
       if (!carriesFiles(event)) return;
-      depth += 1;
+      drag.depth += 1;
       setDragging(true);
     };
     const onDragLeave = (event: DragEvent) => {
       if (!carriesFiles(event)) return;
-      depth -= 1;
-      if (depth <= 0) endDrag();
+      drag.depth -= 1;
+      if (drag.depth <= 0) endDrag();
     };
     const onDragOver = (event: DragEvent) => {
       // Without this the browser navigates to the file when it lands.

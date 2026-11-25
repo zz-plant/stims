@@ -41,6 +41,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:packages`](#checkpackages) | `check` | Typechecks and tests every standalone package under packages/, each in its own directory so its bunfig.toml and tsconfig apply rather than the root's. |
 | [`check:preset-cost`](#checkpreset-cost) | `check:quick` | Merges a perf-certification run into the committed per-preset frame-cost sidecar (`src/data/preset-frame-cost.json`), the signal autoplay and shuffle read to keep frame-hungry presets away from low-tier devices. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
+| [`check:react-compiler`](#checkreact-compiler) | `check:quick` | Fails when a component or hook under `src/` stops compiling with React Compiler. |
 | [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the repo's public claims aligned with what it actually ships. |
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
@@ -683,6 +684,31 @@ stale silently when the app routes changed; that is why this check also
 asserts on the card endpoints rather than a human-browsed page.
 
 Run it directly: `bun run check:production-edge`
+
+## check:react-compiler
+
+Fails when a component or hook under `src/` stops compiling with React Compiler.
+
+Both Vite configs run `react({ compiler: true })`. The compiler skips any
+function it cannot prove follows the Rules of React, silently: the app
+still works, it just loses the memoization. Four files slipped out between
+two hand-run censuses in November (#1540), each on the same pattern, and
+nothing noticed for weeks. This runs the compiler over every `.ts` and
+`.tsx` file in `src/` with diagnostics on, which takes about half a second.
+
+  bun run check:react-compiler
+
+A file that reports a diagnostic fails unless `KNOWN_BAILOUTS` lists it with a
+reason. A listed file that now compiles cleanly also fails, so the list can
+only shrink: delete its entry. The usual fixes:
+
+- "Cannot reassign variable after render completes": an effect-local `let`
+  that a later callback reassigns. Hold it in an object, or use an
+  `AbortController` for a cancelled flag.
+- "Cannot access refs during render": move the ref write into an effect.
+- "Handle Import expressions": move the `import()` to a module-scope loader.
+
+Run it directly: `bun run check:react-compiler`
 
 ## check:readme-claims
 

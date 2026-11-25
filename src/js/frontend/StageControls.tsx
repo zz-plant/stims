@@ -562,7 +562,9 @@ export function StageControls({
   }, [transition.phase, signalActivity]);
 
   useEffect(() => {
-    let activityFrame: number | null = null;
+    // An object, not a reassigned `let`, so React Compiler compiles this
+    // component (#1540).
+    const pending: { activityFrame: number | null } = { activityFrame: null };
     // Not from the folded dock's own buttons. Bringing the bar back marks them
     // inert, so a tap's pointerdown (or the focus it moves) arrived first and
     // dropped the click it was for: the editor stayed shut and a second tap
@@ -576,9 +578,9 @@ export function StageControls({
           foldedNextRef.current?.contains(event.target),
       );
     const handlePointerMove = (event: PointerEvent) => {
-      if (activityFrame !== null || fromFoldedButton(event)) return;
-      activityFrame = requestAnimationFrame(() => {
-        activityFrame = null;
+      if (pending.activityFrame !== null || fromFoldedButton(event)) return;
+      pending.activityFrame = requestAnimationFrame(() => {
+        pending.activityFrame = null;
         signalActivity();
       });
     };
@@ -596,7 +598,8 @@ export function StageControls({
     // hard guarantee that focus is never left on a hidden control).
     document.addEventListener('focusin', handleActivity);
     return () => {
-      if (activityFrame !== null) cancelAnimationFrame(activityFrame);
+      if (pending.activityFrame !== null)
+        cancelAnimationFrame(pending.activityFrame);
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerdown', handleActivity);
       document.removeEventListener('wheel', handleActivity);

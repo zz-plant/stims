@@ -499,6 +499,10 @@ export default defineConfig({
         cmd: ['bun', 'run', 'check:cache-bounds'],
       },
       {
+        label: 'React Compiler coverage',
+        cmd: ['bun', 'run', 'check:react-compiler'],
+      },
+      {
         label: 'File size ratchet',
         cmd: ['bun', 'run', 'check:file-size'],
       },
