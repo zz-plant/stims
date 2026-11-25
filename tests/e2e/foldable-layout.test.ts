@@ -334,7 +334,7 @@ requiredBrowserTest(
 
 const ROTATE_HINT = '.stims-shell__rotate-hint';
 const rotateHint = (page: Page) =>
-  page.locator(ROTATE_HINT, { hasText: 'Rotate your phone' });
+  page.locator(ROTATE_HINT, { hasText: 'Turn your phone sideways' });
 
 type HintWindow = Window & { __rotateHintSeen?: boolean };
 
