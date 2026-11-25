@@ -224,9 +224,13 @@ function BreathingGuide() {
   useEscapeHandler(true, stopPacedBreathing);
 
   useEffect(() => {
-    let frame = 0;
-    let lastInhale: boolean | null = null;
-    let lastSecond = -1;
+    // Loop state lives in one object: React Compiler bails on locals that a
+    // later callback reassigns (#1540).
+    const loop: {
+      frame: number;
+      lastInhale: boolean | null;
+      lastSecond: number;
+    } = { frame: 0, lastInhale: null, lastSecond: -1 };
     const step = () => {
       const state = guidedBreathingPhase(performance.now());
       const active = getGuidedBreathing();
@@ -239,20 +243,20 @@ function BreathingGuide() {
         barRef.current.style.transform = `scaleX(${fill.toFixed(4)})`;
       }
       // Text changes at the turn only, and the clock once a second.
-      if (state.inhale !== lastInhale) {
-        lastInhale = state.inhale;
+      if (state.inhale !== loop.lastInhale) {
+        loop.lastInhale = state.inhale;
         setInhale(state.inhale);
       }
       const second =
         state.remainingMs === null ? -1 : Math.ceil(state.remainingMs / 1000);
-      if (second !== lastSecond) {
-        lastSecond = second;
+      if (second !== loop.lastSecond) {
+        loop.lastSecond = second;
         setRemainingMs(state.remainingMs);
       }
-      frame = requestAnimationFrame(step);
+      loop.frame = requestAnimationFrame(step);
     };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
+    loop.frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(loop.frame);
   }, []);
 
   if (!session) return null;

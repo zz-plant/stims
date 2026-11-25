@@ -110,10 +110,12 @@ export function EditorSurface() {
     if (!host) return;
     noteGrowthEvent('editor-opened');
 
-    let cancelled = false;
+    // An AbortController, not a reassigned `let`: React Compiler bails on a
+    // local reassigned from a callback that runs after render (#1540).
+    const unmounted = new AbortController();
 
     loadEditorPanel().then(({ EditorPanel }) => {
-      if (cancelled) return;
+      if (unmounted.signal.aborted) return;
 
       const panel = new EditorPanel({
         onEditorSourceChange: (source: string) => {
@@ -165,7 +167,7 @@ export function EditorSurface() {
     });
 
     return () => {
-      cancelled = true;
+      unmounted.abort();
       panelRef.current?.dispose();
       panelRef.current = null;
     };

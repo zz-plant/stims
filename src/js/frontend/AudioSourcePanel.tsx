@@ -238,18 +238,16 @@ export function AudioSourcePanel({
 
   useEffect(() => {
     if (mobileDevice) return;
-    let cancelled = false;
+    const unmounted = new AbortController();
     void listAudioInputs().then((inputs) => {
-      if (cancelled) return;
+      if (unmounted.signal.aborted) return;
       setAudioDevices(inputs);
       if (!deviceInitRef.current && inputs.length > 0) {
         deviceInitRef.current = true;
         setSelectedDeviceId(inputs[0].deviceId);
       }
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => unmounted.abort();
   }, [mobileDevice]);
 
   const { displayCaptureDropsAudio, canCaptureDisplayAudio } =
