@@ -769,7 +769,7 @@ export async function autoSwitchScene(options?: {
       chosenScene: null,
       applied: false,
       confidence,
-      reason: 'Clef Omni chose to retain the current scene.',
+      reason: 'The AI kept the current scene.',
     };
   }
 
@@ -781,7 +781,7 @@ export async function autoSwitchScene(options?: {
       chosenScene: null,
       applied: false,
       confidence,
-      reason: 'Model chose an unknown scene.',
+      reason: 'The AI picked a scene that does not exist, so nothing changed.',
     };
   }
 

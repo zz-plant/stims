@@ -101,7 +101,7 @@ test('an exhausted neighbourhood says so and points at the control that still mo
   });
 
   expect(played).toEqual([]);
-  expect(announcements.at(-1)).toContain('Surprise me');
+  expect(announcements.at(-1)).toContain('Try a random preset');
 });
 
 test('the dev server having no index is explained, not reported as a failure', async () => {
@@ -189,7 +189,7 @@ test('a chunk that fails to load is reported, not left hanging', async () => {
 
   // The real path resolves searchByFrame through a dynamic import; a rejected
   // one used to escape the try entirely, leaving an unhandled rejection and
-  // the status line stuck on "Looking for something nearby…".
+  // the status line stuck on "Looking for a similar-looking preset…".
   await playNearbyPreset({
     canvas: {} as HTMLCanvasElement,
     currentPresetId: null,

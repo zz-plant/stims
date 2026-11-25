@@ -19,10 +19,10 @@ export function useFullscreen(
       try {
         const toggled = await toggleElementFullscreen(stageElement, document);
         if (!toggled) {
-          setStatusMessage('Full screen unavailable.');
+          setStatusMessage('This browser cannot go full screen here.');
         }
       } catch {
-        setStatusMessage('Full screen unavailable.');
+        setStatusMessage('This browser cannot go full screen here.');
       }
     })();
   }, [stageRef, setStatusMessage]);

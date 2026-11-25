@@ -6,7 +6,7 @@
  * Retrieval runs entirely on the device (the static EmbeddingGemma 2 preview
  * vectors and the same text scorer Browse uses), so it works offline and
  * while any hosted service is down. The image is sent to the hosted Clef
- * service only when the user clicks "Let AI pick one (Clef)", and is retained on
+ * service only when the user clicks "Let AI pick one", and is retained on
  * this device only when the user checks the retention box. Outcome episodes
  * are recorded in the bounded local store (LL-00): proposal shown, applied,
  * and an explicit accept or reject. Accepted references are offered again so
@@ -137,9 +137,7 @@ export function ReferenceFinderPanel({
           setCurrentEpisodeId(episode.id);
           setActiveApplied(applied);
           if (applied) {
-            setStatus(
-              'Your last starting point is waiting for a verdict below.',
-            );
+            setStatus('Your last starting point is below. Did it work?');
           }
         }
       });
@@ -306,7 +304,7 @@ export function ReferenceFinderPanel({
     const isCurrent = () => aliveRef.current && runId === runRef.current;
     setSelecting(true);
     setClefPickId(null);
-    setStatus('Sending your reference image and candidate list to Clef…');
+    setStatus('Sending your reference image and the candidate list to the AI…');
     const attempt = async () => {
       const image = await fileToBase64(imageFile);
       if (!isCurrent()) return;
@@ -320,11 +318,11 @@ export function ReferenceFinderPanel({
       if (outcome.kind === 'chosen') {
         setClefPickId(outcome.presetId);
         setStatus(
-          'Clef picked the closest starting point below. A similarity judgment is not a promise the preset reproduces your reference.',
+          'The AI picked the closest starting point below. Looking similar is not a promise that the preset reproduces your reference.',
         );
       } else if (outcome.kind === 'abstained') {
         setStatus(
-          'Clef abstained: none of the candidates plausibly matches your reference image, or the image was unclear. The list below is kept for you to judge.',
+          'The AI did not pick one: none of the candidates plausibly matches your reference image, or the image was unclear. The list below is kept for you to judge.',
         );
       } else {
         setStatus(outcome.message);
@@ -335,7 +333,7 @@ export function ReferenceFinderPanel({
     } catch (error) {
       if (isCurrent() && !controller.signal.aborted) {
         setStatus(
-          `Clef selection failed: ${error instanceof Error ? error.message : 'try again later'}`,
+          `AI pick failed: ${error instanceof Error ? error.message : 'try again later'}`,
         );
       }
     }
@@ -418,7 +416,7 @@ export function ReferenceFinderPanel({
     setImageFile(file);
     if (file) {
       setStatus(
-        'Your reference image is sent to the hosted Clef service only when you click "Let AI pick one (Clef)", and is not kept on this device unless you check the box below.',
+        'Your reference image is sent to a hosted AI model (Clef) only when you click "Let AI pick one", and is not kept on this device unless you check the box below.',
       );
     }
   }, []);
@@ -430,7 +428,7 @@ export function ReferenceFinderPanel({
     <section className={styles.panel}>
       <p className={styles.intro}>
         Find an editable preset from your description — search stays on this
-        device; only an image you ask Clef to check is sent.
+        device; only an image you ask the AI to judge is sent.
       </p>
 
       <label className={styles.field}>
@@ -479,8 +477,8 @@ export function ReferenceFinderPanel({
             disabled={working}
           />
           <span>
-            Keep my reference image on this device (counts toward the local
-            episode budget)
+            Keep my reference image on this device, with my past searches (the
+            oldest are removed when space runs out)
           </span>
         </label>
       ) : null}
@@ -506,21 +504,21 @@ export function ReferenceFinderPanel({
             !hostedAvailable
           }
         >
-          {selecting ? 'Asking Clef…' : 'Let AI pick one (Clef)'}
+          {selecting ? 'Asking the AI…' : 'Let AI pick one'}
         </button>
       </div>
 
       {imageFile && !hostedAvailable ? (
         <p className={styles.hint}>
-          Clef selection needs the hosted decision service and a connection; the
-          on-device list still works offline.
+          AI pick needs the hosted AI service and a connection; the list found
+          on this device still works offline.
         </p>
       ) : null}
 
       {!imageFile && shortlist && hostedAvailable ? (
         <p className={styles.hint}>
-          Letting AI pick needs a reference image to judge against; without one,
-          the on-device ranking stands.
+          The AI pick needs a reference image to judge against. Without one,
+          this ranking stands.
         </p>
       ) : null}
 
@@ -534,7 +532,7 @@ export function ReferenceFinderPanel({
                   role="img"
                   aria-label={
                     clefPickId === candidate.presetId
-                      ? `Clef's pick, rank ${index + 1}`
+                      ? `AI pick, rank ${index + 1}`
                       : `Rank ${index + 1}`
                   }
                 >

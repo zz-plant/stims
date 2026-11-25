@@ -73,7 +73,7 @@ export function FirstEditGuide({
         </button>
       </div>
       <p hidden={edit !== null}>
-        Add <code>rot=rot+0.02;</code> to the equations and watch the feedback
+        Add <code>rot=rot+0.02;</code> to the equations and watch the picture
         turn.
       </p>
       <p role="status">

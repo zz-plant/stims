@@ -109,7 +109,8 @@ describe('Workspace shell toast regression', () => {
       for (const message of [
         'Microphone access was denied. Allow it from the address bar, or in macOS Privacy & Security / Windows Privacy Settings. Demo audio needs no permission.',
         'Microphone is in use by another app (for example, Zoom or Teams). Close that app and try again.',
-        'No microphone hardware found. Please connect a microphone and try again.',
+        'No microphone found. Connect one and try again.',
+        'Could not start the microphone.',
         'No tab or system audio track was captured. Re-share and enable Share audio.',
         'Screen sharing is blocked on this page, which may be embedded in another site. Open Stims in its own tab, or use the microphone or a file.',
         'Screen sharing is blocked by your system. On macOS, allow your browser under Privacy & Security → Screen & System Audio Recording, then try again.',

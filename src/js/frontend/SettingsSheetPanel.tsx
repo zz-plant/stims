@@ -427,7 +427,7 @@ function SensoryMoodSection() {
       <div className="ctl-row">
         <span className="ctl-row__text">
           <label className="ctl-row__label" htmlFor="sensory-breathing-cadence">
-            Breathing pace
+            Breathing pulse
           </label>
           <span className="ctl-row__hint" id="sensory-breathing-cadence-hint">
             A slow swell and release in the picture to breathe along with. The
@@ -1185,7 +1185,7 @@ export function SettingsSheetPanel({
               }
             />
             <SwitchRow
-              label="Performance readout on the stage"
+              label="Frame-rate readout on the stage"
               hint="Overlays frames per second, the quality level, and the values the shaders receive."
               checked={overlays.debugHud}
               onChange={(next) => setStageOverlayPreference({ debugHud: next })}
@@ -1250,7 +1250,7 @@ export function SettingsSheetPanel({
             />
             {offline ? (
               <p className="ctl-section__note">
-                Offline mode is on. AI imports are paused until you reconnect.
+                You're offline. The AI tools work again once you reconnect.
               </p>
             ) : installAvailable ? (
               <button type="button" className="ctl-btn" onClick={onInstallApp}>

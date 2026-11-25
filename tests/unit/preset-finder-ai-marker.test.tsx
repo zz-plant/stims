@@ -70,6 +70,6 @@ describe('PresetFinderPanel AI marker', () => {
     const clefPick = [...panel.container.querySelectorAll('button')].find(
       (button) => button.textContent?.includes('Let AI pick one'),
     );
-    expect(clefPick?.textContent).toBe('Let AI pick one (Clef)');
+    expect(clefPick?.textContent).toBe('Let AI pick one');
   });
 });

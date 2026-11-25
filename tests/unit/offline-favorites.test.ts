@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { warmFavoriteForOffline } from '../../src/js/frontend/offline-favorites.ts';
 
 /**
- * The shell tells the user offline party mode keeps saved presets working.
+ * The shell's offline notice tells the user saved presets keep working.
  * What backed that was the service worker caching whatever had already been
  * fetched, so a preset saved from a browse tile and never played was not
  * offline at all. Saving is the signal; saving fetches.

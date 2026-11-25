@@ -548,7 +548,7 @@ requiredBrowserTest(
       await page.mouse.move(box.x + box.width / 3, box.y + box.height / 3);
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page
-        .locator('[aria-label="Edit this visual"]:not([inert]):visible')
+        .locator('[aria-label="Edit this preset"]:not([inert]):visible')
         .click({ timeout: CLICK_TIMEOUT_MS });
       await waitForAgentState(
         page,

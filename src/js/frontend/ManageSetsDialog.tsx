@@ -95,7 +95,7 @@ export function ManageSetsDialog({
   const handleLoad = (set: SavedPresetSet) => {
     onLoadQueue(set.presetIds);
     onClose();
-    onNotify(`Loaded "${set.title}" into queue.`);
+    onNotify(`Loaded “${set.title}” into the queue.`);
   };
 
   const handleCopyLink = async (set: SavedPresetSet) => {
@@ -106,9 +106,9 @@ export function ManageSetsDialog({
     );
     try {
       await navigator.clipboard.writeText(url);
-      onNotify(`Share link for "${set.title}" copied!`);
+      onNotify(`Link to “${set.title}” copied.`);
     } catch {
-      onNotify('Could not copy link to clipboard.');
+      onNotify('Could not reach the clipboard, so the link was not copied.');
     }
   };
 
@@ -122,13 +122,13 @@ export function ManageSetsDialog({
         data-shell-dialog="true"
         role="dialog"
         aria-modal="true"
-        aria-label="Manage Preset Sets"
+        aria-label="Preset sets"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={containDialogKeydown}
       >
         <div className="stims-shell__dialog-head">
-          <h2 className="stims-shell__dialog-title">Preset Sets</h2>
+          <h2 className="stims-shell__dialog-title">Preset sets</h2>
           <DialogCloseButton
             label="Close preset sets dialog"
             onClose={onClose}
@@ -148,7 +148,7 @@ export function ManageSetsDialog({
             }}
           >
             <label className="stims-shell__set-field">
-              Name this set:
+              Set name
               <input
                 ref={titleInputRef}
                 type="text"
@@ -183,8 +183,8 @@ export function ManageSetsDialog({
               disabled={currentQueueIds.length === 0}
               data-action="save-current-queue-as-set"
             >
-              + Save current queue as named set ({currentQueueIds.length}{' '}
-              presets)
+              + Save the queue as a set ({currentQueueIds.length}{' '}
+              {currentQueueIds.length === 1 ? 'preset' : 'presets'})
             </button>
           </div>
         )}
@@ -199,8 +199,8 @@ export function ManageSetsDialog({
         <div className="stims-shell__set-list">
           {sets.length === 0 ? (
             <p className="stims-shell__set-empty">
-              No saved preset sets yet. Queue presets and click "Save current
-              queue" above.
+              No saved sets yet. Queue some presets, then save the queue as a
+              set.
             </p>
           ) : (
             sets.map((set) => (

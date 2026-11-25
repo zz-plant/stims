@@ -206,8 +206,8 @@ describe('stage dock auto-hide', () => {
       expect(bar(rendered)?.dataset.visible).toBe('false');
       expect(foldedEdit()?.dataset.visible).toBe('true');
       expect(foldedEdit()?.hasAttribute('inert')).toBe(false);
-      expect(foldedEdit()?.getAttribute('aria-label')).toBe('Edit this visual');
-      expect(foldedEdit()?.getAttribute('title')).toBe('Edit this visual (E)');
+      expect(foldedEdit()?.getAttribute('aria-label')).toBe('Edit this preset');
+      expect(foldedEdit()?.getAttribute('title')).toBe('Edit this preset (E)');
 
       rendered.click(foldedEdit());
       expect(panels).toEqual(['editor']);
@@ -234,7 +234,7 @@ describe('stage dock transport', () => {
       },
     );
     try {
-      const edit = rendered.byLabel('Edit this visual');
+      const edit = rendered.byLabel('Edit this preset');
       // A control in the bar, labelled with the word it does, not a pill
       // floating over the bar's end.
       expect(pill(rendered)?.contains(edit)).toBe(true);
@@ -255,8 +255,8 @@ describe('stage dock transport', () => {
     // of the accessible name: aria-keyshortcuts announces it.
     const rendered = mount();
 
-    const edit = rendered.byLabel('Edit this visual');
-    expect(edit?.getAttribute('title')).toBe('Edit this visual (E)');
+    const edit = rendered.byLabel('Edit this preset');
+    expect(edit?.getAttribute('title')).toBe('Edit this preset (E)');
     expect(edit?.getAttribute('aria-keyshortcuts')).toBe('E');
 
     rendered.dispose();
@@ -546,9 +546,7 @@ describe('stage dock says what each control will do', () => {
     ].find((element) =>
       element.getAttribute('aria-label')?.startsWith('Publish'),
     );
-    expect(publish?.getAttribute('aria-label')).toBe(
-      'Publish a public video link…',
-    );
+    expect(publish?.getAttribute('aria-label')).toBe('Publish a video link…');
     rendered.dispose();
   });
 

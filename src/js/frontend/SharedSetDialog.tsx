@@ -86,7 +86,7 @@ export function SharedSetDialog({
         data-shell-dialog="true"
         role="dialog"
         aria-modal="true"
-        aria-label={`Shared Preset Set: ${payload.title}`}
+        aria-label={`Shared preset set: ${payload.title}`}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={containDialogKeydown}

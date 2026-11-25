@@ -74,7 +74,7 @@ export function CapturePanel() {
       setSupport({
         supported: false,
         mimeType: null,
-        reason: 'Start a visualizer before recording.',
+        reason: 'Start the visualizer before recording.',
       });
       return;
     }
@@ -145,7 +145,7 @@ export function CapturePanel() {
       fps: 60,
     });
     if (!result) {
-      setStatus('Start a visualizer before recording.');
+      setStatus('Start the visualizer before recording.');
       return;
     }
     if (!result.ok) {
@@ -156,7 +156,7 @@ export function CapturePanel() {
     setSaved(false);
     setRecording(true);
     setStatus(
-      `Recording ${EXPORT_PRESETS[preset].label}${engine.audioActive ? ' with audio' : ' without audio'}. The visualizer remains live.`,
+      `Recording ${EXPORT_PRESETS[preset].label}${engine.audioActive ? ' with audio' : ' without audio'}. The visuals keep playing.`,
     );
   }, [engine.audioActive, preset]);
 
@@ -219,7 +219,7 @@ export function CapturePanel() {
       {/* The side panel's own title names this ("Record video") and the
           format list below shows the sizes on offer. */}
       <p className={styles.intro}>
-        Capture the live canvas and active audio without pausing playback.
+        Records the stage and the playing audio. Nothing pauses.
       </p>
 
       <fieldset className={styles.formats} disabled={recording}>

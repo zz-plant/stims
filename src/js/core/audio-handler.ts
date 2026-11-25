@@ -1066,7 +1066,7 @@ export function classifyAudioAccessError(error: unknown): AudioAccessError {
   ) {
     return new AudioAccessError(
       'unavailable',
-      'No microphone hardware was found. Please connect a microphone and try again.',
+      'No microphone found. Connect one and try again.',
     );
   }
 

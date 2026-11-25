@@ -293,16 +293,16 @@ export function CueMonitor() {
                 queue.presetIds,
               );
               void navigator.clipboard.writeText(url).then(
+                () => ui.setStatusMessage('Queue link copied.'),
                 () =>
                   ui.setStatusMessage(
-                    'Share link for this set copied to clipboard!',
+                    'Could not reach the clipboard, so the link was not copied.',
                   ),
-                () => ui.setStatusMessage('Could not copy link.'),
               );
             }}
             data-action="queue-share-set"
           >
-            Copy link to this set
+            Copy a link to the queue
           </button>
           <button
             type="button"

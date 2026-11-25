@@ -43,7 +43,7 @@ requiredBrowserTest(
       );
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       const dialog = page.getByRole('dialog', {
-        name: 'Shared Preset Set: Evening reprise',
+        name: 'Shared preset set: Evening reprise',
         exact: true,
       });
       await dialog.waitFor({ state: 'visible', timeout: 45000 });

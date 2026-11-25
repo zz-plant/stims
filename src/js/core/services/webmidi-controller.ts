@@ -194,7 +194,7 @@ export type MidiClockListener = (snapshot: MidiClockSnapshot) => void;
 type DevicesChangedListener = (devices: MidiDeviceInfo[]) => void;
 
 /**
- * Global "touch + turn" learn: armed once from the Performance hardware
+ * Global "touch + turn" learn: armed once from the Settings Controllers
  * panel, it waits for BOTH a UI-designated target (any instrumented control
  * — the editor's per-field ⏺ path routes here automatically while armed)
  * AND a CC message, in either order, then binds them.

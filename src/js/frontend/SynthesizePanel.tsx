@@ -377,7 +377,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         };
       }
     } catch (err) {
-      setStatus(`Error: ${(err as Error).message}`);
+      setStatus(`Could not generate a preset: ${(err as Error).message}`);
     }
     // Cleanup after the catch rather than in a `finally` clause: React
     // Compiler cannot lower try/finally yet, and one unparsable function
@@ -410,7 +410,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     reviewController.current = controller;
     const revision = window.__stims_agent?.getPerformanceRevision();
     setReviewing(true);
-    setStatus('Checking the current picture against your description…');
+    setStatus('Checking a still frame against your description…');
     // The attempt runs as an inner function so its early returns end the
     // attempt instead of the handler: cleanup below must run on every path,
     // which a `finally` clause did before React Compiler made try/finally a
@@ -436,17 +436,17 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       if (controller.signal.aborted) return;
       if (revision !== window.__stims_agent?.getPerformanceRevision()) {
         setStatus(
-          'The performance changed during the picture check. Check the new picture again.',
+          'The visuals changed during the check. Check the frame again.',
         );
         return;
       }
       const verdict = summarizePromptMatch(result);
       setStatus(
         verdict === 'match'
-          ? 'The picture appears to match your description. This is an AI visual judgment.'
+          ? 'The frame appears to match your description. This is an AI judgment, not a measurement.'
           : verdict === 'mismatch'
-            ? 'The picture appears to miss part of your description. Try a more specific prompt or generate again.'
-            : 'The picture check was uncertain. Try a clearer description or check a later frame.',
+            ? 'The frame appears to miss part of your description. Try a more specific prompt or generate again.'
+            : 'The frame check was uncertain. Try a clearer description or check a later frame.',
       );
       setCanRegenerate(verdict !== 'match');
     };
@@ -455,7 +455,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     } catch (error) {
       if (!controller.signal.aborted)
         setStatus(
-          `Picture check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
+          `Frame check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
         );
     }
     if (!controller.signal.aborted) setReviewing(false);
@@ -468,7 +468,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     reviewController.current = controller;
     const revision = window.__stims_agent?.getPerformanceRevision();
     setReviewingVideo(true);
-    setStatus('Recording animation clip for Clef Omni motion check…');
+    setStatus('Recording a short clip of the motion…');
     // The attempt runs as an inner function so its early returns end the
     // attempt instead of the handler: cleanup below must run on every path,
     // which a `finally` clause did before React Compiler made try/finally a
@@ -485,7 +485,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      setStatus('Evaluating animation with Clef Omni…');
+      setStatus('Checking the motion…');
       const result = await requestDecision(
         {
           task: 'prompt-match',
@@ -497,17 +497,17 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       if (controller.signal.aborted) return;
       if (revision !== window.__stims_agent?.getPerformanceRevision()) {
         setStatus(
-          'The performance changed during the animation check. Check the new animation again.',
+          'The visuals changed during the check. Check the motion again.',
         );
         return;
       }
       const verdict = summarizePromptMatch(result);
       setStatus(
         verdict === 'match'
-          ? 'The animation appears to match your description. This is a Clef Omni motion judgment.'
+          ? 'The motion appears to match your description. This is an AI judgment, not a measurement.'
           : verdict === 'mismatch'
-            ? 'The animation appears to miss part of your description. Try a more specific prompt or generate again.'
-            : 'The animation check was uncertain. Try a clearer description or check a later clip.',
+            ? 'The motion appears to miss part of your description. Try a more specific prompt or generate again.'
+            : 'The motion check was uncertain. Try a clearer description or check again later.',
       );
       setCanRegenerate(verdict !== 'match');
     };
@@ -516,7 +516,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     } catch (error) {
       if (!controller.signal.aborted)
         setStatus(
-          `Animation check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
+          `Motion check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
         );
     }
     if (!controller.signal.aborted) setReviewingVideo(false);
@@ -641,7 +641,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                   ? 'Prompts and your key go to OpenRouter. The key is sent straight from this browser to openrouter.ai and stored only in this browser.'
                   : provider === 'on-device'
                     ? 'Gemini Nano, built into desktop Chrome. Works offline once downloaded. Needs a GPU over 4 GB, or 16 GB of RAM.'
-                    : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
+                    : 'Stims’s hosted model. If this site has none set up, or it is down, nothing is generated: Stims never swaps in a template.'}
             </p>
           </fieldset>
 
@@ -757,13 +757,13 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
 
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          Check the current picture
+          Check the result against your description
         </summary>
         <div className="stims-shell__settings-advanced-body">
           <p className={styles.intro}>
-            Compare the stage with your description. Check a single still frame
-            (Clef Flash) or record a short animation clip to evaluate dynamic
-            motion (Clef Omni). No audio is sent.
+            Compare the stage with your description, from one still frame or a
+            short clip of the motion. Either goes to a hosted AI model (Clef);
+            no audio is sent.
           </p>
           <div className={styles.checkActions}>
             <button
@@ -778,9 +778,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                 !resolveOptionalApiUrl('/api/decide')
               }
             >
-              {reviewing
-                ? 'Checking picture…'
-                : 'Check picture with AI (Clef Flash)'}
+              {reviewing ? 'Checking frame…' : 'Check a still frame with AI'}
             </button>
             <button
               type="button"
@@ -794,14 +792,13 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                 !resolveOptionalApiUrl('/api/decide')
               }
             >
-              {reviewingVideo
-                ? 'Checking animation…'
-                : 'Check animation with AI (Clef Omni)'}
+              {reviewingVideo ? 'Checking motion…' : 'Check the motion with AI'}
             </button>
           </div>
           {!resolveOptionalApiUrl('/api/decide') ? (
             <p className={styles.intro}>
-              Picture checks need a configured hosted API.
+              These checks need the hosted AI service, which this site has not
+              set up.
             </p>
           ) : null}
         </div>
