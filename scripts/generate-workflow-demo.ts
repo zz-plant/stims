@@ -121,7 +121,7 @@ try {
   // The dock has expanded and folded Edit buttons. The inactive copy is
   // inert; choose the interactive one even during its visibility transition.
   await page
-    .locator('[aria-label="Edit this visual"]:not([inert]):visible')
+    .locator('[aria-label="Edit this preset"]:not([inert]):visible')
     .click();
   const spin = page.getByRole('button', {
     name: 'Add a slow spin',

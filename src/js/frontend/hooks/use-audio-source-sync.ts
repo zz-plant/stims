@@ -104,8 +104,8 @@ export function useAudioSourceSync({
         error instanceof Error
           ? error.message
           : source === 'demo'
-            ? 'Unable to start demo audio.'
-            : 'Unable to start the microphone.',
+            ? 'Could not start demo audio.'
+            : 'Could not start the microphone.',
       );
       armGestureRetry();
     });

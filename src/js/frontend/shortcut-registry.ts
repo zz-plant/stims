@@ -98,7 +98,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     // destructive thing, with no key to undo it. It now holds the picture
     // and releases it; stopping audio is a named item in the dock menu.
     id: 'audio',
-    label: 'Pause or resume the visuals (before you start: audio choices)',
+    label: 'Pause or resume the visuals (on the start page: choose audio)',
     defaultKeys: ['Space'],
     paletteActionId: 'toggle-playback',
   },
@@ -134,13 +134,13 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     id: 'visualsearch',
-    label: 'Find presets that match the music or picture',
+    label: 'Find a preset by sound, look or reference',
     defaultKeys: ['M'],
     paletteActionId: 'find-similar',
   },
   {
     id: 'inspect',
-    label: 'Inspect the canvas: click a spot to name its equations',
+    label: 'Inspect the stage: click a spot to name its equations',
     defaultKeys: ['Alt+I'],
     paletteActionId: 'toggle-canvas-inspector',
     dispatchViaPalette: true,
@@ -189,19 +189,19 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     id: 'help',
-    label: 'This help',
+    label: 'Show this list',
     defaultKeys: ['?'],
     paletteActionId: 'open-shortcuts',
   },
   {
     id: 'close',
-    label: 'Close panels / dismiss',
+    label: 'Close the open panel',
     defaultKeys: ['Esc'],
     configurable: false,
   },
   {
     id: 'compile',
-    label: 'Compile in editor',
+    label: 'Apply edits to the stage now (in the editor)',
     defaultKeys: ['Cmd+Enter'],
     configurable: false,
   },
@@ -301,7 +301,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     // break; one more press brings it back.
     id: 'blackout',
     group: 'Live stage utilities',
-    label: 'Blackout the picture (hold, or double-tap to latch)',
+    label: 'Black out the stage (hold, or double-tap to keep it dark)',
     defaultKeys: ['D'],
     // The palette row latches (stage-utilities toggleBlackout); the key
     // keeps its own hold handling in useKeyboardShortcuts.

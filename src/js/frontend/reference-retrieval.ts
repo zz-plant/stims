@@ -152,7 +152,8 @@ export async function chooseReferenceWithClef(options: {
   if (!endpoint) {
     return {
       kind: 'unavailable',
-      message: 'Clef selection needs a configured hosted API.',
+      message:
+        'AI pick needs the hosted AI service, which this site has not set up.',
     };
   }
   if (options.candidates.length === 0) {

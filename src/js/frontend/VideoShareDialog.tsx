@@ -65,7 +65,7 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
     const source = original?.sessionState?.source;
     const presetId = original?.activePresetId;
     if (!stage || !source || !presetId || !original.runtimeReady) {
-      setMessage('Start the visualizer before creating a video link.');
+      setMessage('Start the visualizer before publishing a video link.');
       return;
     }
     const abort = new AbortController();
@@ -157,7 +157,7 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
         aria-labelledby="video-share-title"
         tabIndex={-1}
       >
-        <h2 id="video-share-title">Create a video link</h2>
+        <h2 id="video-share-title">Publish a video link</h2>
         <p>
           This publishes a small, silent preview and this preset’s code to
           Stims. Anyone with the link can view or copy them. Your audio stays in
@@ -170,7 +170,7 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
           {message ||
             (available === null
               ? 'Checking availability…'
-              : 'Nothing is captured until you choose Create public link.')}
+              : 'Nothing is captured until you choose Publish link.')}
         </p>
         {published ? (
           <>
@@ -226,7 +226,7 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
               void publish();
             }}
           >
-            {busy ? 'Creating…' : 'Create public link'}
+            {busy ? 'Publishing…' : 'Publish link'}
           </button>
         )}
         <button type="button" className="cta-button ghost" onClick={close}>

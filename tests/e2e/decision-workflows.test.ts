@@ -149,7 +149,7 @@ requiredBrowserTest(
       });
       await prompt.fill('a blue tunnel');
       await page
-        .getByText('Check the current picture', { exact: true })
+        .getByText('Check the result against your description', { exact: true })
         .click();
       expect(requests).toHaveLength(0);
       const preset = await page.evaluate(
@@ -157,7 +157,7 @@ requiredBrowserTest(
       );
       await page
         .getByRole('button', {
-          name: 'Check picture with AI (Clef Flash)',
+          name: 'Check a still frame with AI',
           exact: true,
         })
         .click();
@@ -182,7 +182,7 @@ requiredBrowserTest(
       // Clef Omni canvas animation check
       await page
         .getByRole('button', {
-          name: 'Check animation with AI (Clef Omni)',
+          name: 'Check the motion with AI',
           exact: true,
         })
         .click();
@@ -191,8 +191,8 @@ requiredBrowserTest(
           const text =
             document.querySelector('p[role="status"]')?.textContent ?? '';
           return (
-            !text.includes('Recording animation') &&
-            !text.includes('Evaluating animation')
+            !text.includes('Recording a short clip') &&
+            !text.includes('Checking the motion')
           );
         },
         null,
@@ -202,7 +202,7 @@ requiredBrowserTest(
         .locator('p[role="status"]')
         .textContent();
       expect(animationStatus).toContain(
-        'The animation appears to match your description',
+        'The motion appears to match your description',
       );
       expect(requests).toHaveLength(2);
       expect(requests[1].task).toBe('prompt-match');
@@ -221,7 +221,7 @@ requiredBrowserTest(
         expect(
           await page
             .getByRole('button', {
-              name: 'Check picture with AI (Clef Flash)',
+              name: 'Check a still frame with AI',
               exact: true,
             })
             .isVisible(),

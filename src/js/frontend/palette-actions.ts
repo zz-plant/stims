@@ -322,8 +322,8 @@ export function buildPaletteActions(
       group: 'Create',
       get label() {
         return isCanvasInspectorActive()
-          ? 'Stop inspecting the canvas'
-          : 'Inspect the canvas: click a spot to name its equations';
+          ? 'Stop inspecting the stage'
+          : 'Inspect the stage: click a spot to name its equations';
       },
       keywords: [
         'inspect',
@@ -352,9 +352,9 @@ export function buildPaletteActions(
         );
         uiRef.current.setStatusMessage(
           on
-            ? 'Canvas inspector on. Click a spot to see what drives it; Escape dismisses.'
+            ? 'Inspecting the stage. Click a spot to see what drives it; Escape stops.'
             : stage
-              ? 'Canvas inspector off.'
+              ? 'Stopped inspecting the stage.'
               : 'The stage is not running yet.',
         );
       },
@@ -608,7 +608,7 @@ export function buildPaletteActions(
             get label() {
               return stageUtilityMode() === 'blackout'
                 ? 'End the blackout'
-                : 'Black out the picture';
+                : 'Black out the stage';
             },
             keywords: ['blackout', 'dark', 'cut', 'break', 'vj'],
             run: () => toggleBlackout(),
@@ -627,7 +627,7 @@ export function buildPaletteActions(
           return;
         }
         uiRef.current.presetQueue.add(presetId);
-        uiRef.current.setStatusMessage('Queued. It shows in the cue monitor.');
+        uiRef.current.setStatusMessage('Queued. It shows under Up next.');
       },
     },
     {
@@ -638,7 +638,7 @@ export function buildPaletteActions(
       run: () => {
         const presetId = uiRef.current.presetQueue.popNext();
         if (!presetId) {
-          uiRef.current.setStatusMessage('Nothing is cued.');
+          uiRef.current.setStatusMessage('The queue is empty.');
           return;
         }
         if (presetId === engineSnapshotRef.current?.activePresetId) {
@@ -658,7 +658,7 @@ export function buildPaletteActions(
       run: () => {
         const next = uiRef.current.presetQueue.presetIds[0];
         if (!next) {
-          uiRef.current.setStatusMessage('Nothing is cued.');
+          uiRef.current.setStatusMessage('The queue is empty.');
           return;
         }
         uiRef.current.presetQueue.remove(next);
@@ -672,7 +672,7 @@ export function buildPaletteActions(
       run: () => {
         const next = uiRef.current.presetQueue.presetIds[0];
         if (!next) {
-          uiRef.current.setStatusMessage('Nothing is cued.');
+          uiRef.current.setStatusMessage('The queue is empty.');
           return;
         }
         if (next === engineSnapshotRef.current?.activePresetId) {
@@ -705,12 +705,14 @@ export function buildPaletteActions(
     {
       id: 'queue-save-set',
       group: 'Queue',
-      label: 'Save the queue as a named set…',
+      label: 'Save the queue as a set…',
       keywords: ['set', 'playlist', 'crate', 'save'],
       run: () => {
         const queueIds = uiRef.current.presetQueue.presetIds;
         if (queueIds.length === 0) {
-          uiRef.current.setStatusMessage('Queue is empty. Add presets first.');
+          uiRef.current.setStatusMessage(
+            'The queue is empty. Queue a preset first.',
+          );
           return;
         }
         if (context.setShowManageSets) {
@@ -718,7 +720,7 @@ export function buildPaletteActions(
         } else {
           saveNamedSet(`Set (${queueIds.length} presets)`, queueIds);
           uiRef.current.setStatusMessage(
-            `Saved queue as named set (${queueIds.length} presets).`,
+            `Saved the queue as a set (${queueIds.length} ${queueIds.length === 1 ? 'preset' : 'presets'}).`,
           );
         }
       },
@@ -731,7 +733,9 @@ export function buildPaletteActions(
       run: () => {
         const queueIds = uiRef.current.presetQueue.presetIds;
         if (queueIds.length === 0) {
-          uiRef.current.setStatusMessage('Queue is empty. Add presets first.');
+          uiRef.current.setStatusMessage(
+            'The queue is empty. Queue a preset first.',
+          );
           return;
         }
         const url = buildPresetSetShareUrl(
@@ -740,11 +744,11 @@ export function buildPaletteActions(
           queueIds,
         );
         void navigator.clipboard.writeText(url).then(
+          () => uiRef.current.setStatusMessage('Queue link copied.'),
           () =>
             uiRef.current.setStatusMessage(
-              'Share link for queue copied to clipboard!',
+              'Could not reach the clipboard, so the link was not copied.',
             ),
-          () => uiRef.current.setStatusMessage('Could not copy link.'),
         );
       },
     },
@@ -780,7 +784,7 @@ export function buildPaletteActions(
     {
       id: 'auto-switch-scene',
       group: 'Playback',
-      label: 'Pick the next scene with AI (Clef Omni)',
+      label: 'Pick the next scene with AI',
       keywords: ['vj', 'scene', 'switch', 'clef', 'omni', 'transition'],
       // Scenes are saved only through the live-coding console API
       // (__stims_live.saveScene), so for everyone else this row could only
@@ -799,7 +803,7 @@ export function buildPaletteActions(
           .then((outcome) => {
             if (outcome.applied && outcome.chosenScene) {
               uiRef.current.setStatusMessage(
-                `Switched to scene: ${outcome.chosenScene} (Clef Omni)`,
+                `The AI picked the scene ${outcome.chosenScene}.`,
               );
             } else if (outcome.reason) {
               uiRef.current.setStatusMessage(outcome.reason);
@@ -842,7 +846,7 @@ export function buildPaletteActions(
       keywords: ['sensory', 'stimulate', 'energize'],
       run: () => {
         setSensoryMoodKnobs({ overloadCeiling: 1.0 });
-        uiRef.current.setStatusMessage('Visuals stimulated.');
+        uiRef.current.setStatusMessage('Visuals at full intensity.');
       },
     },
     {
@@ -862,12 +866,12 @@ export function buildPaletteActions(
     {
       id: 'sensory-breathing-toggle',
       group: 'View',
-      // The Breathing pace dial's background pulse. The guided session with
+      // The Breathing pulse dial's background pulse. The guided session with
       // a bar and a timer is 'paced-breathing' below.
       get label() {
         return getSensoryMoodKnobs().breathingCadenceSeconds === null
-          ? 'Turn on the slow breathing pulse'
-          : 'Turn off the slow breathing pulse';
+          ? 'Turn on the breathing pulse'
+          : 'Turn off the breathing pulse';
       },
       keywords: ['sensory', 'breathing', 'pace', 'breath', 'pulse'],
       run: () => {
@@ -876,9 +880,7 @@ export function buildPaletteActions(
           breathingCadenceSeconds: current === null ? 6.0 : null,
         });
         uiRef.current.setStatusMessage(
-          current === null
-            ? 'Slow breathing pulse on.'
-            : 'Slow breathing pulse off.',
+          current === null ? 'Breathing pulse on.' : 'Breathing pulse off.',
         );
       },
     },

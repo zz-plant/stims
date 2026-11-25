@@ -203,7 +203,7 @@ export function PerformanceHardwareSection({
   return (
     <section className="ctl-section">
       <div className="ctl-section__head">
-        <h3 className="ctl-section__title">Performance hardware</h3>
+        <h3 className="ctl-section__title">Controllers</h3>
       </div>
       <p className="ctl-section__note">
         Connect a MIDI controller that needs no driver and map its knobs, or let
@@ -261,9 +261,9 @@ export function PerformanceHardwareSection({
         <span className="ctl-row__text">
           <span className="ctl-row__label">Learn from a control</span>
           <span className="ctl-row__hint">
-            No typing: arm learn, touch the on-screen control you want (in the
-            editor's Tune tab or on the stage), then move a knob, in either
-            order.
+            No typing: press the button below, touch the on-screen control you
+            want (in the editor's Tune tab or on the stage), then move a knob,
+            in either order.
           </span>
         </span>
         <div className="ctl-midi-learn-row">
@@ -297,9 +297,9 @@ export function PerformanceHardwareSection({
           <span className="ctl-row__text">
             <span className="ctl-row__label">Map a pad to a command</span>
             <span className="ctl-row__hint">
-              Pick a command, press Learn, then hit a pad, key or gamepad
-              button. That first hit only maps it; every hit after runs the
-              command.
+              Pick a command and press the button below: the next pad, key or
+              gamepad button you hit is mapped to it, and every hit after that
+              runs the command.
             </span>
           </span>
           <div className="ctl-midi-learn-row">

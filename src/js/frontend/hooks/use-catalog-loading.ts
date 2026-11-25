@@ -31,7 +31,7 @@ async function loadStarterCatalog(): Promise<PresetCatalogEntry[]> {
     const response = await fetch(STARTER_CATALOG_URL);
     if (!response.ok) {
       throw new Error(
-        `Unable to load the starter catalog (${response.status}).`,
+        `Could not load the starter presets (${response.status}).`,
       );
     }
     document = await response.json();
@@ -137,7 +137,7 @@ export function useCatalogLoading() {
         setFallbackCatalogError(
           error instanceof Error
             ? error.message
-            : 'Unable to load the catalog.',
+            : 'Check your connection, then reload the page.',
         );
       });
 
@@ -173,7 +173,7 @@ export function useCatalogLoading() {
           setFallbackCatalogError(
             error instanceof Error
               ? error.message
-              : 'Unable to load the catalog.',
+              : 'Check your connection, then reload the page.',
           );
           setActivityCatalog([]);
         });
@@ -205,7 +205,9 @@ export function useCatalogLoading() {
       reportLoadStatus('full-catalog');
     } catch (error) {
       setFallbackCatalogError(
-        error instanceof Error ? error.message : 'Unable to load the catalog.',
+        error instanceof Error
+          ? error.message
+          : 'Check your connection, then reload the page.',
       );
       setActivityCatalog([]);
     }

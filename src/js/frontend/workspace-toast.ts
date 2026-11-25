@@ -168,11 +168,11 @@ export function useWorkspaceToast({
 
     // Failures that leave the visitor without the sound they asked for need
     // the longer, louder toast. The microphone's denial, missing hardware and
-    // busy-device messages lead with what failed, not with "Unable to", so
+    // busy-device messages lead with what failed, not with "Could not", so
     // they used to read as 4-second info notes.
     const resolvedTone =
       fromShell &&
-      (/^(Unable to|error|failed|denied|blocked)/i.test(message) ||
+      (/^(Unable to|Could not|error|failed|denied|blocked)/i.test(message) ||
         /^(Microphone (access was denied|is in use)|No (microphone|tab or|YouTube) |Screen sharing is blocked)/.test(
           message,
         ))

@@ -929,7 +929,9 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     setSharedSetDismissed(false);
     if (ui.routeState.sharedSet && !sharedSetPayload) {
-      ui.setStatusMessage('Invalid or corrupted preset set link.');
+      ui.setStatusMessage(
+        'This set link is damaged or incomplete, so nothing was loaded.',
+      );
       ui.commitRoute((current) => ({ ...current, sharedSet: null }));
     }
   }, [
@@ -948,7 +950,7 @@ function StimsWorkspaceAppShell() {
     (presetIds: string[]) => {
       ui.presetQueue.replaceQueue(presetIds);
       ui.setStatusMessage(
-        `Loaded "${sharedSetPayload?.title ?? 'Set'}" (${presetIds.length} preset${presetIds.length === 1 ? '' : 's'}) into queue.`,
+        `Loaded "${sharedSetPayload?.title ?? 'Set'}" into the queue (${presetIds.length} preset${presetIds.length === 1 ? '' : 's'}).`,
       );
       handleCloseSharedSet();
     },
@@ -1569,13 +1571,13 @@ function StimsWorkspaceAppShell() {
 
       {offline ? (
         <div className="stims-shell__mobile-notice" role="status">
-          Offline party mode: saved presets and cached previews still work.
+          Offline: saved presets and cached previews still work.
         </div>
       ) : null}
 
       {showRotateHint ? (
         <div className="stims-shell__rotate-hint" role="status">
-          <span>Rotate your phone for theater mode.</span>
+          <span>Turn your phone sideways for a bigger picture.</span>
         </div>
       ) : null}
 

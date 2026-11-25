@@ -299,7 +299,7 @@ export function useWorkspaceYouTubePreview({
       setStatusMessage(
         error instanceof Error
           ? error.message
-          : 'Unable to load the YouTube preview.',
+          : 'Could not load the YouTube preview.',
       );
     } finally {
       setYoutubeLoading(false);

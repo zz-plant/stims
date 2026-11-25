@@ -26,7 +26,7 @@ A moving stage does not prove that external audio reached it. Check the audio st
 
 ## Edit a preset
 
-1. Choose **Edit this visual** to open the studio.
+1. Choose **Edit this preset** to open the studio.
 2. On a first edit, use **Add a slow spin**, or change the source directly. The button adds one rotation line: to the per-pixel equations when they set `rot`, and to the per-frame equations otherwise. A preset whose warp shader ignores the warp cannot show a spin, so it does not offer one. The code opens at the first line whose field follows the audio, and each such line ends with the sounds that drive it (`zoom=… ← bass, mid, treb`). Press Esc to leave the code; Tab inside it indents.
 3. Use the tabs under the code:
    - **Tune**: sliders, switches and colours for each field. A field the equations recompute names the audio that reaches it.
@@ -47,7 +47,7 @@ Compare with the original (Cmd/Ctrl+Shift+B) shows your edit against the preset 
 
 An edit that compiles is saved as that preset's draft in this browser, and the preset opens with it next time; the status line says so when it does, and Revert in the editor returns to the original. Text with errors is not saved: the draft keeps the last version that ran, and the browser asks before you leave the page.
 
-To change a preset without writing the code, describe the change in the field above the editor and press **Ask AI**. It sends the preset's code to the AI model and shows the result as a diff; nothing changes until you press **Apply**. After an edit that compiles, **Copy link** above the code copies a link that carries it.
+To change a preset without writing the code, describe the change in the field above the editor and press **Refine with AI**. It sends the preset's code to the AI model and shows the result as a diff; nothing changes until you press **Apply**. After an edit that compiles, **Copy link** above the code copies a link that carries it.
 
 Use the editor's export controls to keep a `.milk` file. A file gives you a portable backup of the source independent of local browser storage.
 
@@ -57,7 +57,7 @@ To put a preset on your own web page, choose **Share → Copy embed code**, or r
 
 When video publishing is enabled, the stage’s **Share → Publish a
 public video link…** dialog can publish a small, silent preview with the current preset
-code. Choose **Create public link** to capture four seconds; opening the
+code. Choose **Publish link** to capture four seconds; opening the
 dialog captures nothing. Anyone with the resulting link can view and copy
 the code. Audio stays in your browser. Keep the preset unchanged during
 capture. The dialog offers sharing and deletion after publication; deletion

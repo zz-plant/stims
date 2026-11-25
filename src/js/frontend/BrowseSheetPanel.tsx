@@ -864,8 +864,8 @@ export function BrowseSheetPanel({
             type="button"
             className="ctl-btn ctl-btn--icon ctl-compass-toggle"
             aria-expanded={showCompass}
-            aria-label="Aesthetic compass"
-            title="Aesthetic compass: pick a preset by how it looks"
+            aria-label="Map of looks"
+            title="Map of looks: pick a preset by how it looks"
             onClick={() => setShowCompass((open) => !open)}
           >
             <UiIcon
@@ -1081,7 +1081,7 @@ export function BrowseSheetPanel({
             <option value="author">Author</option>
             <option value="recent">Recently opened</option>
             <option value="favorites-first">Saved first</option>
-            <option value="like-saved">Like your saved</option>
+            <option value="like-saved">Similar to saved</option>
             <option value="random">Random</option>
           </select>
 
@@ -1166,7 +1166,7 @@ export function BrowseSheetPanel({
       </section>
 
       {showCompass ? (
-        <section className="ctl-browse-compass" aria-label="Aesthetic compass">
+        <section className="ctl-browse-compass" aria-label="Map of looks">
           <AestheticCompassPad
             onSelectPreset={selectPreset}
             isSelectable={(id) => !hiddenByFlash.has(id)}
@@ -1276,7 +1276,7 @@ export function BrowseSheetPanel({
         {catalogError ? (
           <div className="ctl-empty" role="alert">
             <span className="ctl-empty__title">
-              Preset catalog failed to load
+              The preset list didn't load
             </span>
             <p className="ctl-empty__body">{catalogError}</p>
           </div>

@@ -64,7 +64,7 @@ export function togglePanel(surface: PanelSurface, panel: PanelState): void {
  * while it closed Browse left the outcome to a checkmark.
  */
 const PANEL_OPEN_LABELS: Partial<Record<Exclude<PanelState, null>, string>> = {
-  finder: 'Find presets that match the music or picture',
+  finder: 'Find a preset by sound, look or reference',
 };
 const PANEL_CLOSE_LABELS: Partial<Record<Exclude<PanelState, null>, string>> = {
   browse: 'Close Browse',
@@ -466,7 +466,7 @@ export function togglePresetQueuedAction({
     return false;
   }
   queue.add(entry.id);
-  announce(`Queued “${title}”. It shows in the cue monitor.`);
+  announce(`Queued “${title}”. It shows under Up next.`);
   return true;
 }
 
@@ -668,7 +668,7 @@ export function toggleProjectorAction({
   if (!result.ok) {
     announce(
       result.reason === 'no-canvas'
-        ? 'Start the visuals first. The projector mirrors the stage.'
+        ? 'Start the visualizer first. The projector mirrors the stage.'
         : result.reason === 'popup-blocked'
           ? 'The projector window was blocked. Allow pop-ups for this site and try again.'
           : 'This browser cannot mirror the stage into another window.',
@@ -844,7 +844,7 @@ export async function playNearbyPreset({
   inFlightNearby = attempt;
   const superseded = () => attempt.signal.aborted;
 
-  announce('Looking for something nearby…');
+  announce('Looking for a similar-looking preset…');
 
   let matches: Array<{ presetId: string; score: number }>;
   try {
@@ -916,7 +916,7 @@ export async function playNearbyPreset({
     // A neighbourhood can genuinely run out — a preset with few look-alikes,
     // all of them just played. Saying so beats silently doing nothing, and
     // names the control that does still have somewhere to go.
-    announce('No new neighbors for this one. Try Surprise me.');
+    announce('No new look-alikes for this one. Try a random preset.');
     return;
   }
 

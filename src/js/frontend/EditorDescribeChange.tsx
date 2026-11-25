@@ -55,7 +55,7 @@ export function EditorDescribeChange({
           className="stims-editor-describe__submit"
           disabled={asking || !instruction.trim() || !source}
         >
-          {asking ? 'Asking…' : 'Ask AI'}
+          {asking ? 'Refining…' : 'Refine with AI'}
         </button>
       </form>
       {/* Said once there is something to send, not on every open. */}

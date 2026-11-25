@@ -229,7 +229,7 @@ export function PerformSurface() {
                 discover it mid-set. */}
             {state.overridden ? (
               <p className={styles.warning} id={`perform-warning-${target}`}>
-                This preset recomputes {target} every frame — the fader has no
+                This preset recomputes {target} every frame — the slider has no
                 effect here.
               </p>
             ) : null}

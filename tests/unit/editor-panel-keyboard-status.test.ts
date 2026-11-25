@@ -217,7 +217,7 @@ describe('editor panel keyboard, toolbar and status', () => {
       ) as HTMLElement;
       expect(note.hidden).toBe(false);
       expect(note.textContent).toBe(
-        'Queued — Cmd/Ctrl+Enter punches it in now.',
+        'Applies when you pause typing. Cmd/Ctrl+Enter applies it now.',
       );
     }));
 });

@@ -407,7 +407,7 @@ export function PresetFinderPanel({
       await attempt();
     } catch (err) {
       setError(
-        `Clef Omni audio match unavailable: ${err instanceof Error ? err.message : 'try again later'}`,
+        `AI match unavailable: ${err instanceof Error ? err.message : 'try again later'}`,
       );
     }
     // Cleanup after the catch rather than in a `finally` clause: React
@@ -554,7 +554,7 @@ export function PresetFinderPanel({
               // "Clef Omni" named a model nobody had been introduced to. It
               // sends the top results' titles and tags (and a generated test
               // tone, not your audio) to that model, which reorders them.
-              title="Sends the top results' titles and tags to Clef Omni, an AI model, which moves its pick to the top. Your audio is not sent."
+              title="Sends the top results' titles and tags to a hosted AI model (Clef Omni), which moves its pick to the top. Your audio is not sent."
             >
               {matchingOmni
                 ? 'Asking the AI model…'

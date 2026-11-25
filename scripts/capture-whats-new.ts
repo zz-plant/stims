@@ -173,9 +173,7 @@ async function main() {
 
     // Browse -> aesthetic compass.
     await run(page, 'open-browse');
-    const compassButton = page.locator(
-      'button[aria-label="Aesthetic compass"]',
-    );
+    const compassButton = page.locator('button[aria-label="Map of looks"]');
     try {
       await compassButton.first().waitFor({ state: 'visible' });
       await compassButton.first().click();
@@ -183,9 +181,7 @@ async function main() {
       await shoot(page, 'aesthetic-compass.png');
     } catch (error) {
       console.warn('compass button not found:', String(error).slice(0, 160));
-      const count = await page
-        .locator('[aria-label="Aesthetic compass"]')
-        .count();
+      const count = await page.locator('[aria-label="Map of looks"]').count();
       console.warn('aria-label matches:', count);
     }
   } finally {

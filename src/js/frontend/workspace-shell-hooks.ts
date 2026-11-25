@@ -73,7 +73,7 @@ function buildHealedPresetRoute(
     : (presetOverride ?? routeState.presetId);
   const healMessage =
     missingRequestedPreset && featuredPreset
-      ? `Requested preset unavailable. Starting with ${featuredPreset.title}.`
+      ? `The linked preset isn't available. Playing ${featuredPreset.title} instead.`
       : null;
   return {
     nextRouteState: {
@@ -561,13 +561,13 @@ export function useWorkspaceShellOrchestration({
             errName === 'NotAllowedError' || errName === 'PermissionDeniedError'
               ? 'Microphone access was denied. Allow it from the address bar, or in macOS Privacy & Security / Windows Privacy Settings. Demo audio needs no permission.'
               : errName === 'NotFoundError'
-                ? 'No microphone hardware found. Please connect a microphone and try again.'
+                ? 'No microphone found. Connect one and try again.'
                 : errName === 'NotReadableError' ||
                     errName === 'TrackStartError'
                   ? 'Microphone is in use by another app (for example, Zoom or Teams). Close that app and try again.'
                   : error instanceof Error && error.message
                     ? error.message
-                    : 'Unable to access the microphone.';
+                    : 'Could not reach the microphone.';
           throw new Error(msg);
         }
 
@@ -632,7 +632,7 @@ export function useWorkspaceShellOrchestration({
       return { ok: true, source };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Audio start failed.';
+        error instanceof Error ? error.message : 'Could not start the audio.';
       setStatusMessage(message);
       return { ok: false, source: null, message };
     } finally {

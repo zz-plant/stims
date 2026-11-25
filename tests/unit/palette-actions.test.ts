@@ -99,7 +99,7 @@ describe('palette actions', () => {
     expect(label(actions, 'open-settings')).toBe(getPanelTitle('settings'));
     // The finder's title names a thing; the row says what it finds.
     expect(label(actions, 'find-similar')).toBe(
-      'Find presets that match the music or picture',
+      'Find a preset by sound, look or reference',
     );
   });
 
@@ -182,7 +182,7 @@ describe('palette rows for commands that had no other route', () => {
     ).toBe(false);
     const actions = buildPaletteActions(context({ liveMode: true }));
     const blackout = actions.find((a) => a.id === 'toggle-blackout');
-    expect(blackout?.label).toBe('Black out the picture');
+    expect(blackout?.label).toBe('Black out the stage');
     blackout?.run();
     expect(stageUtilityMode()).toBe('blackout');
     expect(blackout?.label).toBe('End the blackout');

@@ -672,7 +672,7 @@ export function AudioSourcePanel({
             name="arrow-left"
             className="stims-icon-slot stims-icon-slot--sm"
           />
-          <span>Prev track</span>
+          <span>Previous track</span>
         </button>
         <span className="stims-shell__playlist-count">
           {playlist.currentIndex + 1} / {playlist.totalTracks}

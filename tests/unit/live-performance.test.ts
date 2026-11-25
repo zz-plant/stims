@@ -613,7 +613,7 @@ describe('live performance runtime', () => {
       });
       expect(outcome.chosenScene).toBeNull();
       expect(outcome.applied).toBe(false);
-      expect(outcome.reason).toContain('retain');
+      expect(outcome.reason).toContain('kept the current scene');
     } finally {
       globalThis.fetch = origFetch;
       live.deleteScene('chill-ambient');

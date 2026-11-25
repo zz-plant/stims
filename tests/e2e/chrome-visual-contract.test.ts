@@ -359,7 +359,7 @@ chromeTest(
   async () => {
     // The page-width check above cannot see this one: the card clips what
     // leaves it, so the document never grew. On a phone the action stack
-    // wrapped "Try sample audio instead" into a second column past the
+    // wrapped "Play demo audio instead" into a second column past the
     // card's right edge (visible only as "Try s"), and left an empty band
     // under Edit where it belonged.
     const page = await (browser as Browser).newPage({
@@ -404,7 +404,7 @@ chromeTest(
       });
       expect(layout).not.toBeNull();
       expect(
-        layout?.some((item) => item.label.startsWith('Try sample audio')),
+        layout?.some((item) => item.label.startsWith('Play demo audio')),
       ).toBe(true);
       // Keyed by label, so a failure names the action that left the card.
       const stray = (layout ?? []).filter(

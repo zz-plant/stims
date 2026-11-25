@@ -436,7 +436,7 @@ export function createMilkdropExperienceFrameLoop({
         }
         // A guided breathing session (#1625) sets the swell on its own clock,
         // so the guide's bar and the picture turn together; otherwise the
-        // Breathing pace dial does.
+        // Breathing pulse dial does.
         const breathingExpansion =
           guidedBreathingExpansion(now) ??
           calculateBreathingLFO(

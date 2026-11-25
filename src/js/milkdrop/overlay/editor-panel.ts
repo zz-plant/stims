@@ -1811,7 +1811,7 @@ export class EditorPanel {
       : state.dirty
         ? 'Draft is live on stage and saved in this browser. Revert restores the original.'
         : this.hasBufferedEdits
-          ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
+          ? 'Applies when you pause typing. Cmd/Ctrl+Enter applies it now.'
           : '';
 
     const noteKey = `${hasErrors}|${shouldShowStatus}|${baseStatus}`;

@@ -4,7 +4,7 @@ Start with a preset you enjoy. Change one thing, watch the stage, and share the 
 
 ```mermaid
 flowchart LR
-    A[Browse presets] --> B[Edit this visual]
+    A[Browse presets] --> B[Edit this preset]
     B --> C[Tune or edit source]
     C --> D[Check the running stage]
     D --> E[Remix with credit]
@@ -19,7 +19,7 @@ Credits keep each preset's authors, including the names a remix chain accumulate
 
 ## 2 · Open it in the editor
 
-Choose **Edit this visual**. The studio shows the `.milk` source used by the preset and tools for tuning, inspection, diagnostics, and versions. On a first edit, **Add a slow spin** gives you a visible change to try.
+Choose **Edit this preset**. The studio shows the `.milk` source used by the preset and tools for tuning, inspection, diagnostics, and versions. On a first edit, **Add a slow spin** gives you a visible change to try.
 
 ## 3 · Turn the knobs
 
@@ -52,7 +52,7 @@ When ready to contribute a preset, see [contributing presets](../../CONTRIBUTING
 | Action           | Where              | Result                                           |
 | ---------------- | ------------------ | ------------------------------------------------ |
 | Browse           | Workspace          | Catalog search and collections                   |
-| Edit             | Edit this visual   | Live source and studio panes                     |
+| Edit             | Edit this preset   | Live source and studio panes                     |
 | Tune             | Studio             | Controls tied to the loaded source               |
 | Remix            | Editor **⋯** menu  | A draft retaining supplied credit lineage        |
 | Explain / Refine | Studio assistance  | Provider-dependent explanation or proposed edits |

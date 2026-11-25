@@ -510,7 +510,7 @@ export function useWorkspaceSessionState({
         setStatusMessage(
           error instanceof Error
             ? error.message
-            : 'Unable to start the visualizer runtime.',
+            : 'Could not start the visuals.',
         );
       });
     };

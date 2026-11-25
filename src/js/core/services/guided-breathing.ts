@@ -4,7 +4,7 @@
  *
  * The guide's bar and label read `guidedBreathingPhase(now)`; the frame loop
  * reads `guidedBreathingExpansion(now)` and feeds it to the same
- * `applyBreathingExpansion` the Breathing pace dial uses. Both derive the
+ * `applyBreathingExpansion` the Breathing pulse dial uses. Both derive the
  * phase from elapsed time since start, so they cannot drift apart or drift
  * over a long session, and nothing touches the preset's source: the swell
  * is applied to the frame, after the VM, and before motion dampening, so a

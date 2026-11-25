@@ -342,7 +342,7 @@ export function StageControls({
       return;
     }
     ui.presetQueue.add(presetId);
-    ui.setStatusMessage('Queued. It shows in the cue monitor.');
+    ui.setStatusMessage('Queued. It shows under Up next.');
   };
   // favoritePresets is the store-derived list, so it stays fresh across
   // toggles even if the selectedPreset entry object is a stale snapshot.
@@ -908,8 +908,8 @@ export function StageControls({
     {
       icon: 'eye' as const,
       label: isCanvasInspectorActive()
-        ? 'Stop inspecting the canvas'
-        : 'Inspect the canvas',
+        ? 'Stop inspecting the stage'
+        : 'Inspect the stage',
       actionId: 'toggle-canvas-inspector',
       action: () => {
         const stage = ui.stageRef?.current ?? null;
@@ -926,8 +926,8 @@ export function StageControls({
         );
         ui.setStatusMessage(
           on
-            ? 'Canvas inspector on. Click a spot to see what drives it.'
-            : 'Canvas inspector off.',
+            ? 'Inspecting the stage. Click a spot to see what drives it.'
+            : 'Stopped inspecting the stage.',
         );
       },
       active: isCanvasInspectorActive(),
@@ -1003,7 +1003,7 @@ export function StageControls({
       // Not the link icon: Share link above copies a link, this publishes a
       // clip and the preset's code where anyone with the address can see it.
       icon: 'upload' as const,
-      label: 'Publish a public video link…',
+      label: 'Publish a video link…',
       // No data-action: there is no palette row for it to match, so the
       // click is noted here instead of by the delegated listener.
       action: () => {
@@ -1336,8 +1336,8 @@ export function StageControls({
               type="button"
               className={styles.editEntry}
               data-action="open-editor"
-              aria-label="Edit this visual"
-              title={withHint('Edit this visual', 'open-editor')}
+              aria-label="Edit this preset"
+              title={withHint('Edit this preset', 'open-editor')}
               aria-keyshortcuts={ariaKeyShortcutsFor(
                 'open-editor',
                 shortcutOverrides,
@@ -1656,8 +1656,8 @@ export function StageControls({
           className={styles.foldedEdit}
           data-action="open-editor"
           data-visible={String(!visible)}
-          aria-label="Edit this visual"
-          title={withHint('Edit this visual', 'open-editor')}
+          aria-label="Edit this preset"
+          title={withHint('Edit this preset', 'open-editor')}
           aria-keyshortcuts={ariaKeyShortcutsFor(
             'open-editor',
             shortcutOverrides,

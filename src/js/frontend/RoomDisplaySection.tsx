@@ -77,8 +77,8 @@ export function RoomDisplaySection() {
             Sound
           </label>
           <span className="ctl-row__hint">
-            The demo track needs no permission. The microphone follows the
-            room's own music; the browser asks once.
+            Demo audio needs no permission. The microphone follows the room's
+            own music; the browser asks once.
           </span>
         </span>
         <select
@@ -89,7 +89,7 @@ export function RoomDisplaySection() {
             update({ audio: e.target.value as RoomLinkOptions['audio'] })
           }
         >
-          <option value="demo">Demo track</option>
+          <option value="demo">Demo audio</option>
           <option value="microphone">Microphone</option>
         </select>
       </div>

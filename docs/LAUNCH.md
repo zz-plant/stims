@@ -5,7 +5,7 @@ Prepared copy, not a record of publication. The workflow clip is a local capture
 ## Assets and destinations
 
 - [With-sound clip](https://toil.fyi/clips/shifter-curlique-with-sound.mp4): 20 seconds of Shifter's Curlique reacting to the built-in demo loop, recorded with the app's Record panel.
-- [Full workflow video](https://toil.fyi/clips/stims-workflow.mp4): Start visualizer → Edit this visual → Add a slow spin → copy the remix link. Silent, at recorded speed.
+- [Full workflow video](https://toil.fyi/clips/stims-workflow.mp4): Start visualizer → Edit this preset → Add a slow spin → copy the remix link. Silent, at recorded speed.
 - [README preview](./assets/clips/stims-workflow.webp): the same capture at 1.5 times speed; faster previews break the WCAG flash limit.
 - [Try Stims](https://toil.fyi/): no account or install.
 - [Source](https://github.com/zz-plant/stims).
@@ -23,7 +23,7 @@ Submission URL: https://toil.fyi/
 
 First comment:
 
-> Stims runs original .milk presets in a browser. Press Start visualizer, then Edit this visual: the editor shows the equations and which audio signals reach each control. Add a slow spin adds one rotation equation; you can undo it or change the code while playback continues. Copy link puts the edited source in the URL, so a remix does not need an account or server-side storage.
+> Stims runs original .milk presets in a browser. Press Start visualizer, then Edit this preset: the editor shows the equations and which audio signals reach each control. Add a slow spin adds one rotation equation; you can undo it or change the code while playback continues. Copy link puts the edited source in the URL, so a remix does not need an account or server-side storage.
 >
 > WebGL2 is the baseline; WebGPU is an optional path. Compiling a preset is not proof that it matches MilkDrop visually. The README links both the compiler corpus tests and the much smaller set of measured comparisons against native projectM.
 >

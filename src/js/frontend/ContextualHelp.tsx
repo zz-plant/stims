@@ -46,8 +46,8 @@ const HINTS: HelpHintDef[] = [
     // a screensaver cannot be left to ?'s list.
     message: () =>
       isMobileDevice()
-        ? 'Swipe to change the visuals — double-tap to fill the screen.'
-        : 'Press → for another visual, E to edit its code, or ? for every key.',
+        ? 'Swipe to change preset — double-tap to fill the screen.'
+        : 'Press → for another preset, E to edit its code, or ? for every key.',
     autoHideMs: 7000,
     anchor: 'stage',
   },

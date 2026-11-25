@@ -767,7 +767,7 @@ function Actions({
           aria-busy={isStarting}
           onClick={onPlayDemo}
         >
-          Try sample audio instead, no permission needed
+          Play demo audio instead (no permission needed)
         </button>
       ) : null}
     </div>
@@ -827,7 +827,7 @@ function LaunchStarterShowcase({
       aria-labelledby="starter-showcase-heading"
     >
       <h2 id="starter-showcase-heading" className="stims-shell__section-label">
-        Jump into an iconic look
+        Start from a classic
       </h2>
       <div className="stims-shell__launch-showcase-grid">
         {STARTER_SHOWCASE_PRESETS.map((item) => {
@@ -917,7 +917,7 @@ function LaunchSoundflowPreview({
               name="pencil"
               className="stims-icon-slot stims-icon-slot--sm"
             />
-            Open formula editor
+            Open the editor
           </button>
         ) : null}
       </div>

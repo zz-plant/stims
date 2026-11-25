@@ -619,7 +619,7 @@ describe('Preset page', () => {
   });
 });
 
-describe('Performance hardware', () => {
+describe('Controllers section', () => {
   test('each map button names its job, and a disabled one says why', () => {
     const rendered = renderWorkspace(createElement(PerformanceHardwareSection));
     try {

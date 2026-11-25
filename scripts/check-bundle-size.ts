@@ -52,7 +52,7 @@ const MANIFEST_GZIP_BUDGETS: ReadonlyArray<{ file: string; max: number }> = [
   { file: 'milkdrop-presets/starter-catalog.json', max: 8_000 },
   { file: 'milkdrop-presets/catalog.json', max: 160_000 },
   { file: 'milkdrop-presets/search-index.json', max: 100_000 },
-  // Fetched only when Nearby, "By look" or "Like your saved" first needs it.
+  // Fetched only when Nearby, "By look" or "Similar to saved" first needs it.
   // The loader prefers the gzip twin (307 KB) and decompresses it locally;
   // the raw binary is the fallback for engines without DecompressionStream.
   { file: 'milkdrop-presets/visual-vectors.bin', max: 360_000 },
