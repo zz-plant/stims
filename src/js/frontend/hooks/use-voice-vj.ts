@@ -2,12 +2,9 @@
  * Hands-free voice VJing via the Web Speech API (issue #1684).
  *
  * On-device browser speech recognition (no audio leaves the browser) maps
- * spoken phrases to bounded __stims_agent actions with smooth 2-4s crossfades
- * and transient corner feedback pills.
- *
- * This is the first slice: recognition setup + phrase→action mapping for the
- * core verbs. Crossfade timing and feedback pills are handled by the existing
- * action infrastructure.
+ * spoken phrases to command-palette actions, so a spoken command takes the
+ * same path, guards and ramps as a picked one: preset changes use the normal
+ * transition, and the sensory dial actions ease in over a few seconds.
  */
 import { useEffect, useRef, useState } from 'react';
 
@@ -90,10 +87,12 @@ export function useVoiceVJ(options: VoiceVJOptions): {
     rec.lang = 'en-US';
     rec.continuous = true;
     rec.interimResults = false;
-    // Keep audio on-device. Only reachable when the browser exposes the flag
-    // (see `supported`), so this is never a silent no-op under a remote path.
-    rec.processLocally = true;
-    if (rec.processLocally !== true) {
+    // Keep audio on-device. A recognizer that does not know the flag would
+    // take the assignment as a plain property and read it back as true, so
+    // check that the flag exists before setting it.
+    const local = 'processLocally' in rec;
+    if (local) rec.processLocally = true;
+    if (!local || rec.processLocally !== true) {
       // The recognizer did not accept local mode. Fail closed rather than
       // risk microphone audio reaching a remote service under a local-only
       // promise.
@@ -178,25 +177,15 @@ export function useVoiceVJ(options: VoiceVJOptions): {
 }
 
 /**
- * Map a transcript to a bounded agent action. Returns the action id + params,
- * or null if no phrase matched.
+ * Map a transcript to a command-palette action id, or null if no phrase
+ * matched. "Slow down" and "speed up" are other words for calm and stimulate:
+ * both move the overload dial, which is what dampens motion.
  */
-export function mapVoicePhrase(
-  phrase: string,
-): { id: string; params?: Record<string, unknown> } | null {
+export function mapVoicePhrase(phrase: string): { id: string } | null {
   const p = phrase.toLowerCase();
-  if (/\bslow\s*down\b/.test(p))
-    return {
-      id: 'set-sensory-knob',
-      params: { knob: 'overloadCeiling', value: 0.3 },
-    };
-  if (/\bspeed\s*up\b|\bfaster\b/.test(p))
-    return {
-      id: 'set-sensory-knob',
-      params: { knob: 'overloadCeiling', value: 1.0 },
-    };
-  if (/\bcalm\b/.test(p)) return { id: 'sensory-calm' };
-  if (/\bstimulate\b|\benergize\b/.test(p)) return { id: 'sensory-stimulate' };
+  if (/\bslow\s*down\b|\bcalm\b/.test(p)) return { id: 'sensory-calm' };
+  if (/\bspeed\s*up\b|\bfaster\b|\bstimulate\b|\benergize\b/.test(p))
+    return { id: 'sensory-stimulate' };
   if (/\bbreath(e|ing)?\b/.test(p)) return { id: 'sensory-breathing-toggle' };
   if (/\bnext\b/.test(p)) return { id: 'next-preset' };
   if (/\bprevious\b|\bback\b/.test(p)) return { id: 'previous-preset' };

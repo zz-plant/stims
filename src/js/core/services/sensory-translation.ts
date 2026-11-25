@@ -48,6 +48,18 @@ export const MIN_CONTRAST_SCALE = 0.6;
 /** Heavy filtering low-pass alpha when predictability is at maximum (1.0) */
 export const MIN_SMOOTHING_ALPHA = 0.05;
 
+/**
+ * How long a one-shot change of the overload dial takes to reach the stage
+ * (#1679's instrumental-continuity rule asks for 2–4 s). A dragged slider
+ * passes no ramp: the hand already moves it gradually.
+ */
+export const SENSORY_RAMP_MS = 3000;
+
+export interface SetSensoryKnobsOptions {
+  /** Ease the overload dial to its new value over this many milliseconds. */
+  rampMs?: number;
+}
+
 export interface SensoryMoodKnobs {
   /**
    * Overload ceiling (0.0 to 1.0, default 1.0).
@@ -253,12 +265,29 @@ export function verifyFlashGovernorInvariant(
 
 export type SensoryMoodSubscriber = (knobs: SensoryMoodKnobs) => void;
 
+/** Eased 0→1 with zero slope at both ends, so a ramp neither lurches nor stops dead. */
+function easeInOut(t: number): number {
+  return 0.5 - 0.5 * Math.cos(Math.PI * t);
+}
+
+interface OverloadRamp {
+  from: number;
+  startMs: number;
+  durationMs: number;
+}
+
 export class SensoryTranslationService {
   private knobs: SensoryMoodKnobs;
   private readonly subscribers = new Set<SensoryMoodSubscriber>();
+  private overloadRamp: OverloadRamp | null = null;
+  private readonly now: () => number;
 
-  constructor(initialKnobs?: Partial<SensoryMoodKnobs>) {
+  constructor(
+    initialKnobs?: Partial<SensoryMoodKnobs>,
+    now: () => number = () => performance.now(),
+  ) {
     this.knobs = this.loadInitialKnobs(initialKnobs);
+    this.now = now;
   }
 
   private loadInitialKnobs(
@@ -283,7 +312,10 @@ export class SensoryTranslationService {
     return { ...this.knobs };
   }
 
-  setKnobs(partial: Partial<SensoryMoodKnobs>): SensoryMoodKnobs {
+  setKnobs(
+    partial: Partial<SensoryMoodKnobs>,
+    options: SetSensoryKnobsOptions = {},
+  ): SensoryMoodKnobs {
     const next: SensoryMoodKnobs = {
       overloadCeiling:
         partial.overloadCeiling !== undefined
@@ -307,6 +339,20 @@ export class SensoryTranslationService {
       return this.knobs;
     }
 
+    if (next.overloadCeiling !== this.knobs.overloadCeiling) {
+      const rampMs = options.rampMs ?? 0;
+      // A ramp interrupted by another change continues from where the stage
+      // is now, not from the old target, so it never jumps.
+      this.overloadRamp =
+        rampMs > 0
+          ? {
+              from: this.getAppliedOverloadCeiling(),
+              startMs: this.now(),
+              durationMs: rampMs,
+            }
+          : null;
+    }
+
     this.knobs = next;
     writeStored(SENSORY_MOOD_KNOBS_STORAGE_KEY, JSON.stringify(next));
     this.notifySubscribers();
@@ -315,6 +361,29 @@ export class SensoryTranslationService {
 
   resetKnobs(): SensoryMoodKnobs {
     return this.setKnobs(DEFAULT_SENSORY_MOOD_KNOBS);
+  }
+
+  /**
+   * The overload value the stage shows right now: the dial itself, or a point
+   * on the way to it while a ramp runs. Everything that renders reads this;
+   * the Settings dial and storage hold the target.
+   */
+  getAppliedOverloadCeiling(): number {
+    const target = this.knobs.overloadCeiling;
+    const ramp = this.overloadRamp;
+    if (!ramp) return target;
+    const t = (this.now() - ramp.startMs) / ramp.durationMs;
+    if (!(t < 1)) {
+      this.overloadRamp = null;
+      return target;
+    }
+    return ramp.from + (target - ramp.from) * easeInOut(Math.max(0, t));
+  }
+
+  /** Whether the overload dial is still easing toward its value. */
+  isRamping(): boolean {
+    this.getAppliedOverloadCeiling();
+    return this.overloadRamp !== null;
   }
 
   subscribe(subscriber: SensoryMoodSubscriber): () => void {
@@ -338,7 +407,7 @@ export class SensoryTranslationService {
     timeSeconds: number,
     governorScale: number = 1.0,
   ): SensoryModulationFrame {
-    const overload = translateOverloadCeiling(this.knobs.overloadCeiling);
+    const overload = translateOverloadCeiling(this.getAppliedOverloadCeiling());
     const pred = translatePredictability(this.knobs.predictability);
     const breathingExpansionFactor = calculateBreathingLFO(
       timeSeconds,
@@ -392,8 +461,13 @@ export function getSensoryMoodKnobs(): SensoryMoodKnobs {
 
 export function setSensoryMoodKnobs(
   partial: Partial<SensoryMoodKnobs>,
+  options?: SetSensoryKnobsOptions,
 ): SensoryMoodKnobs {
-  return getSensoryTranslationService().setKnobs(partial);
+  return getSensoryTranslationService().setKnobs(partial, options);
+}
+
+export function isSensoryRampActive(): boolean {
+  return getSensoryTranslationService().isRamping();
 }
 
 export function resetSensoryMoodKnobs(): SensoryMoodKnobs {
@@ -408,8 +482,9 @@ export function subscribeToSensoryMoodKnobs(
 
 export function resetSensoryTranslationServiceStateForTests(
   initial?: Partial<SensoryMoodKnobs>,
+  now?: () => number,
 ): void {
-  globalService = new SensoryTranslationService(initial);
+  globalService = new SensoryTranslationService(initial, now);
 }
 
 /**

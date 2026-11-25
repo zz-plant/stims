@@ -23,6 +23,7 @@ import {
   resetSensoryMoodKnobs,
   resetSensoryTranslationServiceStateForTests,
   SENSORY_MOOD_KNOBS_STORAGE_KEY,
+  SENSORY_RAMP_MS,
   SensoryTranslationService,
   sanitizeSensoryMoodKnobs,
   setSensoryMoodKnobs,
@@ -345,5 +346,71 @@ describe('Sensory translation: service & subscription lifecycle', () => {
     const s2 = new SensoryTranslationService();
     expect(s2.getKnobs().overloadCeiling).toBe(0.45);
     expect(s2.getKnobs().predictability).toBe(0.85);
+  });
+});
+
+describe('Sensory translation: overload ramps', () => {
+  const clocked = (initial: number) => {
+    let now = 1000;
+    const service = new SensoryTranslationService(
+      { overloadCeiling: initial },
+      () => now,
+    );
+    return {
+      service,
+      at: (ms: number) => {
+        now = 1000 + ms;
+      },
+    };
+  };
+
+  test('a ramped change eases the stage from the old value to the new one', () => {
+    const { service, at } = clocked(1.0);
+    service.setKnobs({ overloadCeiling: 0.3 }, { rampMs: SENSORY_RAMP_MS });
+
+    // The dial (and storage) hold the target at once; the stage eases.
+    expect(service.getKnobs().overloadCeiling).toBe(0.3);
+    expect(service.getAppliedOverloadCeiling()).toBe(1.0);
+    expect(service.isRamping()).toBe(true);
+
+    at(SENSORY_RAMP_MS / 4);
+    const quarter = service.getAppliedOverloadCeiling();
+    at(SENSORY_RAMP_MS / 2);
+    expect(service.getAppliedOverloadCeiling()).toBeCloseTo(0.65, 6);
+    // Eased: the first quarter covers less than a quarter of the distance.
+    expect(1.0 - quarter).toBeLessThan(0.7 / 4);
+    expect(service.translate(0).motionDampener).toBeCloseTo(0.65, 6);
+
+    at(SENSORY_RAMP_MS);
+    expect(service.getAppliedOverloadCeiling()).toBe(0.3);
+    expect(service.isRamping()).toBe(false);
+  });
+
+  test('a change without a ramp reaches the stage at once', () => {
+    const { service } = clocked(1.0);
+    service.setKnobs({ overloadCeiling: 0.3 });
+    expect(service.getAppliedOverloadCeiling()).toBe(0.3);
+    expect(service.isRamping()).toBe(false);
+  });
+
+  test('an interrupted ramp continues from where the stage is, without a jump', () => {
+    const { service, at } = clocked(1.0);
+    service.setKnobs({ overloadCeiling: 0.3 }, { rampMs: SENSORY_RAMP_MS });
+    at(SENSORY_RAMP_MS / 2);
+    const midway = service.getAppliedOverloadCeiling();
+
+    service.setKnobs({ overloadCeiling: 1.0 }, { rampMs: SENSORY_RAMP_MS });
+    expect(service.getAppliedOverloadCeiling()).toBeCloseTo(midway, 9);
+    at(SENSORY_RAMP_MS / 2 + SENSORY_RAMP_MS);
+    expect(service.getAppliedOverloadCeiling()).toBe(1.0);
+  });
+
+  test('a dragged slider cancels a running ramp', () => {
+    const { service, at } = clocked(1.0);
+    service.setKnobs({ overloadCeiling: 0.3 }, { rampMs: SENSORY_RAMP_MS });
+    at(500);
+    service.setKnobs({ overloadCeiling: 0.8 });
+    expect(service.getAppliedOverloadCeiling()).toBe(0.8);
+    expect(service.isRamping()).toBe(false);
   });
 });

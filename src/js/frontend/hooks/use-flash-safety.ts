@@ -12,6 +12,7 @@ import {
 } from '../../core/services/flash-safety.ts';
 import {
   getSensoryBrightnessCeiling,
+  isSensoryRampActive,
   subscribeToSensoryMoodKnobs,
 } from '../../core/services/sensory-translation.ts';
 import { setStageLuminanceChannel } from '../../core/services/stage-luminance.ts';
@@ -188,7 +189,9 @@ export function useStageBrightness(stageRef: {
 /**
  * Holds the sensory mood dial's brightness ceiling on the stage, composing
  * with the visitor's comfort ceiling and the flash governor. Multiplicative,
- * same as the other channels.
+ * same as the other channels. A one-shot change (a voice command, a palette
+ * action) eases in over a few seconds, so this writes every frame until the
+ * ramp ends.
  */
 export function useStageSensoryBrightness(stageRef: {
   current: HTMLDivElement | null;
@@ -203,14 +206,24 @@ export function useStageSensoryBrightness(stageRef: {
   });
 
   useEffect(() => {
-    const unsubscribe = subscribeToSensoryMoodKnobs(() => {
+    // An object, not a reassigned `let`, so React Compiler compiles this
+    // hook (#1540).
+    const ramp = { frame: 0 };
+    const write = () => {
+      ramp.frame = 0;
       const stage = stageRef.current ?? appliedToRef.current;
       if (!stage) return;
       setStageLuminanceChannel(stage, 'sensory', getSensoryBrightnessCeiling());
+      if (isSensoryRampActive()) ramp.frame = requestAnimationFrame(write);
+    };
+    const unsubscribe = subscribeToSensoryMoodKnobs(() => {
+      if (ramp.frame) cancelAnimationFrame(ramp.frame);
+      write();
     });
 
     return () => {
       unsubscribe();
+      if (ramp.frame) cancelAnimationFrame(ramp.frame);
       const stage = appliedToRef.current;
       if (stage) setStageLuminanceChannel(stage, 'sensory', 1);
       appliedToRef.current = null;
