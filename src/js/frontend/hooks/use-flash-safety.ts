@@ -206,22 +206,24 @@ export function useStageSensoryBrightness(stageRef: {
   });
 
   useEffect(() => {
-    let frame = 0;
+    // An object, not a reassigned `let`, so React Compiler compiles this
+    // hook (#1540).
+    const ramp = { frame: 0 };
     const write = () => {
-      frame = 0;
+      ramp.frame = 0;
       const stage = stageRef.current ?? appliedToRef.current;
       if (!stage) return;
       setStageLuminanceChannel(stage, 'sensory', getSensoryBrightnessCeiling());
-      if (isSensoryRampActive()) frame = requestAnimationFrame(write);
+      if (isSensoryRampActive()) ramp.frame = requestAnimationFrame(write);
     };
     const unsubscribe = subscribeToSensoryMoodKnobs(() => {
-      if (frame) cancelAnimationFrame(frame);
+      if (ramp.frame) cancelAnimationFrame(ramp.frame);
       write();
     });
 
     return () => {
       unsubscribe();
-      if (frame) cancelAnimationFrame(frame);
+      if (ramp.frame) cancelAnimationFrame(ramp.frame);
       const stage = appliedToRef.current;
       if (stage) setStageLuminanceChannel(stage, 'sensory', 1);
       appliedToRef.current = null;
