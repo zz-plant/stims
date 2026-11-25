@@ -618,6 +618,115 @@ describe('preset social sharing', () => {
         expect(new Set(putKeys).size).toBe(1);
       });
     });
+
+    describe('rendered cards persist in R2', () => {
+      const cardKey = 'og-cards/rovastar-parallel-universe.jpg';
+      const cardUrl =
+        'https://toil.fyi/api/og-preset?id=rovastar-parallel-universe';
+      const makeBucket = (preview: Uint8Array) => {
+        const objects = new Map<
+          string,
+          { bytes: Uint8Array; customMetadata?: Record<string, string> }
+        >();
+        const puts: string[] = [];
+        return {
+          objects,
+          puts,
+          setPreview(next: Uint8Array) {
+            preview = next;
+          },
+          get: async (key: string) => {
+            const bytes = key.startsWith('milkdrop-presets/previews/')
+              ? preview
+              : objects.get(key)?.bytes;
+            if (!bytes) return null;
+            return {
+              customMetadata: objects.get(key)?.customMetadata,
+              arrayBuffer: async () => bytes.slice().buffer as ArrayBuffer,
+            };
+          },
+          put: async (
+            key: string,
+            value: Uint8Array,
+            options?: { customMetadata?: Record<string, string> },
+          ) => {
+            puts.push(key);
+            objects.set(key, {
+              bytes: value.slice(),
+              customMetadata: options?.customMetadata,
+            });
+          },
+        };
+      };
+      const request = async (
+        bucket: ReturnType<typeof makeBucket>,
+        url = cardUrl,
+        assets: RenderAssets = renderAssets,
+      ) => {
+        const pending: Promise<unknown>[] = [];
+        const response = await ogPresetRequest({
+          request: new Request(url),
+          env: { STATIC_R2: bucket },
+          waitUntil: (promise) => pending.push(promise),
+          renderAssets: assets,
+        });
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        await Promise.all(pending);
+        return { response, bytes };
+      };
+      const frame = async (r: number) =>
+        new Uint8Array(
+          await sharp({
+            create: {
+              width: 48,
+              height: 27,
+              channels: 3,
+              background: { r, g: 40, b: 90 },
+            },
+          })
+            .png()
+            .toBuffer(),
+        );
+
+      test('serves the stored card instead of rendering it again', async () => {
+        const bucket = makeBucket(await frame(200));
+        const first = await request(bucket);
+        expect(first.response.headers.get('content-type')).toBe('image/jpeg');
+        expect(bucket.puts).toEqual([cardKey]);
+
+        // Swap the stored bytes for a marker, keeping the digest: if the
+        // second request rendered, it would answer a real JPEG instead.
+        const stored = bucket.objects.get(cardKey);
+        if (!stored) throw new Error('card was not stored');
+        const marker = new Uint8Array([0xff, 0xd8, 0x01, 0x02, 0xff, 0xd9]);
+        bucket.objects.set(cardKey, { ...stored, bytes: marker });
+
+        const second = await request(bucket);
+        expect(Array.from(second.bytes)).toEqual(Array.from(marker));
+        expect(second.response.headers.get('content-type')).toBe('image/jpeg');
+        expect(bucket.puts).toEqual([cardKey]);
+      }, 30_000);
+
+      test('a regenerated preview frame replaces the stored card', async () => {
+        const bucket = makeBucket(await frame(200));
+        const first = await request(bucket);
+        bucket.setPreview(await frame(20));
+        const second = await request(bucket);
+
+        expect(bucket.puts).toEqual([cardKey, cardKey]);
+        expect(Array.from(second.bytes)).not.toEqual(Array.from(first.bytes));
+        expect(Array.from(bucket.objects.get(cardKey)?.bytes ?? [])).toEqual(
+          Array.from(second.bytes),
+        );
+      }, 30_000);
+
+      test('stores neither tweaked cards nor cards rendered without their fonts', async () => {
+        const bucket = makeBucket(await frame(200));
+        await request(bucket, `${cardUrl}&tweak=abc123`);
+        await request(bucket, cardUrl, { ...renderAssets, fonts: [] });
+        expect(bucket.puts).toEqual([]);
+      }, 30_000);
+    });
   });
 
   describe('edge middleware unfurling', () => {
