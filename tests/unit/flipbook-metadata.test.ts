@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { Window } from 'happy-dom';
 import { onRequest } from '../../functions/_middleware.ts';
+import { loadPresetFlipbook } from '../../functions/shared/flipbook-store.ts';
 
 const id = 'a'.repeat(64);
 const record = {
@@ -108,5 +109,70 @@ describe('video share metadata', () => {
     const html = await (await onRequest(request)).text();
     expect(html).not.toContain('og:video');
     expect(html).toContain(`/api/flipbooks/${id}.jpg`);
+  });
+
+  describe('homepage clip lookup', () => {
+    const countingEnv = (failFirst = 0) => {
+      const base = context('/').env;
+      const keys: string[] = [];
+      let failures = failFirst;
+      const bucket = {
+        ...base.STATIC_R2,
+        get: async (key: string) => {
+          keys.push(key);
+          if (failures > 0) {
+            failures -= 1;
+            throw new Error('R2 unavailable');
+          }
+          return base.STATIC_R2.get(key);
+        },
+      };
+      return { env: { ...base, STATIC_R2: bucket }, keys };
+    };
+
+    test('reads R2 once per few minutes, not on every request', async () => {
+      const { env, keys } = countingEnv();
+      const start = 1_000_000;
+      for (const offset of [0, 1_000, 60_000]) {
+        expect(
+          (await loadPresetFlipbook(env, 'shifter-curlique', start + offset))
+            ?.id,
+        ).toBe(id);
+      }
+      expect(keys).toEqual([
+        'flipbooks/presets/shifter-curlique.json',
+        `flipbooks/${id}.json`,
+      ]);
+
+      await loadPresetFlipbook(env, 'shifter-curlique', start + 10 * 60_000);
+      expect(keys).toHaveLength(4);
+    });
+
+    test('a failed read is retried on the next request', async () => {
+      const { env, keys } = countingEnv(1);
+      expect(await loadPresetFlipbook(env, 'shifter-curlique', 0)).toBeNull();
+      expect((await loadPresetFlipbook(env, 'shifter-curlique', 1))?.id).toBe(
+        id,
+      );
+      expect(keys).toHaveLength(3);
+    });
+
+    test('a failed record read behind a good pointer is retried too', async () => {
+      const { env, keys } = countingEnv();
+      const original = env.STATIC_R2.get;
+      let failRecord = true;
+      env.STATIC_R2.get = async (key: string) => {
+        if (key === `flipbooks/${id}.json` && failRecord) {
+          failRecord = false;
+          keys.push(key);
+          throw new Error('R2 unavailable');
+        }
+        return original(key);
+      };
+      expect(await loadPresetFlipbook(env, 'shifter-curlique', 0)).toBeNull();
+      expect((await loadPresetFlipbook(env, 'shifter-curlique', 1))?.id).toBe(
+        id,
+      );
+    });
   });
 });

@@ -1,7 +1,9 @@
 /**
- * Warms the edge cache for the most-shared preset cards.
+ * Renders the most-shared preset cards ahead of their first share.
  *
- * A cold card render costs ~850ms of resvg work; a warm one is ~100ms. More
+ * A cold card render costs ~850ms of resvg work. The first render of each card
+ * is stored in R2 (og-cards/<id>.jpg), so a warm run fills that store for every
+ * edge location, not just the data centre the run happens to hit. More
  * importantly, the crawler's *first* fetch is the one that can fail — and a
  * failed render serves the generic card, which unfurlers then cache for that
  * URL indefinitely. Warming removes that window for the presets most likely

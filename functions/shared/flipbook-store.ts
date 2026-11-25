@@ -76,58 +76,100 @@ export async function loadFlipbook(
   env: FlipbookEnv,
   id: string,
 ): Promise<PublishedFlipbook | null> {
-  if (!env.STATIC_R2 || !isFlipbookId(id)) return null;
   try {
-    const object = await env.STATIC_R2.get(recordKey(id));
-    if (!object || object.size > 150_000) return null;
-    const value = (await object.json()) as PublishedFlipbook;
-    if (
-      value.version !== 1 ||
-      value.id !== id ||
-      typeof value.title !== 'string' ||
-      value.title.length > 160 ||
-      typeof value.source !== 'string' ||
-      value.source.length > 128_000 ||
-      typeof value.presetId !== 'string' ||
-      !/^[a-zA-Z0-9_-]{1,200}$/.test(value.presetId) ||
-      !Number.isInteger(value.width) ||
-      value.width < 2 ||
-      value.width > 320 ||
-      !Number.isInteger(value.height) ||
-      value.height < 2 ||
-      value.height > 180 ||
-      !Number.isInteger(value.delayMs) ||
-      value.delayMs < 100 ||
-      value.delayMs > 500 ||
-      !Number.isInteger(value.frameCount) ||
-      value.frameCount < 2 ||
-      value.frameCount > 24
-    )
-      return null;
-    return value;
+    return await readFlipbook(env, id);
   } catch {
     return null;
   }
 }
 
+/** loadFlipbook without the catch: a failed R2 read throws. */
+async function readFlipbook(
+  env: FlipbookEnv,
+  id: string,
+): Promise<PublishedFlipbook | null> {
+  if (!env.STATIC_R2 || !isFlipbookId(id)) return null;
+  const object = await env.STATIC_R2.get(recordKey(id));
+  if (!object || object.size > 150_000) return null;
+  const value = (await object.json()) as PublishedFlipbook;
+  if (
+    value.version !== 1 ||
+    value.id !== id ||
+    typeof value.title !== 'string' ||
+    value.title.length > 160 ||
+    typeof value.source !== 'string' ||
+    value.source.length > 128_000 ||
+    typeof value.presetId !== 'string' ||
+    !/^[a-zA-Z0-9_-]{1,200}$/.test(value.presetId) ||
+    !Number.isInteger(value.width) ||
+    value.width < 2 ||
+    value.width > 320 ||
+    !Number.isInteger(value.height) ||
+    value.height < 2 ||
+    value.height > 180 ||
+    !Number.isInteger(value.delayMs) ||
+    value.delayMs < 100 ||
+    value.delayMs > 500 ||
+    !Number.isInteger(value.frameCount) ||
+    value.frameCount < 2 ||
+    value.frameCount > 24
+  )
+    return null;
+  return value;
+}
+
+// Every `/` request looks up the homepage preset's clip: a pointer read, then
+// the record it names, two R2 round trips (~85 ms each) in series before the
+// first byte. Pointers change only when scripts/publish-video-previews.ts
+// runs, so a lookup is reused for a few minutes per isolate. A read that
+// throws is not reused, so a transient R2 failure costs one response its
+// video tags rather than every response for the next few minutes.
+const PRESET_FLIPBOOK_TTL_MS = 5 * 60_000;
+const PRESET_FLIPBOOK_MEMO_LIMIT = 256;
+const presetFlipbookMemo = new WeakMap<
+  FlipbookBucket,
+  Map<string, { expires: number; value: Promise<PublishedFlipbook | null> }>
+>();
+
+async function readPresetFlipbook(
+  env: FlipbookEnv & { STATIC_R2: FlipbookBucket },
+  presetId: string,
+): Promise<PublishedFlipbook | null> {
+  const pointer = await env.STATIC_R2.get(presetFlipbookKey(presetId));
+  if (!pointer || pointer.size > 1000) return null;
+  const { id } = (await pointer.json()) as { id?: unknown };
+  if (typeof id !== 'string') return null;
+  const record = await readFlipbook(env, id);
+  return record?.presetId === presetId ? record : null;
+}
+
 export async function loadPresetFlipbook(
   env: FlipbookEnv,
   presetId: string,
+  now = Date.now(),
 ): Promise<PublishedFlipbook | null> {
+  const bucket = env.STATIC_R2;
   if (
     env.VIDEO_PREVIEWS_ENABLED !== 'true' ||
-    !env.STATIC_R2 ||
+    !bucket ||
     !/^[a-zA-Z0-9_-]{1,200}$/.test(presetId)
   )
     return null;
+  let memo = presetFlipbookMemo.get(bucket);
+  if (!memo) {
+    memo = new Map();
+    presetFlipbookMemo.set(bucket, memo);
+  }
+  const cached = memo.get(presetId);
+  if (cached && cached.expires > now) return cached.value;
+  if (memo.size >= PRESET_FLIPBOOK_MEMO_LIMIT) memo.clear();
+  const value = readPresetFlipbook({ ...env, STATIC_R2: bucket }, presetId);
+  const entry = { expires: now + PRESET_FLIPBOOK_TTL_MS, value };
+  memo.set(presetId, entry);
   try {
-    const pointer = await env.STATIC_R2.get(presetFlipbookKey(presetId));
-    if (!pointer || pointer.size > 1000) return null;
-    const { id } = (await pointer.json()) as { id?: unknown };
-    if (typeof id !== 'string') return null;
-    const record = await loadFlipbook(env, id);
-    return record?.presetId === presetId ? record : null;
+    return await value;
   } catch {
+    if (memo.get(presetId) === entry) memo.delete(presetId);
     return null;
   }
 }
