@@ -52,9 +52,9 @@ Keep the orchestration in `scripts/build-site.mjs`. Running both compilers as a 
 
 Done in the Cloudflare dashboard (Workers & Pages → the `stims` Worker → Settings → Builds, or "Import a repository" if the Worker does not exist yet):
 1. Connect the `zz-plant/stims` GitHub repository.
-2. Build command: `bun run site:build:gated`. Deploy command: `bunx wrangler deploy --config wrangler.site.jsonc`. Non-production branch command: `bunx wrangler versions upload --config wrangler.site.jsonc`.
+2. Build command: none. Deploy command: `bun run deploy`. Non-production branch commands: `bun run deploy:dry-run` (validate) and `bun run deploy:preview` (preview). Each script runs the build itself: `deploy`, `deploy:dry-run` and `deploy:preview` call `site:deploy`, `site:check` and `site:preview`, so they build with the ungated `site:build`, as the trigger did before. `cloudflare.config.ts` pins the account for the cf CLI; Wrangler ignores it.
 
-   `site:build:gated` runs `test:fast` (unit + compat) before the build. Workers Builds deploys on push and does not wait for GitHub Actions, so without a test step in the build itself a commit pushed straight to `main` reaches production whether or not CI is green. That is how the failing `check` run on `ad65ee2d` still shipped. A failing test now fails the build, and production keeps serving the previous version. Use the plain `bun run site:build` only if you deliberately want an ungated deploy path.
+   Workers Builds deploys on push and does not wait for GitHub Actions, so a commit pushed straight to `main` reaches production whether or not CI is green. That is how the failing `check` run on `ad65ee2d` still shipped. To make a failing test stop the deploy, point `site:deploy` at `site:build:gated`, which runs `test:fast` (unit + compat) before the build.
 3. Production branch: `main`.
 4. Enable **Build cache** under Settings → Build. Workers Builds then preserves Bun's package cache between builds; see [Cloudflare's build-caching guide](https://developers.cloudflare.com/workers/ci-cd/builds/build-caching/).
 

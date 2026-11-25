@@ -259,8 +259,9 @@ invariant tests worth knowing by name:
   [steward skill](.claude/skills/steward/SKILL.md) covers CI and squash-merges.
 - **Deploys**: Cloudflare Workers Builds deploys the `stims` Worker on push
   (production from `main`, previews from other branches; config in
-  `wrangler.site.jsonc`). CI only gates merges; `bun run site:deploy` is the
-  manual fallback. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+  `wrangler.site.jsonc`). Each trigger runs one script (`deploy` on `main`,
+  `deploy:dry-run` and `deploy:preview` elsewhere). CI only gates merges;
+  `bun run deploy` is the manual fallback. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Further reading
 
