@@ -347,9 +347,18 @@ type StaticAssetFetcher = {
 // answers unknown paths with the SPA shell, so every shared preset card
 // rendered the "no preview" branch.
 type PreviewBucket = {
-  get: (
+  get: (key: string) => Promise<{
+    arrayBuffer: () => Promise<ArrayBuffer>;
+    customMetadata?: Record<string, string>;
+  } | null>;
+  put?: (
     key: string,
-  ) => Promise<{ arrayBuffer: () => Promise<ArrayBuffer> } | null>;
+    value: Uint8Array,
+    options?: {
+      httpMetadata?: { contentType?: string };
+      customMetadata?: Record<string, string>;
+    },
+  ) => Promise<unknown>;
 };
 
 type OgPresetContext = {
@@ -413,6 +422,41 @@ const CARD_CACHE_CONTROL =
   'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
 
 const CARD_CACHE_REVISION = 'jpeg';
+
+// The edge cache is per data centre and not tiered, so crawlers spreading
+// requests over ~2,500 presets and many locations almost never hit it:
+// measured 2026-11-25, ~750 card requests a day each rendered from scratch
+// (1.2-1.5 s). Rendered cards are also kept in R2, one object per preset,
+// stamped with a digest of the SVG they were rasterized from. The SVG embeds
+// the preview frame, title and byline, so a regenerated preview or a renamed
+// preset changes the digest and the card re-renders; CARD_CACHE_REVISION
+// covers changes to the encoder. Tweaked cards are not stored: `tweak` is
+// free text, so storing it would let anyone mint objects in the bucket.
+const cardStoreKey = (presetId: string) => `og-cards/${presetId}.jpg`;
+
+async function cardDigest(svg: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${CARD_CACHE_REVISION}\n${svg}`),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+}
+
+async function readStoredCard(
+  bucket: PreviewBucket,
+  presetId: string,
+  digest: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    const object = await bucket.get(cardStoreKey(presetId));
+    if (object?.customMetadata?.digest !== digest) return null;
+    return await object.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
 
 function edgeCache(): Cache | null {
   const store = (globalThis as { caches?: { default?: Cache } & CacheStorage })
@@ -607,10 +651,8 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
     if (cached) return cached;
   }
 
-  try {
-    const assets = await resolveRenderAssets(context, url.origin);
-    const jpeg = await renderPresetOgJpeg(svg, assets);
-    const response = new Response(new Uint8Array(jpeg).buffer, {
+  const cardResponse = (body: ArrayBuffer) => {
+    const response = new Response(body, {
       headers: {
         'Content-Type': 'image/jpeg',
         'Cache-Control': CARD_CACHE_CONTROL,
@@ -621,6 +663,31 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
       context.waitUntil?.(store);
     }
     return response;
+  };
+
+  const bucket = tweak ? undefined : context.env?.STATIC_R2;
+  const digest = bucket?.put ? await cardDigest(svg) : null;
+  if (bucket && digest) {
+    const stored = await readStoredCard(bucket, presetId, digest);
+    if (stored) return cardResponse(stored);
+  }
+
+  try {
+    const assets = await resolveRenderAssets(context, url.origin);
+    const jpeg = await renderPresetOgJpeg(svg, assets);
+    // A card rendered without its full font set has no caption. The edge
+    // cache already holds it for a week; R2 would hold it until the preview
+    // changed, so only complete renders are stored.
+    if (bucket?.put && digest && assets.fonts.length === FONT_PATHS.length) {
+      const store = bucket
+        .put(cardStoreKey(presetId), jpeg, {
+          httpMetadata: { contentType: 'image/jpeg' },
+          customMetadata: { digest },
+        })
+        .catch(() => {});
+      context.waitUntil?.(store);
+    }
+    return cardResponse(new Uint8Array(jpeg).buffer);
   } catch {
     return fallbackPngResponse(context, url.origin);
   }
