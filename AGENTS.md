@@ -36,7 +36,9 @@ Parked, in rough order of how little a priority-1 listener touches it:
 
 - **Agent-discovery metadata** — `public/llms.txt`, `llms-full.txt`,
   `openapi.json`, `auth.md`, `.well-known/api-catalog`,
-  `.well-known/mcp/server-card.json`, `.well-known/agent-skills/`.
+  `.well-known/mcp/server-card.json`, `.well-known/agent-skills/`, and the
+  four WebMCP tools in `src/js/frontend/webmcp-tools.ts` (added by owner
+  override on 2026-11-18).
 - **Model-backed API routes** — `functions/api/{generate,refine,blend,image-to-preset,visual-search,patch,validate,batch-generate,decide,feed}-*.ts`.
   They are rate-limited and documented, and they stay, but they are not the
   product and do not get new siblings.
