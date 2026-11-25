@@ -1,11 +1,11 @@
 name: CI
 
+# Pull requests only. A push to main re-ran the suite on a tree its pull
+# request had already passed (Workers Builds deploys main on its own), and no
+# merge queue is configured, so merge_group never fired. Run it on main by
+# hand from the Actions tab when a direct push needs it.
 on:
   pull_request:
-  push:
-    branches:
-      - main
-  merge_group:
   workflow_dispatch:
 
 concurrency:

@@ -284,5 +284,5 @@ invariant tests worth knowing by name:
 | [`.claude/CLAUDE.md`](.claude/CLAUDE.md) | Claude Code | Imports this file, plus Claude Code notes |
 | [`.claude/skills/steward/SKILL.md`](.claude/skills/steward/SKILL.md) | Claude Code; any agent opening a PR | PR and CI conventions |
 | [`.github/copilot-instructions.md`](.github/copilot-instructions.md), `.github/prompts/` | GitHub Copilot | Copilot notes and prompt files |
-| `.opencode/` | opencode (locally and via `/oc` on PRs) | Commands and modes |
+| `.opencode/` | opencode (locally) | Commands and modes |
 | [`.github/AGENTS.md`](.github/AGENTS.md) | Tools that look under `.github/` | A pointer here |
