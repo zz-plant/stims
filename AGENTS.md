@@ -36,7 +36,9 @@ Parked, in rough order of how little a priority-1 listener touches it:
 
 - **Agent-discovery metadata** — `public/llms.txt`, `llms-full.txt`,
   `openapi.json`, `auth.md`, `.well-known/api-catalog`,
-  `.well-known/mcp/server-card.json`, `.well-known/agent-skills/`.
+  `.well-known/mcp/server-card.json`, `.well-known/agent-skills/`, and the
+  four WebMCP tools in `src/js/frontend/webmcp-tools.ts` (added by owner
+  override on 2026-11-18).
 - **Model-backed API routes** — `functions/api/{generate,refine,blend,image-to-preset,visual-search,patch,validate,batch-generate,decide,feed}-*.ts`.
   They are rate-limited and documented, and they stay, but they are not the
   product and do not get new siblings.
@@ -282,5 +284,5 @@ invariant tests worth knowing by name:
 | [`.claude/CLAUDE.md`](.claude/CLAUDE.md) | Claude Code | Imports this file, plus Claude Code notes |
 | [`.claude/skills/steward/SKILL.md`](.claude/skills/steward/SKILL.md) | Claude Code; any agent opening a PR | PR and CI conventions |
 | [`.github/copilot-instructions.md`](.github/copilot-instructions.md), `.github/prompts/` | GitHub Copilot | Copilot notes and prompt files |
-| `.opencode/` | opencode (locally and via `/oc` on PRs) | Commands and modes |
+| `.opencode/` | opencode (locally) | Commands and modes |
 | [`.github/AGENTS.md`](.github/AGENTS.md) | Tools that look under `.github/` | A pointer here |

@@ -19,6 +19,7 @@ import type { EngineSnapshot } from '../engine/engine-snapshot.ts';
 import { getAudioEnergy } from '../engine-audio-energy-store.ts';
 import type { EngineContextValue } from '../engine-context.tsx';
 import { pinTarget, unpinTarget } from '../perform-pins.ts';
+import { registerWebMcpTools } from '../webmcp-tools.ts';
 import type { WorkspaceContextValue } from '../workspace-context.tsx';
 import { findActivePresetEntry } from '../workspace-helpers.ts';
 
@@ -141,6 +142,26 @@ export function useAgentStateInstall({
     engineBridgeRef.current.getEditorSessionState,
     engineBridgeRef.current.applyEditorSourceAwaited,
   ]);
+
+  // WebMCP tools go up once, at mount, so an in-browser agent finds them on
+  // page load. They read the agent global and the catalog when called, which
+  // is why nothing here depends on the snapshot.
+  useEffect(() => {
+    const controller = new AbortController();
+    registerWebMcpTools(
+      {
+        getAgent: () => window.__stims_agent,
+        getCatalog: () => engineBridgeRef.current.catalog,
+        presetUrl: (presetId) =>
+          new URL(
+            `/?preset=${encodeURIComponent(presetId)}`,
+            window.location.origin,
+          ).href,
+      },
+      controller.signal,
+    );
+    return () => controller.abort();
+  }, [engineBridgeRef]);
 
   useEffect(() => {
     document.body.dataset.engineState = liveMode

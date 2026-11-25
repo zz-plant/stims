@@ -151,6 +151,17 @@ bun run ctl -- --step-timeout 90000 \
   process **exits non-zero** if any step failed, and prints `Step failed: …`
   to stderr, so a shell script can branch on it.
 
+## For an agent in the visitor's browser: WebMCP
+
+Where the browser has [WebMCP](https://webmachinelearning.github.io/webmcp/)
+(`navigator.modelContext`, or `document.modelContext` as the spec has it), the
+page registers four tools at mount, in every mode
+(`src/js/frontend/webmcp-tools.ts`): `search_presets`, `play_preset`,
+`skip_preset` and `get_now_playing`. Each one wraps an `__stims_agent` verb and
+returns the same errors and did-you-mean suggestions. Before the stage is live,
+`play_preset` answers `queued: true`, because the preset waits for an audio
+source. The set is parked surface (see AGENTS.md) and does not grow.
+
 ## On the tab you are watching: the live channel
 
 `bun run ctl` and the MCP sessions launch a browser of their own. The live
