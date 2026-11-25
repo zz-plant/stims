@@ -22,6 +22,7 @@ import { getProjectorState } from '../core/services/projector-window-service.ts'
 import { isRecordingActive } from '../core/services/recording-state.ts';
 import {
   getSensoryMoodKnobs,
+  SENSORY_RAMP_MS,
   setSensoryMoodKnobs,
 } from '../core/services/sensory-translation.ts';
 import {
@@ -835,7 +836,10 @@ export function buildPaletteActions(
       label: 'Calm the visuals (lower brightness, motion, contrast)',
       keywords: ['sensory', 'calm', 'grounding', 'overload', 'neurodivergent'],
       run: () => {
-        setSensoryMoodKnobs({ overloadCeiling: 0.3 });
+        setSensoryMoodKnobs(
+          { overloadCeiling: 0.3 },
+          { rampMs: SENSORY_RAMP_MS },
+        );
         uiRef.current.setStatusMessage('Visuals calmed.');
       },
     },
@@ -845,7 +849,10 @@ export function buildPaletteActions(
       label: 'Stimulate the visuals (full brightness and motion)',
       keywords: ['sensory', 'stimulate', 'energize'],
       run: () => {
-        setSensoryMoodKnobs({ overloadCeiling: 1.0 });
+        setSensoryMoodKnobs(
+          { overloadCeiling: 1.0 },
+          { rampMs: SENSORY_RAMP_MS },
+        );
         uiRef.current.setStatusMessage('Visuals at full intensity.');
       },
     },
@@ -855,11 +862,14 @@ export function buildPaletteActions(
       label: 'Reset sensory mood dials',
       keywords: ['sensory', 'reset', 'default'],
       run: () => {
-        setSensoryMoodKnobs({
-          overloadCeiling: 1.0,
-          predictability: 0.5,
-          breathingCadenceSeconds: null,
-        });
+        setSensoryMoodKnobs(
+          {
+            overloadCeiling: 1.0,
+            predictability: 0.5,
+            breathingCadenceSeconds: null,
+          },
+          { rampMs: SENSORY_RAMP_MS },
+        );
         uiRef.current.setStatusMessage('Sensory mood reset.');
       },
     },
