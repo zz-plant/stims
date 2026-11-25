@@ -11,6 +11,11 @@
   // trigger-embed-backfill.ts) after those change instead of paying for an
   // always-on cron. The authenticated POST route triggers a run; PUT /static
   // serves scripts/sync-previews-r2.ts.
+  //
+  // The empty list is deliberate: Wrangler leaves a Worker's existing crons
+  // in place when `triggers` is absent, so dropping the key kept an August
+  // `*/15` schedule firing into a Worker with no scheduled() handler.
+  "triggers": { "crons": [] },
   "ai": {
     "binding": "AI"
   },
