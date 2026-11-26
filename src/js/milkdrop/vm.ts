@@ -22,6 +22,7 @@ import {
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
   type MilkdropLoopBudget,
+  type MilkdropProgramFn,
   type MilkdropProgramOptions,
 } from 'milkdrop-toolchain/src/expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
@@ -232,6 +233,17 @@ export class MilkdropPresetVM implements MilkdropVM {
   };
   /** Absolute `Date.now()` deadline for the step in progress, or null. */
   private executionDeadlineMs: number | null = null;
+  /**
+   * The block runProgram last compiled, and its compiled function. The mesh,
+   * wave and shape passes call one block hundreds to thousands of times in a
+   * row, so remembering the last one skips compileMilkdropProgram's WeakMap
+   * lookup on every call but the first. Blocks are immutable once compiled,
+   * so a matching block always has a matching function.
+   */
+  private lastProgramBlock:
+    | MilkdropCompiledPreset['ir']['programs']['init']
+    | null = null;
+  private lastProgram: MilkdropProgramFn | null = null;
   /** True when the last step stopped at the wall-clock deadline. */
   private executionBudgetExceeded = false;
   private readonly frameDeadlineMs: number;
@@ -1103,7 +1115,13 @@ export class MilkdropPresetVM implements MilkdropVM {
       this.loopBudget.deadlineExceeded = true;
       return;
     }
-    compileMilkdropProgram(block, VM_PROGRAM_OPTIONS)(
+    let program = this.lastProgram;
+    if (program === null || block !== this.lastProgramBlock) {
+      program = compileMilkdropProgram(block, VM_PROGRAM_OPTIONS);
+      this.lastProgramBlock = block;
+      this.lastProgram = program;
+    }
+    program(
       env as Record<string, number>,
       this.state as Record<string, number>,
       this.registers as Record<string, number>,
